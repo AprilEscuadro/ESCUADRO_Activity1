@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - CCS Sit-in System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-section">
+                <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="CCS Logo" class="navbar-logo">
+                <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
+            </div>
+            <div class="nav-links">
+                <span class="nav-login-label">👤 {{ student.firstName }} {{ student.lastName }}</span>
+                <a href="/logout" class="btn-register">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-wrapper">
+
+        <!-- SIDEBAR -->
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="#section-profile" class="sidebar-link active">🏠 Dashboard</a></li>
+                <li><a href="#section-history" class="sidebar-link">📋 Sit-in History</a></li>
+            </ul>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="admin-main">
+
+            <!-- ── PROFILE CARD ── -->
+            <section id="section-profile">
+                <h2 class="admin-section-title">🏠 My Dashboard</h2>
+
+                <div class="dashboard-profile-card">
+                    <div class="profile-avatar">
+                        <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="Profile">
+                    </div>
+                    <div class="profile-info">
+                        <h2>{{ student.lastName }}, {{ student.firstName }} {{ student.middleName }}</h2>
+                        <p><strong>ID Number:</strong> {{ student.idNumber }}</p>
+                        <p><strong>Course:</strong> {{ student.course }}</p>
+                        <p><strong>Year Level:</strong>
+                            {{ student.courseLevel }}{% if student.courseLevel == '1' %}st
+                            {% elif student.courseLevel == '2' %}nd
+                            {% elif student.courseLevel == '3' %}rd
+                            {% else %}th{% endif %} Year
+                        </p>
+                        <p><strong>Email:</strong> {{ student.email }}</p>
+                        <p><strong>Address:</strong> {{ student.address }}</p>
+                    </div>
+
+                    <!-- Sit-in Count Badge -->
+                    <div class="sitin-badge
+                        {% if student.sitin_count <= 5 %}badge-danger
+                        {% elif student.sitin_count <= 10 %}badge-warning
+                        {% else %}badge-success{% endif %}">
+                        <span class="sitin-number">{{ student.sitin_count }}</span>
+                        <span class="sitin-label">Sit-ins<br>Remaining</span>
+                    </div>
+                </div>
+
+                <!-- Mini Stats -->
+                <div class="stats-grid" style="margin-top: 1.5rem;">
+                    <div class="stat-card stat-blue">
+                        <div class="stat-number">{{ sessions|length }}</div>
+                        <div class="stat-label">Total Sit-ins Used</div>
+                    </div>
+                    <div class="stat-card stat-green">
+                        <div class="stat-number">{{ sessions|selectattr('status', 'equalto', 'active')|list|length }}</div>
+                        <div class="stat-label">Active Session</div>
+                    </div>
+                    <div class="stat-card stat-gray">
+                        <div class="stat-number">{{ sessions|selectattr('status', 'equalto', 'done')|list|length }}</div>
+                        <div class="stat-label">Completed Sessions</div>
+                    </div>
+                    <div class="stat-card
+                        {% if student.sitin_count <= 5 %}stat-red
+                        {% elif student.sitin_count <= 10 %}stat-yellow
+                        {% else %}stat-green{% endif %}">
+                        <div class="stat-number">{{ student.sitin_count }}</div>
+                        <div class="stat-label">Sit-ins Remaining</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── SIT-IN HISTORY ── -->
+            <section id="section-history" style="margin-top: 2rem; margin-bottom: 3rem;">
+                <h2 class="admin-section-title">📋 My Sit-in History</h2>
+                <div class="admin-card">
+                    <div class="table-scroll">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Purpose</th>
+                                    <th>Laboratory</th>
+                                    <th>Time In</th>
+                                    <th>Time Out</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in sessions %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ s.purpose }}</td>
+                                    <td>{{ s.lab }}</td>
+                                    <td>{{ s.time_in }}</td>
+                                    <td>{{ s.time_out if s.time_out else '—' }}</td>
+                                    <td>
+                                        <span class="status-badge {% if s.status == 'active' %}status-active{% else %}status-done{% endif %}">
+                                            {{ s.status }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="no-data">No sit-in sessions yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
+    </footer>
+
+</body>
+</html>

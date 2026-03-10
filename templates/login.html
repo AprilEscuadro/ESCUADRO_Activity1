@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - CCS Sit-in System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-section">
+                <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="CCS Logo" class="navbar-logo">
+                <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
+            </div>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle">Community ▾</a>
+                    <div class="dropdown-menu">
+                        <a href="/#announcements">Announcements</a>
+                        <a href="/#rules">Lab Rules &amp; Regulations</a>
+                        <a href="/#faqs">FAQs</a>
+                        <a href="/#leaderboard">Student Leaderboard</a>
+                        <a href="/#contact">Contact Us</a>
+                    </div>
+                </div>
+                <a href="/#about">About</a>
+                <a href="/login" class="nav-login-label">Login</a>
+                <a href="/register.html" class="btn-register">Register</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="register-container">
+        <div class="register-card">
+            <a href="/" class="back-btn">← Back to Home</a>
+
+            <div class="form-content">
+                <h1>Login</h1>
+                <p class="form-subtitle">Enter your credentials to continue</p>
+
+                {% if error %}
+                <div class="error-message">
+                    ⚠️ {{ error }}
+                </div>
+                {% endif %}
+
+                <form action="/login" method="post">
+
+                    <div class="form-field">
+                        <label for="loginId">ID Number</label>
+                        <input type="text" id="loginId" name="loginId"
+                               required placeholder="Enter your ID number">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="loginPassword">Password</label>
+                        <input type="password" id="loginPassword" name="loginPassword"
+                               required minlength="6"
+                               placeholder="Enter your password">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Login</button>
+
+                    <p class="form-footer">Don't have an account?
+                        <a href="/register.html" style="color:#0F3E7D; font-weight:bold;">Register here</a>
+                    </p>
+
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
+    </footer>
+
+</body>
+</html>

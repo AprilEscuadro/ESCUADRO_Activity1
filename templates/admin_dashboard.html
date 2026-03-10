@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - CCS Sit-in System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-section">
+                <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="CCS Logo" class="navbar-logo">
+                <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
+            </div>
+            <div class="nav-links">
+                <span class="nav-login-label">👤 Admin: {{ session['admin_name'] }}</span>
+                <a href="/admin/logout" class="btn-register">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-wrapper">
+
+        <!-- SIDEBAR -->
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="#section-stats" class="sidebar-link active">📊 Dashboard</a></li>
+                <li><a href="#section-students" class="sidebar-link">👥 Students</a></li>
+                <li><a href="#section-sitin" class="sidebar-link">📋 Sit-in Sessions</a></li>
+                <li><a href="#section-announcements" class="sidebar-link">📢 Announcements</a></li>
+            </ul>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="admin-main">
+
+            <!-- ── STATS CARDS ── -->
+            <section id="section-stats">
+                <h2 class="admin-section-title">📊 Dashboard Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card stat-blue">
+                        <div class="stat-number">{{ students|length }}</div>
+                        <div class="stat-label">Total Students</div>
+                    </div>
+                    <div class="stat-card stat-green">
+                        <div class="stat-number">{{ sessions|selectattr('status', 'equalto', 'active')|list|length }}</div>
+                        <div class="stat-label">Active Sit-ins</div>
+                    </div>
+                    <div class="stat-card stat-gray">
+                        <div class="stat-number">{{ sessions|selectattr('status', 'equalto', 'done')|list|length }}</div>
+                        <div class="stat-label">Completed Sit-ins</div>
+                    </div>
+                    <div class="stat-card stat-yellow">
+                        <div class="stat-number">{{ announcements|length }}</div>
+                        <div class="stat-label">Announcements</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── ADD SIT-IN FORM ── -->
+            <section id="section-sitin-form" style="margin-top: 2rem;">
+                <h2 class="admin-section-title">➕ Add Sit-in Session</h2>
+                <div class="admin-card">
+                    <form action="/admin/sitin/add" method="post" class="inline-form">
+                        <div class="form-field">
+                            <label>Student ID Number</label>
+                            <input type="text" name="idNumber" required placeholder="e.g. 2024-00001">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label>Purpose</label>
+                                <select name="purpose" required>
+                                    <option value="">Select purpose</option>
+                                    <option value="C Programming">C Programming</option>
+                                    <option value="Java Programming">Java Programming</option>
+                                    <option value="Python Programming">Python Programming</option>
+                                    <option value="Web Development">Web Development</option>
+                                    <option value="Database">Database</option>
+                                    <option value="Research">Research</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label>Laboratory</label>
+                                <select name="lab" required>
+                                    <option value="">Select lab</option>
+                                    <option value="Lab 524">Lab 524</option>
+                                    <option value="Lab 526">Lab 526</option>
+                                    <option value="Lab 528">Lab 528</option>
+                                    <option value="Lab 530">Lab 530</option>
+                                    <option value="Lab 542">Lab 542</option>
+                                    <option value="Lab 544">Lab 544</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Sit-in</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- ── STUDENTS TABLE ── -->
+            <section id="section-students" style="margin-top: 2rem;">
+                <h2 class="admin-section-title">👥 Registered Students</h2>
+                <div class="admin-card">
+                    <div class="table-scroll">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>ID Number</th>
+                                    <th>Name</th>
+                                    <th>Course</th>
+                                    <th>Year</th>
+                                    <th>Email</th>
+                                    <th>Sit-ins Left</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in students %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ s.idNumber }}</td>
+                                    <td>{{ s.lastName }}, {{ s.firstName }} {{ s.middleName }}</td>
+                                    <td>{{ s.course }}</td>
+                                    <td>{{ s.courseLevel }}{% if s.courseLevel == '1' %}st{% elif s.courseLevel == '2' %}nd{% elif s.courseLevel == '3' %}rd{% else %}th{% endif %}</td>
+                                    <td>{{ s.email }}</td>
+                                    <td>
+                                        <span class="sitin-remaining
+                                            {% if s.sitin_count <= 5 %}remaining-low
+                                            {% elif s.sitin_count <= 10 %}remaining-mid
+                                            {% else %}remaining-ok{% endif %}">
+                                            {{ s.sitin_count }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="7" class="no-data">No students registered yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── SIT-IN SESSIONS TABLE ── -->
+            <section id="section-sitin" style="margin-top: 2rem;">
+                <h2 class="admin-section-title">📋 Sit-in Sessions</h2>
+                <div class="admin-card">
+                    <div class="table-scroll">
+                        <table class="dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>ID Number</th>
+                                    <th>Name</th>
+                                    <th>Purpose</th>
+                                    <th>Lab</th>
+                                    <th>Time In</th>
+                                    <th>Time Out</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in sessions %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ s.idNumber }}</td>
+                                    <td>{{ s.firstName }} {{ s.lastName }}</td>
+                                    <td>{{ s.purpose }}</td>
+                                    <td>{{ s.lab }}</td>
+                                    <td>{{ s.time_in }}</td>
+                                    <td>{{ s.time_out if s.time_out else '—' }}</td>
+                                    <td>
+                                        <span class="status-badge {% if s.status == 'active' %}status-active{% else %}status-done{% endif %}">
+                                            {{ s.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if s.status == 'active' %}
+                                        <form action="/admin/sitin/end/{{ s.id }}" method="post" style="display:inline;">
+                                            <button type="submit" class="btn-end">End</button>
+                                        </form>
+                                        {% else %}
+                                        <span style="color:#999; font-size:0.85rem;">Done</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="9" class="no-data">No sit-in sessions yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── ANNOUNCEMENTS ── -->
+            <section id="section-announcements" style="margin-top: 2rem; margin-bottom: 3rem;">
+                <h2 class="admin-section-title">📢 Announcements</h2>
+
+                <!-- Post Announcement Form -->
+                <div class="admin-card" style="margin-bottom: 1.5rem;">
+                    <h3 style="color:#0F3E7D; margin-bottom: 1rem;">Post New Announcement</h3>
+                    <form action="/admin/announcement/add" method="post">
+                        <div class="form-field">
+                            <label>Title</label>
+                            <input type="text" name="title" required placeholder="Announcement title">
+                        </div>
+                        <div class="form-field">
+                            <label>Content</label>
+                            <textarea name="content" required rows="4"
+                                style="width:100%; padding:0.8rem; border:2px solid #ddd;
+                                       border-radius:5px; font-size:1rem; font-family:Arial, sans-serif;
+                                       resize:vertical;"
+                                placeholder="Write your announcement here..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Post Announcement</button>
+                    </form>
+                </div>
+
+                <!-- Announcements List -->
+                <div class="admin-card">
+                    {% for a in announcements %}
+                    <div class="announcement-item">
+                        <div class="announcement-header">
+                            <h4>{{ a.title }}</h4>
+                            <span class="announcement-date">{{ a.created_at }}</span>
+                        </div>
+                        <p>{{ a.content }}</p>
+                        <small style="color:#999;">Posted by: {{ a.posted_by }}</small>
+                    </div>
+                    {% else %}
+                    <p class="no-data">No announcements yet.</p>
+                    {% endfor %}
+                </div>
+
+            </section>
+
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
+    </footer>
+
+</body>
+</html>

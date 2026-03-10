@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - CCS Sit-in System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-section">
+                <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="CCS Logo" class="navbar-logo">
+                <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
+            </div>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle">Community ▾</a>
+                    <div class="dropdown-menu">
+                        <a href="/#announcements">Announcements</a>
+                        <a href="/#rules">Lab Rules &amp; Regulations</a>
+                        <a href="/#faqs">FAQs</a>
+                        <a href="/#leaderboard">Student Leaderboard</a>
+                        <a href="/#contact">Contact Us</a>
+                    </div>
+                </div>
+                <a href="/#about">About</a>
+                <a href="/login" class="nav-login-label">Login</a>
+                <a href="/register.html" class="btn-register">Register</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="register-container">
+        <div class="register-card">
+            <a href="/" class="back-btn">← Back to Home</a>
+
+            <div class="form-content">
+                <h1>Create Account</h1>
+                <p class="form-subtitle">Register to access the sit-in monitoring system</p>
+
+                <form id="registerForm" action="/register" method="post">
+
+                    <div class="form-field">
+                        <label for="idNumber">ID Number</label>
+                        <input type="text" id="idNumber" name="idNumber"
+                               required placeholder="e.g. 2024-00001">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" name="lastName"
+                                   required placeholder="Last name">
+                        </div>
+                        <div class="form-field">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" name="firstName"
+                                   required placeholder="First name">
+                        </div>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="middleName">Middle Name</label>
+                        <input type="text" id="middleName" name="middleName"
+                               placeholder="Middle name (optional)">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="courseLevel">Course Level</label>
+                        <select id="courseLevel" name="courseLevel" required>
+                            <option value="">Select year level</option>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="course">Course</label>
+                        <select id="course" name="course" required>
+                            <option value="">Select your course</option>
+
+                            <optgroup label="🖥️ College of Computer Studies (30 sit-ins)">
+                                <option value="BSIT">BS Information Technology</option>
+                                <option value="BSCS">BS Computer Science</option>
+                            </optgroup>
+
+                            <optgroup label="💼 College of Business and Accountancy (15 sit-ins)">
+                                <option value="BSA">BS Accountancy</option>
+                                <option value="BSBA-FM">BSBA - Financial Management</option>
+                                <option value="BSBA-MM">BSBA - Marketing Management</option>
+                                <option value="BSBA-HRM">BSBA - Human Resource Management</option>
+                                <option value="BSBA-OM">BSBA - Operations Management</option>
+                                <option value="BSMA">BS Management Accounting</option>
+                                <option value="BSEntrep">BS Entrepreneurship</option>
+                            </optgroup>
+
+                            <optgroup label="⚙️ College of Engineering (15 sit-ins)">
+                                <option value="BSCE">BS Civil Engineering</option>
+                                <option value="BSEE">BS Electrical Engineering</option>
+                                <option value="BSME">BS Mechanical Engineering</option>
+                                <option value="BSIE">BS Industrial Engineering</option>
+                                <option value="BSECE">BS Electronics Engineering</option>
+                            </optgroup>
+
+                            <optgroup label="📚 College of Education (15 sit-ins)">
+                                <option value="BEED">Bachelor of Elementary Education</option>
+                                <option value="BSED-ENG">BSED - English</option>
+                                <option value="BSED-MATH">BSED - Mathematics</option>
+                                <option value="BSED-SCI">BSED - Science</option>
+                                <option value="BSED-FIL">BSED - Filipino</option>
+                                <option value="BSED-SOSHIL">BSED - Social Studies</option>
+                                <option value="BPED">BS Physical Education</option>
+                            </optgroup>
+
+                            <optgroup label="🏥 College of Nursing (15 sit-ins)">
+                                <option value="BSN">BS Nursing</option>
+                            </optgroup>
+
+                            <optgroup label="🎨 College of Arts and Sciences (15 sit-ins)">
+                                <option value="ABCOM">AB Communication</option>
+                                <option value="ABPOLSCI">AB Political Science</option>
+                                <option value="BSPSY">BS Psychology</option>
+                                <option value="BSBIO">BS Biology</option>
+                                <option value="BSMATH">BS Mathematics</option>
+                            </optgroup>
+
+                            <optgroup label="🏛️ College of Architecture and Fine Arts (15 sit-ins)">
+                                <option value="BSARCH">BS Architecture</option>
+                                <option value="BSID">BS Interior Design</option>
+                                <option value="BSFA">BS Fine Arts</option>
+                            </optgroup>
+
+                            <optgroup label="🏨 College of Tourism and Hospitality Management (15 sit-ins)">
+                                <option value="BSTM">BS Tourism Management</option>
+                                <option value="BSHM">BS Hospitality Management</option>
+                            </optgroup>
+
+                            <optgroup label="⚖️ College of Criminal Justice Education (15 sit-ins)">
+                                <option value="BSCRIM">BS Criminology</option>
+                            </optgroup>
+
+                            <optgroup label="💊 College of Pharmacy (15 sit-ins)">
+                                <option value="BSPHAR">BS Pharmacy</option>
+                            </optgroup>
+
+                            <optgroup label="⚓ College of Maritime Education (15 sit-ins)">
+                                <option value="BSMARE">BS Marine Engineering</option>
+                                <option value="BSMT">BS Marine Transportation</option>
+                            </optgroup>
+
+                            <optgroup label="⚕️ College of Allied Medical Sciences (15 sit-ins)">
+                                <option value="BSMT-MED">BS Medical Technology</option>
+                                <option value="BSRT">BS Radiologic Technology</option>
+                                <option value="BSOT">BS Occupational Therapy</option>
+                                <option value="BSPT">BS Physical Therapy</option>
+                            </optgroup>
+
+                            <optgroup label="📜 College of Law (15 sit-ins)">
+                                <option value="JD">Juris Doctor</option>
+                            </optgroup>
+
+                            <optgroup label="🎓 Senior High School (15 sit-ins)">
+                                <option value="SHS-STEM">SHS - STEM</option>
+                                <option value="SHS-ABM">SHS - ABM</option>
+                                <option value="SHS-HUMSS">SHS - HUMSS</option>
+                                <option value="SHS-TVL">SHS - TVL</option>
+                            </optgroup>
+
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password"
+                               required minlength="6"
+                               placeholder="Minimum 6 characters">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword"
+                               required minlength="6"
+                               placeholder="Re-enter your password">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email"
+                               required placeholder="e.g. juan@email.com">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="address">Address</label>
+                        <input type="text" id="address" name="address"
+                               required placeholder="Your address">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Register Now</button>
+
+                    <p class="form-footer">Already have an account?
+                        <a href="/login" style="color:#0F3E7D; font-weight:bold;">Login here</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
+    </footer>
+
+</body>
+</html>

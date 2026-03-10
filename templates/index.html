@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCS Sit-in Monitoring System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-section">
+                <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="CCS Logo" class="navbar-logo">
+                <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
+            </div>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <div class="dropdown">
+                    <a href="#" class="dropdown-toggle">Community ▾</a>
+                    <div class="dropdown-menu">
+                        <a href="/#announcements">Announcements</a>
+                        <a href="/#rules">Lab Rules &amp; Regulations</a>
+                        <a href="/#faqs">FAQs</a>
+                        <a href="/#leaderboard">Student Leaderboard</a>
+                        <a href="/#contact">Contact Us</a>
+                    </div>
+                </div>
+                <a href="/#about">About</a>
+                <a href="/login" class="nav-login-label">Login</a>
+                <a href="/register.html" class="btn-register">Register</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="hero">
+            <div class="hero-left">
+                <h1>Track your attendance easily and efficiently. Stay on top of your academic requirements.</h1>
+                <div class="notice-box">
+                    <h3>📌 Important Reminder</h3>
+                    <p>CCS Students can only have <strong>30 sit-in sessions per semester</strong></p>
+                    <p>Other courses can only have <strong>15 sit-in sessions per semester</strong></p>
+                </div>
+            </div>
+            <div class="hero-right">
+                <div class="hero-image">
+                    <img src="{{ url_for('static', filename='images/landingpage_pic.png') }}" alt="Image" class="image-logo">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <section class="about-section" id="about">
+        <div class="about-content">
+            <div class="about-left">
+                <h2>About the System</h2>
+                <p>The <strong>CCS Sit-in Monitoring System</strong> is developed for the College of Computer Studies at the University of Cebu. It provides a streamlined way for students and faculty to track laboratory sit-in sessions throughout the semester.</p>
+                <p>The system ensures that students are aware of their sit-in usage and helps administrators efficiently manage laboratory access and attendance records.</p>
+                <ul class="about-list">
+                    <li>✔ Track sit-in sessions per semester</li>
+                    <li>✔ Easy student registration and login</li>
+                    <li>✔ Real-time monitoring for faculty and staff</li>
+                    <li>✔ Secure and organized record-keeping</li>
+                </ul>
+            </div>
+            <div class="about-right">
+                <img src="{{ url_for('static', filename='images/uclogo.jpg') }}" alt="UC CCS Logo" class="about-photo">
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
+    </footer>
+
+</body>
+</html>
