@@ -5,6 +5,152 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard - CCS Sit-in System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .page-section        { display: none; }
+        .page-section.active { display: block; }
+        .admin-sidebar { display: none !important; }
+        .admin-wrapper { display: block; }
+        .admin-main { padding: 2rem; background: #f5f5f5; min-height: calc(100vh - 70px); }
+
+        .header-actions { display: flex; align-items: center; gap: 10px; position: relative; }
+        .student-name-label { color: white; font-size: 0.9rem; }
+
+        .notif-btn { position: relative; background: none; border: 1.5px solid rgba(255,255,255,0.35); border-radius: 6px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s, border-color 0.2s; flex-shrink: 0; }
+        .notif-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
+        .notif-btn svg { width: 18px; height: 18px; fill: white; }
+        .notif-badge { position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; font-size: 10px; font-weight: 700; min-width: 17px; height: 17px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #0F3E7D; line-height: 1; padding: 0 2px; }
+
+        .notif-dropdown { display: none; position: absolute; top: calc(100% + 10px); right: 46px; width: 300px; background: white; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,0.18); z-index: 3000; border: 1px solid rgba(0,0,0,0.08); overflow: hidden; animation: dropIn 0.18s ease; }
+        .notif-dropdown.open { display: block; }
+        .notif-header { background: #0F3E7D; color: white; padding: 0.75rem 1rem; font-size: 0.92rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between; }
+        .notif-mark-all { font-size: 0.78rem; font-weight: 400; color: #F4B942; cursor: pointer; background: none; border: none; font-family: Arial, sans-serif; }
+        .notif-mark-all:hover { text-decoration: underline; }
+        .notif-list { max-height: 300px; overflow-y: auto; }
+        .notif-item { display: flex; gap: 10px; padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s; }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-item:hover { background: #f5f8ff; }
+        .notif-item.unread { background: #eef3fb; }
+        .notif-dot { width: 8px; height: 8px; border-radius: 50%; background: #0F3E7D; flex-shrink: 0; margin-top: 5px; }
+        .notif-text { flex: 1; }
+        .notif-title { font-size: 0.88rem; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; }
+        .notif-body  { font-size: 0.8rem; color: #666; line-height: 1.4; }
+        .notif-time  { font-size: 0.75rem; color: #aaa; margin-top: 3px; }
+        .notif-empty { text-align: center; padding: 2rem 1rem; color: #aaa; font-size: 0.88rem; }
+        .notif-footer { padding: 0.6rem 1rem; text-align: center; border-top: 1px solid #f0f0f0; background: #fafafa; }
+        .notif-footer a { font-size: 0.82rem; color: #0F3E7D; text-decoration: none; font-weight: 600; cursor: pointer; }
+        .notif-footer a:hover { text-decoration: underline; }
+
+        .hamburger-btn { display: flex; flex-direction: column; justify-content: center; gap: 5px; width: 36px; height: 36px; padding: 4px 5px; background: none; border: 1.5px solid rgba(255,255,255,0.35); border-radius: 6px; cursor: pointer; flex-shrink: 0; transition: background 0.2s, border-color 0.2s; }
+        .hamburger-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); }
+        .hamburger-btn .bar { display: block; width: 100%; height: 2px; background: white; border-radius: 2px; transition: transform 0.25s ease, opacity 0.2s ease; transform-origin: center; }
+        .hamburger-btn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .hamburger-btn.open .bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+        .hamburger-btn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        .ham-dropdown { display: none; position: absolute; top: calc(100% + 10px); right: 0; min-width: 200px; background: white; border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,0.18); z-index: 3000; overflow: hidden; border: 1px solid rgba(0,0,0,0.08); animation: dropIn 0.18s ease; }
+        .ham-dropdown.open { display: block; }
+        @keyframes dropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .ham-dropdown a { display: block; padding: 0.75rem 1.25rem; color: #0F3E7D; font-size: 0.92rem; font-weight: 500; text-decoration: none; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s, padding-left 0.15s; font-family: Arial, sans-serif; }
+        .ham-dropdown a:last-child { border-bottom: none; }
+        .ham-dropdown a:hover { background: #f0f5ff; padding-left: 1.6rem; }
+        .ham-dropdown a.ham-active { background: #0F3E7D; color: #F4B942; font-weight: 700; }
+        .ham-dropdown a.ham-active:hover { background: #0d3569; padding-left: 1.25rem; }
+        .ham-dropdown a.ham-logout { color: #c0392b; border-top: 1px solid #f0f0f0; }
+        .ham-dropdown a.ham-logout:hover { background: #fdecea; color: #a93226; }
+
+        .page-breadcrumb { font-size: 0.8rem; color: #888; margin-bottom: 1.4rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
+        .page-breadcrumb span { color: #0F3E7D; font-weight: 600; }
+
+        .student-panel-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; align-items: stretch; }
+        .student-info-panel, .panel-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; display: flex; flex-direction: column; }
+        .panel-tab-header, .panel-card-header { background: #0F3E7D; color: white; padding: 0.75rem 1.1rem; font-size: 0.92rem; font-weight: 700; letter-spacing: 0.01em; flex-shrink: 0; text-align: center; }
+        .panel-body, .panel-card-body { padding: 1.1rem 1.25rem; flex: 1; overflow-y: auto; max-height: 480px; }
+
+        .announcement-card { border-bottom: 1px solid #f0f0f0; padding-bottom: 0.85rem; margin-bottom: 0.85rem; }
+        .announcement-card:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+        .ann-meta { font-size: 0.78rem; color: #888; margin-bottom: 0.3rem; display: flex; gap: 0.4rem; align-items: center; }
+        .ann-author { font-weight: 700; color: #0F3E7D; }
+        .ann-date   { color: #aaa; }
+        .ann-body   { font-size: 0.88rem; color: #333; line-height: 1.55; margin: 0; }
+
+        .rules-header    { font-size: 1rem; font-weight: 800; color: #0F3E7D; margin: 0 0 0.1rem; }
+        .rules-subheader { font-size: 0.85rem; font-weight: 700; color: #444; margin: 0 0 0.1rem; }
+        .rules-title     { font-size: 0.85rem; font-weight: 700; color: #555; margin: 0 0 0.6rem; }
+        .rules-intro     { font-size: 0.85rem; color: #555; margin-bottom: 0.6rem; line-height: 1.5; }
+        .rules-list      { padding-left: 1.2rem; margin: 0; }
+        .rules-list li   { font-size: 0.84rem; color: #444; line-height: 1.55; margin-bottom: 0.45rem; }
+
+        .student-avatar-wrap { text-align: center; margin-bottom: 1rem; }
+        .student-avatar-img  { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid #0F3E7D; }
+        .student-info-list   { display: flex; flex-direction: column; gap: 0.55rem; }
+        .info-row            { display: flex; flex-direction: column; gap: 0.1rem; }
+        .info-label          { font-size: 0.75rem; color: #999; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+        .info-value          { font-size: 0.9rem; color: #1a1a1a; font-weight: 500; }
+        .session-count-val { font-weight: 700; }
+        .session-low { color: #e74c3c; }
+        .session-mid { color: #e67e22; }
+        .session-ok  { color: #27ae60; }
+        .no-data { font-size: 0.88rem; color: #aaa; text-align: center; padding: 1rem 0; }
+
+        /* EDIT PROFILE */
+        .profile-edit-wrap { display: flex; justify-content: center; align-items: flex-start; padding: 0.5rem 0 2rem; }
+        .profile-edit-card { background: white; border-radius: 14px; padding: 2.25rem 2.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.10); width: 100%; max-width: 600px; }
+        .profile-edit-title { font-size: 1.1rem; font-weight: 800; color: #0F3E7D; margin: 0 0 1.6rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e8f0fb; text-align: center; }
+        .avatar-edit-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-bottom: 1.8rem; }
+        .avatar-preview-img { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid #0F3E7D; }
+        .avatar-hint { font-size: 0.8rem; color: #999; }
+        .btn-upload { background: none; border: 1.5px dashed #0F3E7D; color: #0F3E7D; font-size: 0.85rem; font-weight: 600; padding: 0.45rem 1.2rem; border-radius: 6px; cursor: pointer; transition: background 0.2s; font-family: Arial, sans-serif; }
+        .btn-upload:hover { background: #f0f5ff; }
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .profile-grid .full { grid-column: 1 / -1; }
+        .field-label { display: block; font-size: 0.85rem; font-weight: 700; color: #444; margin-bottom: 0.35rem; }
+        .field-input { width: 100%; padding: 0.65rem 0.8rem; border: 1.5px solid #ddd; border-radius: 6px; font-size: 0.9rem; font-family: Arial, sans-serif; transition: border-color 0.2s; box-sizing: border-box; }
+        .field-input:focus { outline: none; border-color: #0F3E7D; }
+        .field-input[readonly] { background: #f9f9f9; color: #888; cursor: not-allowed; }
+        .field-select { width: 100%; padding: 0.65rem 0.8rem; border: 1.5px solid #ddd; border-radius: 6px; font-size: 0.9rem; font-family: Arial, sans-serif; background: white; box-sizing: border-box; cursor: pointer; }
+        .field-select:focus { outline: none; border-color: #0F3E7D; }
+        .save-row { margin-top: 1.6rem; display: flex; gap: 0.75rem; justify-content: center; }
+        .btn { padding: 0.65rem 1.6rem; border-radius: 7px; font-size: 0.9rem; font-family: Arial, sans-serif; font-weight: 700; cursor: pointer; border: none; transition: opacity 0.18s, transform 0.12s; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: #0F3E7D; color: white; }
+
+        /* HISTORY */
+        .admin-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; }
+        .table-scroll { overflow-x: auto; }
+        .dashboard-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        .dashboard-table thead th { background: #0F3E7D; color: white; padding: 0.75rem 1rem; text-align: left; font-weight: 700; white-space: nowrap; }
+        .dashboard-table tbody td { padding: 0.7rem 1rem; border-bottom: 1px solid #f0f0f0; color: #333; }
+        .dashboard-table tbody tr:last-child td { border-bottom: none; }
+        .dashboard-table tbody tr:hover { background: #f8faff; }
+
+        .btn-feedback { background: #0F3E7D; color: white; border: none; padding: 0.32rem 0.85rem; border-radius: 4px; font-size: 0.8rem; font-weight: 700; cursor: pointer; font-family: Arial, sans-serif; transition: opacity 0.18s; }
+        .btn-feedback:hover { opacity: 0.85; }
+
+        .status-badge { display: inline-block; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.78rem; font-weight: 700; text-transform: capitalize; }
+        .status-active { background: #e8f8ef; color: #27ae60; }
+        .status-done   { background: #f0f0f0; color: #888; }
+
+        .admin-section-title { font-size: 1.15rem; font-weight: 800; color: #0F3E7D; margin: 0 0 1.25rem; }
+        .res-empty { text-align: center; padding: 3rem 1rem; color: #aaa; font-size: 0.92rem; }
+
+        /* MODALS */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 5000; display: flex; align-items: center; justify-content: center; }
+        .modal-box { background: white; border-radius: 12px; width: 90%; max-width: 460px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; }
+        .modal-header { background: #0F3E7D; color: white; padding: 0.9rem 1.25rem; display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h3 { margin: 0; font-size: 1rem; }
+        .modal-close { background: none; border: none; color: white; font-size: 1.1rem; cursor: pointer; padding: 0 0.3rem; line-height: 1; opacity: 0.8; }
+        .modal-close:hover { opacity: 1; }
+        .modal-body { padding: 1.25rem; }
+        .modal-btns { display: flex; gap: 0.6rem; justify-content: flex-end; margin-top: 1.1rem; }
+        .btn-modal-close  { background: #e0e0e0; color: #333; border: none; padding: 0.55rem 1.2rem; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: Arial, sans-serif; }
+        .btn-modal-submit { background: #0F3E7D; color: white; border: none; padding: 0.55rem 1.2rem; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: Arial, sans-serif; }
+
+        @media (max-width: 1024px) { .student-panel-grid { grid-template-columns: 1fr 1fr; } .student-panel-grid .panel-card:last-child { grid-column: 1 / -1; } }
+        @media (max-width: 700px)  { .student-panel-grid { grid-template-columns: 1fr; } .student-panel-grid .panel-card:last-child { grid-column: auto; } }
+        @media (max-width: 600px)  { .student-name-label { display: none; } .profile-grid { grid-template-columns: 1fr; } .admin-main { padding: 1rem; } .profile-edit-card { padding: 1.5rem 1.25rem; } }
+    </style>
 </head>
 <body>
 
@@ -14,129 +160,578 @@
                 <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="CCS Logo" class="navbar-logo">
                 <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
             </div>
-            <div class="nav-links">
-                <span class="nav-login-label">👤 {{ student.firstName }} {{ student.lastName }}</span>
-                <a href="/logout" class="btn-register">Logout</a>
+            <div class="header-actions">
+                <span class="student-name-label">
+                    {{ student.firstName }}{% if student.middleName %} {{ student.middleName }}{% endif %} {{ student.lastName }}
+                </span>
+
+                <button class="notif-btn" id="notifBtn" onclick="toggleNotif()" aria-label="Notifications">
+                    <svg viewBox="0 0 24 24"><path d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2zm6-6V11a6 6 0 0 0-5-5.91V4a1 1 0 0 0-2 0v1.09A6 6 0 0 0 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                    <span class="notif-badge" id="notifBadge">{{ announcements|length if announcements else 0 }}</span>
+                </button>
+
+                <div class="notif-dropdown" id="notifDropdown">
+                    <div class="notif-header">
+                        Notifications
+                        <button class="notif-mark-all" onclick="markAllRead()">Mark all as read</button>
+                    </div>
+                    <div class="notif-list" id="notifList">
+                        {% for a in announcements %}
+                        <div class="notif-item unread">
+                            <div class="notif-dot"></div>
+                            <div class="notif-text">
+                                <div class="notif-title">{{ a.title if a.title else 'New Announcement' }}</div>
+                                <div class="notif-body">{{ a.content[:80] }}{% if a.content|length > 80 %}…{% endif %}</div>
+                                <div class="notif-time">{{ a.created_at }}</div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="notif-empty">No notifications yet.</div>
+                        {% endfor %}
+                    </div>
+                    <div class="notif-footer">
+                        <a onclick="navTo('section-home', null); closeAll();">View all announcements</a>
+                    </div>
+                </div>
+
+                <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleHam()" aria-label="Open menu">
+                    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+                </button>
+                <div class="ham-dropdown" id="hamDropdown">
+                    <a class="ham-active" onclick="navTo('section-home',       this)">Home</a>
+                    <a                    onclick="navTo('section-profile',     this)">Edit Profile</a>
+                    <a                    onclick="navTo('section-history',     this)">History</a>
+                    <a                    onclick="navTo('section-reservation', this)">Reservation</a>
+                    <!-- Logout now opens confirmation modal -->
+                    <a class="ham-logout" onclick="confirmStudentLogout()">Logout</a>
+                </div>
             </div>
         </div>
     </nav>
 
     <div class="admin-wrapper">
-
-        <!-- SIDEBAR -->
-        <aside class="admin-sidebar">
-            <ul class="sidebar-menu">
-                <li><a href="#section-profile" class="sidebar-link active">🏠 Dashboard</a></li>
-                <li><a href="#section-history" class="sidebar-link">📋 Sit-in History</a></li>
-            </ul>
-        </aside>
-
-        <!-- MAIN CONTENT -->
+        <aside class="admin-sidebar" aria-hidden="true"></aside>
         <main class="admin-main">
 
-            <!-- ── PROFILE CARD ── -->
-            <section id="section-profile">
-                <h2 class="admin-section-title">🏠 My Dashboard</h2>
+            <p class="page-breadcrumb">Dashboard &rsaquo; <span id="activeLabel">Home</span></p>
 
-                <div class="dashboard-profile-card">
-                    <div class="profile-avatar">
-                        <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="Profile">
-                    </div>
-                    <div class="profile-info">
-                        <h2>{{ student.lastName }}, {{ student.firstName }} {{ student.middleName }}</h2>
-                        <p><strong>ID Number:</strong> {{ student.idNumber }}</p>
-                        <p><strong>Course:</strong> {{ student.course }}</p>
-                        <p><strong>Year Level:</strong>
-                            {{ student.courseLevel }}{% if student.courseLevel == '1' %}st
-                            {% elif student.courseLevel == '2' %}nd
-                            {% elif student.courseLevel == '3' %}rd
-                            {% else %}th{% endif %} Year
-                        </p>
-                        <p><strong>Email:</strong> {{ student.email }}</p>
-                        <p><strong>Address:</strong> {{ student.address }}</p>
+            <!-- HOME -->
+            <div id="section-home" class="page-section active">
+                <div class="student-panel-grid">
+                    <div class="student-info-panel">
+                        <div class="panel-tab-header">Student Information</div>
+                        <div class="panel-body">
+                            <div class="student-avatar-wrap">
+                                <img src="{{ student.photo_url if student.photo_url else url_for('static', filename='images/ucmainccslogo.jpg') }}"
+                                     alt="Profile" class="student-avatar-img" id="dashAvatar">
+                            </div>
+                            <div class="student-info-list">
+                                <div class="info-row">
+                                    <span class="info-label">Name</span>
+                                    <span class="info-value" id="dashNameDisplay">
+                                        {{ student.firstName }}{% if student.middleName %} {{ student.middleName }}{% endif %} {{ student.lastName }}
+                                    </span>
+                                </div>
+                                <div class="info-row"><span class="info-label">Course</span><span class="info-value" id="dashCourseDisplay">{{ student.course }}</span></div>
+                                <div class="info-row">
+                                    <span class="info-label">Year</span>
+                                    <span class="info-value">{{ student.courseLevel }}{% if student.courseLevel == '1' %}st{% elif student.courseLevel == '2' %}nd{% elif student.courseLevel == '3' %}rd{% else %}th{% endif %}</span>
+                                </div>
+                                <div class="info-row"><span class="info-label">Email</span><span class="info-value" id="dashEmailDisplay">{{ student.email }}</span></div>
+                                <div class="info-row"><span class="info-label">Address</span><span class="info-value" id="dashAddressDisplay">{{ student.address }}</span></div>
+                                <div class="info-row">
+                                    <span class="info-label">Sessions Remaining</span>
+                                    <span class="info-value session-count-val {% if student.sitin_count <= 5 %}session-low{% elif student.sitin_count <= 10 %}session-mid{% else %}session-ok{% endif %}">
+                                        {{ student.sitin_count }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Sit-in Count Badge -->
-                    <div class="sitin-badge
-                        {% if student.sitin_count <= 5 %}badge-danger
-                        {% elif student.sitin_count <= 10 %}badge-warning
-                        {% else %}badge-success{% endif %}">
-                        <span class="sitin-number">{{ student.sitin_count }}</span>
-                        <span class="sitin-label">Sit-ins<br>Remaining</span>
+                    <div class="panel-card">
+                        <div class="panel-card-header">Announcement</div>
+                        <div class="panel-card-body">
+                            {% for a in announcements %}
+                            <div class="announcement-card">
+                                <div class="ann-meta"><span class="ann-author">{{ a.posted_by }}</span><span class="ann-date">| {{ a.created_at }}</span></div>
+                                <p class="ann-body">{{ a.content }}</p>
+                            </div>
+                            {% else %}
+                            <p class="no-data">No announcements at this time.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="panel-card">
+                        <div class="panel-card-header">Rules and Regulation</div>
+                        <div class="panel-card-body">
+                            <h3 class="rules-header">University of Cebu</h3>
+                            <h4 class="rules-subheader">COLLEGE OF INFORMATION &amp; COMPUTER STUDIES</h4>
+                            <h4 class="rules-title">LABORATORY RULES AND REGULATIONS</h4>
+                            <p class="rules-intro">To avoid embarrassment and maintain camaraderie with your friends and superiors at our laboratory, please observe the following:</p>
+                            <ol class="rules-list">
+                                <li>Maintain silence, proper decorum, and discipline inside the laboratory. Mobile phones, walkmans and other personal pieces of equipment must be switched off.</li>
+                                <li>Games are not allowed inside the lab. This includes computer-related games, card games and other games that may affect the operation of the lab.</li>
+                                <li>Surfing the internet is allowed only with the permission of the instructor. Downloading and installing of software are strictly prohibited.</li>
+                                <li>Deleting computer files and changing computer settings are not allowed.</li>
+                                <li>Observe cleanliness and orderliness inside the lab. Place all bags and other materials in the designated area.</li>
+                            </ol>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Mini Stats -->
-                <div class="stats-grid" style="margin-top: 1.5rem;">
-                    <div class="stat-card stat-blue">
-                        <div class="stat-number">{{ sessions|length }}</div>
-                        <div class="stat-label">Total Sit-ins Used</div>
-                    </div>
-                    <div class="stat-card stat-green">
-                        <div class="stat-number">{{ sessions|selectattr('status', 'equalto', 'active')|list|length }}</div>
-                        <div class="stat-label">Active Session</div>
-                    </div>
-                    <div class="stat-card stat-gray">
-                        <div class="stat-number">{{ sessions|selectattr('status', 'equalto', 'done')|list|length }}</div>
-                        <div class="stat-label">Completed Sessions</div>
-                    </div>
-                    <div class="stat-card
-                        {% if student.sitin_count <= 5 %}stat-red
-                        {% elif student.sitin_count <= 10 %}stat-yellow
-                        {% else %}stat-green{% endif %}">
-                        <div class="stat-number">{{ student.sitin_count }}</div>
-                        <div class="stat-label">Sit-ins Remaining</div>
+            <!-- EDIT PROFILE -->
+            <div id="section-profile" class="page-section">
+                <h2 class="admin-section-title">Edit Profile</h2>
+                <div class="profile-edit-wrap">
+                    <div class="profile-edit-card">
+                        <p class="profile-edit-title">Update Your Information</p>
+                        <div class="avatar-edit-wrap">
+                            <img src="{{ student.photo_url if student.photo_url else url_for('static', filename='images/ucmainccslogo.jpg') }}"
+                                 alt="Profile" class="avatar-preview-img" id="avatarPreview">
+                            <p class="avatar-hint">Profile Picture</p>
+                            <button type="button" class="btn-upload" onclick="document.getElementById('photoInput').click()">Upload Photo</button>
+                        </div>
+                        <form id="profileForm" enctype="multipart/form-data">
+                            <input type="file" id="photoInput" name="photo" accept="image/*" style="display:none" onchange="previewPhoto(event)">
+                            <div class="profile-grid">
+                                <div class="form-field full">
+                                    <label class="field-label">ID Number <span style="color:#e74c3c;">*</span></label>
+                                    <input type="text" name="idNumber" id="f_idNumber" class="field-input" required value="{{ student.idNumber }}">
+                                </div>
+                                <div class="form-field full">
+                                    <label class="field-label">First Name <span style="color:#e74c3c;">*</span></label>
+                                    <input type="text" name="firstName" id="f_firstName" class="field-input" required value="{{ student.firstName }}">
+                                </div>
+                                <div class="form-field full">
+                                    <label class="field-label">Middle Name <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(optional)</span></label>
+                                    <input type="text" name="middleName" id="f_middleName" class="field-input" value="{{ student.middleName if student.middleName else '' }}" placeholder="Leave blank if none">
+                                </div>
+                                <div class="form-field full">
+                                    <label class="field-label">Last Name <span style="color:#e74c3c;">*</span></label>
+                                    <input type="text" name="lastName" id="f_lastName" class="field-input" required value="{{ student.lastName }}">
+                                </div>
+                                <div class="form-field full">
+                                    <label class="field-label">Year Level <span style="color:#e74c3c;">*</span></label>
+                                    <select name="courseLevel" id="f_courseLevel" class="field-select" required>
+                                        {% for yr in ['1','2','3','4'] %}
+                                        <option value="{{ yr }}" {% if student.courseLevel == yr %}selected{% endif %}>
+                                            {{ yr }}{% if yr=='1' %}st{% elif yr=='2' %}nd{% elif yr=='3' %}rd{% else %}th{% endif %} Year
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-field full">
+                                    <label class="field-label">Course <span style="color:#e74c3c;">*</span></label>
+                                    <select name="course" id="f_course" class="field-select" required>
+                                        <optgroup label="College of Computer Studies">
+                                            <option value="BSIT" {% if student.course=='BSIT' %}selected{% endif %}>BS Information Technology</option>
+                                            <option value="BSCS" {% if student.course=='BSCS' %}selected{% endif %}>BS Computer Science</option>
+                                        </optgroup>
+                                        <optgroup label="College of Business and Accountancy">
+                                            <option value="BSA"      {% if student.course=='BSA'      %}selected{% endif %}>BS Accountancy</option>
+                                            <option value="BSBA-FM"  {% if student.course=='BSBA-FM'  %}selected{% endif %}>BSBA - Financial Management</option>
+                                            <option value="BSBA-MM"  {% if student.course=='BSBA-MM'  %}selected{% endif %}>BSBA - Marketing Management</option>
+                                            <option value="BSBA-HRM" {% if student.course=='BSBA-HRM' %}selected{% endif %}>BSBA - Human Resource Management</option>
+                                            <option value="BSBA-OM"  {% if student.course=='BSBA-OM'  %}selected{% endif %}>BSBA - Operations Management</option>
+                                            <option value="BSMA"     {% if student.course=='BSMA'     %}selected{% endif %}>BS Management Accounting</option>
+                                            <option value="BSEntrep" {% if student.course=='BSEntrep' %}selected{% endif %}>BS Entrepreneurship</option>
+                                        </optgroup>
+                                        <optgroup label="College of Engineering">
+                                            <option value="BSCE"  {% if student.course=='BSCE'  %}selected{% endif %}>BS Civil Engineering</option>
+                                            <option value="BSEE"  {% if student.course=='BSEE'  %}selected{% endif %}>BS Electrical Engineering</option>
+                                            <option value="BSME"  {% if student.course=='BSME'  %}selected{% endif %}>BS Mechanical Engineering</option>
+                                            <option value="BSIE"  {% if student.course=='BSIE'  %}selected{% endif %}>BS Industrial Engineering</option>
+                                            <option value="BSECE" {% if student.course=='BSECE' %}selected{% endif %}>BS Electronics Engineering</option>
+                                        </optgroup>
+                                        <optgroup label="College of Education">
+                                            <option value="BEED"        {% if student.course=='BEED'        %}selected{% endif %}>Bachelor of Elementary Education</option>
+                                            <option value="BSED-ENG"    {% if student.course=='BSED-ENG'    %}selected{% endif %}>BSED - English</option>
+                                            <option value="BSED-MATH"   {% if student.course=='BSED-MATH'   %}selected{% endif %}>BSED - Mathematics</option>
+                                            <option value="BSED-SCI"    {% if student.course=='BSED-SCI'    %}selected{% endif %}>BSED - Science</option>
+                                            <option value="BSED-FIL"    {% if student.course=='BSED-FIL'    %}selected{% endif %}>BSED - Filipino</option>
+                                            <option value="BSED-SOSHIL" {% if student.course=='BSED-SOSHIL' %}selected{% endif %}>BSED - Social Studies</option>
+                                            <option value="BPED"        {% if student.course=='BPED'        %}selected{% endif %}>BS Physical Education</option>
+                                        </optgroup>
+                                        <optgroup label="Other Colleges">
+                                            <option value="BSN"    {% if student.course=='BSN'    %}selected{% endif %}>BS Nursing</option>
+                                            <option value="ABCOM"  {% if student.course=='ABCOM'  %}selected{% endif %}>AB Communication</option>
+                                            <option value="BSPSY"  {% if student.course=='BSPSY'  %}selected{% endif %}>BS Psychology</option>
+                                            <option value="BSARCH" {% if student.course=='BSARCH' %}selected{% endif %}>BS Architecture</option>
+                                            <option value="BSTM"   {% if student.course=='BSTM'   %}selected{% endif %}>BS Tourism Management</option>
+                                            <option value="BSHM"   {% if student.course=='BSHM'   %}selected{% endif %}>BS Hospitality Management</option>
+                                            <option value="BSCRIM" {% if student.course=='BSCRIM' %}selected{% endif %}>BS Criminology</option>
+                                            <option value="JD"     {% if student.course=='JD'     %}selected{% endif %}>Juris Doctor</option>
+                                        </optgroup>
+                                        <optgroup label="Senior High School">
+                                            <option value="SHS-STEM"  {% if student.course=='SHS-STEM'  %}selected{% endif %}>SHS - STEM</option>
+                                            <option value="SHS-ABM"   {% if student.course=='SHS-ABM'   %}selected{% endif %}>SHS - ABM</option>
+                                            <option value="SHS-HUMSS" {% if student.course=='SHS-HUMSS' %}selected{% endif %}>SHS - HUMSS</option>
+                                            <option value="SHS-TVL"   {% if student.course=='SHS-TVL'   %}selected{% endif %}>SHS - TVL</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                                <div class="form-field full">
+                                    <label class="field-label">Email <span style="color:#e74c3c;">*</span></label>
+                                    <input type="email" name="email" id="f_email" class="field-input" required value="{{ student.email }}">
+                                </div>
+                                <div class="form-field full">
+                                    <label class="field-label">Address <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(optional)</span></label>
+                                    <input type="text" name="address" id="f_address" class="field-input" value="{{ student.address if student.address else '' }}" placeholder="Leave blank if none">
+                                </div>
+                                <div class="form-field full">
+                                    <label class="field-label">New Password <span style="font-weight:400;color:#aaa;font-size:0.8rem;">(leave blank to keep current)</span></label>
+                                    <input type="password" name="newPassword" id="f_newPassword" class="field-input" placeholder="Min. 6 characters if changing">
+                                </div>
+                                <div class="form-field full" id="formValidationMsg" style="display:none;">
+                                    <div style="background:#fdecea;border-left:4px solid #e74c3c;color:#c0392b;padding:0.65rem 1rem;border-radius:5px;font-size:0.85rem;font-weight:600;">
+                                        <span id="formValidationText"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="save-row">
+                                <button type="button" class="btn btn-primary" onclick="confirmSave()">Save Changes</button>
+                                <button type="button" class="btn" style="background:#e0e0e0;color:#333;" onclick="navTo('section-home',null)">Cancel</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <!-- ── SIT-IN HISTORY ── -->
-            <section id="section-history" style="margin-top: 2rem; margin-bottom: 3rem;">
-                <h2 class="admin-section-title">📋 My Sit-in History</h2>
+            <!-- Save Changes Confirm Modal -->
+            <div id="confirmModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9000; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:12px; padding:2rem 2.25rem; max-width:380px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.25); text-align:center;">
+                    <div style="font-size:2rem; margin-bottom:0.75rem;">&#128190;</div>
+                    <h3 style="color:#0F3E7D; margin:0 0 0.6rem; font-size:1.1rem;">Save Changes?</h3>
+                    <p style="color:#555; font-size:0.9rem; margin:0 0 1.5rem; line-height:1.5;">Are you sure you want to save these changes to your profile?</p>
+                    <div style="display:flex; gap:0.75rem; justify-content:center;">
+                        <button onclick="doSave()" style="background:#0F3E7D; color:white; border:none; padding:0.65rem 1.6rem; border-radius:7px; font-size:0.9rem; font-weight:700; cursor:pointer; font-family:Arial,sans-serif;">Yes, Save</button>
+                        <button onclick="closeConfirmModal()" style="background:#e0e0e0; color:#333; border:none; padding:0.65rem 1.6rem; border-radius:7px; font-size:0.9rem; font-weight:700; cursor:pointer; font-family:Arial,sans-serif;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUCCESS / ERROR TOASTS -->
+            <div id="successToast" style="display:none; position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); background:#1e7e34; color:white; padding:0.85rem 1.8rem; border-radius:8px; font-size:0.92rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,0.2); z-index:9999; white-space:nowrap;">&#10003; Profile updated successfully.</div>
+            <div id="errorToast"   style="display:none; position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); background:#c0392b; color:white; padding:0.85rem 1.8rem; border-radius:8px; font-size:0.92rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,0.2); z-index:9999; white-space:nowrap;">&#10007; <span id="errorToastMsg">Something went wrong.</span></div>
+
+            <!-- HISTORY -->
+            <div id="section-history" class="page-section">
+                <h2 class="admin-section-title">My Sit-in History</h2>
                 <div class="admin-card">
                     <div class="table-scroll">
                         <table class="dashboard-table">
                             <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th>Purpose</th>
+                                    <th>ID Number</th>
+                                    <th>Name</th>
+                                    <th>Sit-in Purpose</th>
                                     <th>Laboratory</th>
-                                    <th>Time In</th>
-                                    <th>Time Out</th>
-                                    <th>Status</th>
+                                    <th>Login</th>
+                                    <th>Logout</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for s in sessions %}
                                 <tr>
-                                    <td>{{ loop.index }}</td>
+                                    <td>{{ student.idNumber }}</td>
+                                    <td>{{ student.firstName }}{% if student.middleName %} {{ student.middleName }}{% endif %} {{ student.lastName }}</td>
                                     <td>{{ s.purpose }}</td>
                                     <td>{{ s.lab }}</td>
-                                    <td>{{ s.time_in }}</td>
-                                    <td>{{ s.time_out if s.time_out else '—' }}</td>
+                                    <td>{{ s.time_in.split(' ')[1] if s.time_in and ' ' in s.time_in else s.time_in }}</td>
+                                    <td>{{ s.time_out.split(' ')[1] if s.time_out and ' ' in s.time_out else '—' }}</td>
+                                    <td>{{ s.time_in.split(' ')[0] if s.time_in and ' ' in s.time_in else '—' }}</td>
                                     <td>
-                                        <span class="status-badge {% if s.status == 'active' %}status-active{% else %}status-done{% endif %}">
-                                            {{ s.status }}
-                                        </span>
+                                        {% if s.status == 'done' %}
+                                        <button class="btn-feedback" data-id="{{ s.id }}" onclick="openFeedbackModal(this.dataset.id)">Feedback</button>
+                                        {% else %}
+                                        <span class="status-badge status-active">Active</span>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 {% else %}
-                                <tr>
-                                    <td colspan="6" class="no-data">No sit-in sessions yet.</td>
-                                </tr>
+                                <tr><td colspan="8" class="no-data">No sit-in sessions yet.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </section>
+            </div>
+
+            <!-- RESERVATION -->
+            <div id="section-reservation" class="page-section">
+                <h2 class="admin-section-title">Reservation</h2>
+                <div class="admin-card">
+                    <div class="res-empty">No reservations available at this time.</div>
+                </div>
+            </div>
 
         </main>
+    </div>
+
+
+    <!-- STUDENT LOGOUT CONFIRM MODAL -->
+    <div class="modal-overlay" id="studentLogoutModal" style="display:none;">
+        <div class="modal-box" style="max-width:380px;">
+            <div class="modal-header" style="background:#c0392b;">
+                <h3>Confirm Logout</h3>
+                <button class="modal-close" onclick="closeStudentLogoutModal()">&#10005;</button>
+            </div>
+            <div class="modal-body" style="text-align:center; padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem; margin-bottom:0.75rem;">&#128274;</div>
+                <p style="color:#333; font-size:0.95rem; margin-bottom:1.5rem;">
+                    Are you sure you want to log out?
+                </p>
+                <div style="display:flex; gap:0.8rem; justify-content:center;">
+                    <button type="button" class="btn-modal-close"
+                            onclick="closeStudentLogoutModal()">No, Cancel</button>
+                    <a href="/logout"
+                       style="background:#c0392b; color:white; border:none;
+                              padding:0.55rem 1.4rem; border-radius:6px;
+                              font-weight:700; cursor:pointer; font-family:Arial,sans-serif;
+                              text-decoration:none; display:inline-block;">
+                        Yes, Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- FEEDBACK MODAL -->
+    <div class="modal-overlay" id="feedbackModal" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Submit Feedback</h3>
+                <button class="modal-close" onclick="closeFeedbackModal()">&#10005;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:0.88rem; color:#666; margin-bottom:1rem;">Share your feedback for this sit-in session.</p>
+                <input type="hidden" id="feedbackSessionId">
+                <div style="margin-bottom:0.9rem;">
+                    <label style="display:block; font-size:0.85rem; font-weight:700; color:#444; margin-bottom:0.35rem;">Your Feedback</label>
+                    <textarea id="feedbackText" rows="4"
+                        placeholder="Write your feedback here..."
+                        style="width:100%; padding:0.65rem 0.8rem; border:1.5px solid #ddd; border-radius:6px; font-size:0.9rem; font-family:Arial,sans-serif; resize:vertical; box-sizing:border-box;"></textarea>
+                </div>
+                <div id="feedbackMsg" style="display:none; margin-bottom:0.8rem;"></div>
+                <div class="modal-btns">
+                    <button class="btn-modal-close" onclick="closeFeedbackModal()">Cancel</button>
+                    <button class="btn-modal-submit" onclick="submitFeedback()">Submit</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <footer>
         <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
     </footer>
+
+    <script>
+        const LABELS = {
+            'section-home':        'Home',
+            'section-profile':     'Edit Profile',
+            'section-history':     'History',
+            'section-reservation': 'Reservation'
+        };
+
+        function navTo(sectionId, clickedLink) {
+            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(sectionId);
+            if (target) target.classList.add('active');
+            document.querySelectorAll('.ham-dropdown a').forEach(a => a.classList.remove('ham-active'));
+            if (clickedLink) clickedLink.classList.add('ham-active');
+            const lbl = document.getElementById('activeLabel');
+            if (lbl) lbl.textContent = LABELS[sectionId] || sectionId;
+            closeAll();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        const hamBtn  = document.getElementById('hamburgerBtn');
+        const hamDrop = document.getElementById('hamDropdown');
+        function toggleHam() {
+            const open = hamDrop.classList.toggle('open');
+            hamBtn.classList.toggle('open', open);
+            document.getElementById('notifDropdown').classList.remove('open');
+        }
+
+        const notifBtn  = document.getElementById('notifBtn');
+        const notifDrop = document.getElementById('notifDropdown');
+        const badge     = document.getElementById('notifBadge');
+        if (badge && parseInt(badge.textContent) === 0) badge.style.display = 'none';
+
+        function toggleNotif() {
+            notifDrop.classList.toggle('open');
+            hamDrop.classList.remove('open');
+            hamBtn.classList.remove('open');
+        }
+        function markAllRead() {
+            document.querySelectorAll('.notif-item.unread').forEach(item => {
+                item.classList.replace('unread', 'read');
+                item.querySelector('.notif-dot').style.background = '#ccc';
+            });
+            badge.style.display = 'none';
+        }
+        document.querySelectorAll('.notif-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (this.classList.contains('unread')) {
+                    this.classList.replace('unread', 'read');
+                    this.querySelector('.notif-dot').style.background = '#ccc';
+                }
+                const remaining = document.querySelectorAll('.notif-item.unread').length;
+                badge.style.display = remaining === 0 ? 'none' : '';
+                if (remaining > 0) badge.textContent = remaining;
+            });
+        });
+
+        function closeAll() {
+            hamDrop.classList.remove('open');
+            hamBtn.classList.remove('open');
+            notifDrop.classList.remove('open');
+        }
+        document.addEventListener('click', function(e) {
+            const inHam   = hamBtn.contains(e.target)  || hamDrop.contains(e.target);
+            const inNotif = notifBtn.contains(e.target) || notifDrop.contains(e.target);
+            if (!inHam && !inNotif) closeAll();
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                closeAll();
+                closeConfirmModal();
+                closeFeedbackModal();
+                closeStudentLogoutModal();
+            }
+        });
+
+        /* ── Student Logout Confirmation ── */
+        function confirmStudentLogout() {
+            closeAll();
+            document.getElementById('studentLogoutModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeStudentLogoutModal() {
+            document.getElementById('studentLogoutModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        document.getElementById('studentLogoutModal').addEventListener('click', function(e) {
+            if (e.target === this) closeStudentLogoutModal();
+        });
+
+        /* ── Photo Preview ── */
+        function previewPhoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById('avatarPreview').src = e.target.result;
+                const d = document.getElementById('dashAvatar');
+                if (d) d.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        /* ── Save Profile Confirmation ── */
+        function confirmSave() {
+            const msgBox  = document.getElementById('formValidationMsg');
+            const msgText = document.getElementById('formValidationText');
+            const checks = [
+                ['f_idNumber',  'ID Number is required.'],
+                ['f_lastName',  'Last Name is required.'],
+                ['f_firstName', 'First Name is required.'],
+                ['f_email',     'Email is required.'],
+            ];
+            for (const [id, msg] of checks) {
+                if (!document.getElementById(id).value.trim()) {
+                    msgText.textContent = msg; msgBox.style.display = 'block';
+                    document.getElementById(id).focus(); return;
+                }
+            }
+            if (!document.getElementById('f_course').value)      { msgText.textContent = 'Please select a Course.';     msgBox.style.display = 'block'; return; }
+            if (!document.getElementById('f_courseLevel').value)  { msgText.textContent = 'Please select a Year Level.'; msgBox.style.display = 'block'; return; }
+            const pw = document.getElementById('f_newPassword').value;
+            if (pw && pw.length < 6) { msgText.textContent = 'New password must be at least 6 characters.'; msgBox.style.display = 'block'; return; }
+            msgBox.style.display = 'none';
+            document.getElementById('confirmModal').style.display = 'flex';
+        }
+
+        function closeConfirmModal() { document.getElementById('confirmModal').style.display = 'none'; }
+        document.getElementById('confirmModal').addEventListener('click', function(e) { if (e.target === this) closeConfirmModal(); });
+
+        function doSave() {
+            closeConfirmModal();
+            const form     = document.getElementById('profileForm');
+            const formData = new FormData(form);
+            if (!document.getElementById('f_newPassword').value.trim()) formData.delete('newPassword');
+            const saveBtn  = form.querySelector('button.btn-primary');
+            const origText = saveBtn.textContent;
+            saveBtn.textContent = 'Saving…'; saveBtn.disabled = true;
+            fetch('/student/update-profile', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                saveBtn.textContent = origText; saveBtn.disabled = false;
+                if (data.success) {
+                    if (data.fullName) {
+                        const nl = document.querySelector('.student-name-label');
+                        if (nl) nl.textContent = data.fullName;
+                        const nd = document.getElementById('dashNameDisplay');
+                        if (nd) nd.textContent = data.fullName;
+                    }
+                    if (data.photoUrl) {
+                        const src = data.photoUrl + '?t=' + Date.now();
+                        document.getElementById('avatarPreview').src = src;
+                        const da = document.getElementById('dashAvatar');
+                        if (da) da.src = src;
+                    }
+                    showToast('success');
+                } else { showToast('error', data.message); }
+            })
+            .catch(() => { saveBtn.textContent = origText; saveBtn.disabled = false; showToast('error'); });
+        }
+
+        function showToast(type, msg) {
+            if (type === 'success') {
+                const t = document.getElementById('successToast');
+                t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 3500);
+            } else {
+                const t = document.getElementById('errorToast');
+                const m = document.getElementById('errorToastMsg');
+                if (msg && m) m.textContent = msg;
+                t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 3500);
+            }
+        }
+
+        /* ── Feedback Modal ── */
+        function openFeedbackModal(sessionId) {
+            document.getElementById('feedbackSessionId').value    = sessionId;
+            document.getElementById('feedbackText').value         = '';
+            document.getElementById('feedbackMsg').style.display  = 'none';
+            document.getElementById('feedbackModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeFeedbackModal() {
+            document.getElementById('feedbackModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        function submitFeedback() {
+            const text  = document.getElementById('feedbackText').value.trim();
+            const msgEl = document.getElementById('feedbackMsg');
+            if (!text) {
+                msgEl.style.cssText = 'display:block; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; padding:0.6rem 1rem; border-radius:5px; font-size:0.85rem;';
+                msgEl.textContent = 'Please write your feedback before submitting.';
+                return;
+            }
+            msgEl.style.cssText = 'display:block; background:#d4edda; border-left:4px solid #1e7e34; color:#1e7e34; padding:0.6rem 1rem; border-radius:5px; font-size:0.85rem;';
+            msgEl.textContent = '✓ Feedback submitted!';
+            setTimeout(() => closeFeedbackModal(), 1800);
+        }
+        document.getElementById('feedbackModal').addEventListener('click', function(e) {
+            if (e.target === this) closeFeedbackModal();
+        });
+    </script>
 
 </body>
 </html>

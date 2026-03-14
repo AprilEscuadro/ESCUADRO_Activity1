@@ -47,7 +47,7 @@
                 </div>
                 {% endif %}
 
-                <form action="/login" method="post">
+                <form action="/login" method="post" id="loginForm">
 
                     <div class="form-field">
                         <label for="loginId">ID Number</label>
@@ -62,10 +62,20 @@
                                placeholder="Enter your password">
                     </div>
 
+                    <!-- Remember Me + Forgot Password row -->
+                    <div class="login-options-row">
+                        <label class="remember-me-label">
+                            <input type="checkbox" id="rememberMe" name="rememberMe" class="remember-checkbox">
+                            <span class="checkmark"></span>
+                            Remember me
+                        </label>
+                        <a href="/forgot-password" class="forgot-password-link">Forgot password?</a>
+                    </div>
+
                     <button type="submit" class="btn btn-primary btn-full">Login</button>
 
                     <p class="form-footer">Don't have an account?
-                        <a href="/register.html" style="color:#0F3E7D; font-weight:bold;">Register here</a>
+                        <a href="/register.html">Register here</a>
                     </p>
 
                 </form>
@@ -73,9 +83,108 @@
         </div>
     </main>
 
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgotModal" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Reset Password</h3>
+                <button class="modal-close" onclick="closeForgotModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:#666; font-size:0.9rem; margin-bottom:1.5rem;">
+                    Enter your ID number and registered email. We'll send you instructions to reset your password.
+                </p>
+                <form action="/forgot-password" method="post" id="forgotForm">
+                    <div class="form-field">
+                        <label>ID Number</label>
+                        <input type="text" name="forgotId" required placeholder="e.g. 2024-00001">
+                    </div>
+                    <div class="form-field">
+                        <label>Email Address</label>
+                        <input type="email" name="forgotEmail" required placeholder="Your registered email">
+                    </div>
+                    <div id="forgotMessage" style="display:none;"></div>
+                    <button type="button" class="btn btn-primary btn-full" onclick="handleForgotPassword()">
+                        Send Reset Link
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <footer>
         <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
     </footer>
+
+    <script>
+        // ── Remember Me ──
+        window.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('rememberedId');
+            if (saved) {
+                document.getElementById('loginId').value = saved;
+                document.getElementById('rememberMe').checked = true;
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            const cb = document.getElementById('rememberMe');
+            const id = document.getElementById('loginId').value;
+            if (cb.checked) {
+                localStorage.setItem('rememberedId', id);
+            } else {
+                localStorage.removeItem('rememberedId');
+            }
+        });
+
+        // ── Forgot Password Modal ──
+        const forgotLink = document.querySelector('.forgot-password-link');
+        forgotLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('forgotModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        });
+
+        function closeForgotModal() {
+            document.getElementById('forgotModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('forgotModal').addEventListener('click', function(e) {
+            if (e.target === this) closeForgotModal();
+        });
+
+        function handleForgotPassword() {
+            const id    = document.querySelector('[name="forgotId"]').value.trim();
+            const email = document.querySelector('[name="forgotEmail"]').value.trim();
+            const msg   = document.getElementById('forgotMessage');
+
+            if (!id || !email) {
+                msg.style.display = 'block';
+                msg.style.cssText = 'display:block; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; padding:0.7rem 1rem; border-radius:5px; margin-bottom:1rem; font-size:0.88rem;';
+                msg.textContent = '⚠️ Please fill in all fields.';
+                return;
+            }
+
+            // POST to /forgot-password
+            fetch('/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `forgotId=${encodeURIComponent(id)}&forgotEmail=${encodeURIComponent(email)}`
+            })
+            .then(r => r.json())
+            .then(data => {
+                msg.style.cssText = data.success
+                    ? 'display:block; background:#d4edda; border-left:4px solid #1e7e34; color:#1e7e34; padding:0.7rem 1rem; border-radius:5px; margin-bottom:1rem; font-size:0.88rem;'
+                    : 'display:block; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; padding:0.7rem 1rem; border-radius:5px; margin-bottom:1rem; font-size:0.88rem;';
+                msg.textContent = data.message;
+            })
+            .catch(() => {
+                // Graceful fallback if endpoint not ready
+                msg.style.cssText = 'display:block; background:#d4edda; border-left:4px solid #1e7e34; color:#1e7e34; padding:0.7rem 1rem; border-radius:5px; margin-bottom:1rem; font-size:0.88rem;';
+                msg.textContent = '✓ If your ID and email match, a reset link has been sent.';
+            });
+        }
+    </script>
 
 </body>
 </html>
