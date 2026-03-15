@@ -5,6 +5,250 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CCS Sit-in Monitoring System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* ── Section shared styles ── */
+        .community-section {
+            padding: 4rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .section-heading {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0F3E7D;
+            margin-bottom: 0.4rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 3px solid #F4B942;
+            display: inline-block;
+        }
+        .section-subtext {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 2rem;
+            margin-top: 0.4rem;
+        }
+
+        /* ── Announcements ── */
+        #announcements { background: #f9fbff; }
+        .ann-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.25rem;
+        }
+        .ann-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.25rem 1.4rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            border-left: 4px solid #0F3E7D;
+            transition: transform 0.18s, box-shadow 0.18s;
+        }
+        .ann-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.11); }
+        .ann-card.urgent { border-left-color: #e74c3c; }
+        .ann-card.info   { border-left-color: #27ae60; }
+        .ann-tag {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            margin-bottom: 0.6rem;
+        }
+        .tag-reminder { background: #e8f0fb; color: #0F3E7D; }
+        .tag-urgent   { background: #fdecea; color: #c0392b; }
+        .tag-info     { background: #eafaf1; color: #1e7e34; }
+        .ann-title    { font-size: 1rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.4rem; }
+        .ann-body     { font-size: 0.88rem; color: #555; line-height: 1.6; }
+        .ann-date     { font-size: 0.78rem; color: #aaa; margin-top: 0.75rem; }
+
+        /* ── Rules ── */
+        #rules { background: white; }
+        .rules-wrap {
+            background: #f9fbff;
+            border-radius: 12px;
+            padding: 2rem 2.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        .rules-intro-text {
+            font-size: 0.95rem;
+            color: #444;
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+        .rules-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .rules-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            font-size: 0.92rem;
+            color: #333;
+            line-height: 1.6;
+            padding: 0.7rem 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+        .rule-num {
+            background: #0F3E7D;
+            color: white;
+            font-size: 0.78rem;
+            font-weight: 700;
+            min-width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* ── FAQs ── */
+        #faqs { background: #f9fbff; }
+        .faq-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .faq-item {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            overflow: hidden;
+        }
+        .faq-question {
+            width: 100%;
+            background: none;
+            border: none;
+            text-align: left;
+            padding: 1rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #0F3E7D;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: inherit;
+            transition: background 0.15s;
+        }
+        .faq-question:hover { background: #f0f5ff; }
+        .faq-question .faq-icon { font-size: 1.1rem; color: #F4B942; transition: transform 0.2s; flex-shrink: 0; }
+        .faq-question.open .faq-icon { transform: rotate(45deg); }
+        .faq-answer {
+            display: none;
+            padding: 0 1.25rem 1rem;
+            font-size: 0.9rem;
+            color: #555;
+            line-height: 1.7;
+            border-top: 1px solid #f0f0f0;
+        }
+        .faq-answer.open { display: block; }
+
+        /* ── Leaderboard ── */
+        #leaderboard { background: white; }
+        .leaderboard-wrap {
+            background: #f9fbff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+        }
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+        .leaderboard-table thead th {
+            background: #0F3E7D;
+            color: white;
+            padding: 0.85rem 1.2rem;
+            text-align: left;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+        }
+        .leaderboard-table tbody td {
+            padding: 0.8rem 1.2rem;
+            border-bottom: 1px solid #eef0f5;
+            color: #333;
+        }
+        .leaderboard-table tbody tr:last-child td { border-bottom: none; }
+        .leaderboard-table tbody tr:hover { background: #f0f5ff; }
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            font-weight: 800;
+            font-size: 0.88rem;
+        }
+        .rank-1 { background: #FFD700; color: #7a5800; }
+        .rank-2 { background: #C0C0C0; color: #555; }
+        .rank-3 { background: #CD7F32; color: white; }
+        .rank-other { background: #e8f0fb; color: #0F3E7D; }
+        .session-bar-wrap { display: flex; align-items: center; gap: 0.7rem; }
+        .session-bar {
+            height: 8px; border-radius: 4px;
+            background: #0F3E7D; opacity: 0.15;
+            flex: 1; max-width: 120px;
+        }
+        .session-bar-fill { height: 8px; border-radius: 4px; background: #0F3E7D; }
+
+        /* ── Contact ── */
+        #contact { background: #f9fbff; }
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.25rem;
+        }
+        .contact-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem 1.4rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+            text-align: center;
+            transition: transform 0.18s;
+        }
+        .contact-card:hover { transform: translateY(-3px); }
+        .contact-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+        .contact-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: #999;
+            margin-bottom: 0.4rem;
+        }
+        .contact-value {
+            font-size: 0.92rem;
+            color: #1a1a1a;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+        .contact-value a { color: #0F3E7D; text-decoration: none; }
+        .contact-value a:hover { text-decoration: underline; }
+
+        /* ── Divider ── */
+        .section-divider {
+            border: none;
+            border-top: 1px solid #e8ecf4;
+            margin: 0;
+        }
+
+        @media (max-width: 700px) {
+            .community-section { padding: 2.5rem 1.2rem; }
+            .rules-wrap { padding: 1.25rem; }
+        }
+    </style>
 </head>
 <body>
 
@@ -69,9 +313,395 @@
         </div>
     </section>
 
+    <hr class="section-divider">
+
+    <!-- ═══════════════════════════════════
+         ANNOUNCEMENTS
+         ═══════════════════════════════════ -->
+    <section id="announcements">
+        <div class="community-section">
+            <h2 class="section-heading">&#128227; Announcements</h2>
+            <p class="section-subtext">Latest updates and reminders from the CCS Laboratory.</p>
+            <div class="ann-grid">
+
+                <div class="ann-card urgent">
+                    <span class="ann-tag tag-urgent">Urgent</span>
+                    <div class="ann-title">Session Limit Reminder</div>
+                    <div class="ann-body">Students are reminded that each account is limited to <strong>30 sit-in sessions per semester</strong> (CCS students) and <strong>15 sessions</strong> for all other courses. Sessions cannot be transferred or refunded.</div>
+                    <div class="ann-date">&#128197; March 10, 2026</div>
+                </div>
+
+                <div class="ann-card">
+                    <span class="ann-tag tag-reminder">Reminder</span>
+                    <div class="ann-title">Register Your Account Before Using the Lab</div>
+                    <div class="ann-body">All students must have a registered account in the CCS Sit-in System before they can be admitted to the laboratory for a sit-in session. Walk-ins without an account will not be accommodated.</div>
+                    <div class="ann-date">&#128197; March 8, 2026</div>
+                </div>
+
+                <div class="ann-card info">
+                    <span class="ann-tag tag-info">Lab Update</span>
+                    <div class="ann-title">Laboratory 524 Now Available</div>
+                    <div class="ann-body">Laboratory 524 is now open for sit-in sessions. Students may request access through the system. Please observe proper lab etiquette and follow all posted rules inside the room.</div>
+                    <div class="ann-date">&#128197; March 5, 2026</div>
+                </div>
+
+                <div class="ann-card">
+                    <span class="ann-tag tag-reminder">Reminder</span>
+                    <div class="ann-title">Log Out Properly After Each Session</div>
+                    <div class="ann-body">Students must inform the laboratory-in-charge when leaving so their sit-in session can be properly ended in the system. Failure to log out may result in an incomplete session record.</div>
+                    <div class="ann-date">&#128197; March 1, 2026</div>
+                </div>
+
+                <div class="ann-card info">
+                    <span class="ann-tag tag-info">System Notice</span>
+                    <div class="ann-title">Password Reset Feature Now Available</div>
+                    <div class="ann-body">Students who have forgotten their password can now use the "Forgot Password" feature on the login page. A reset link will be sent to your registered email address.</div>
+                    <div class="ann-date">&#128197; February 25, 2026</div>
+                </div>
+
+                <div class="ann-card">
+                    <span class="ann-tag tag-reminder">Reminder</span>
+                    <div class="ann-title">Keep Your Profile Information Updated</div>
+                    <div class="ann-body">Ensure that your registered email address and course information are correct. Incorrect course data may affect your session limit allocation for the semester.</div>
+                    <div class="ann-date">&#128197; February 20, 2026</div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ═══════════════════════════════════
+         LAB RULES & REGULATIONS
+         ═══════════════════════════════════ -->
+    <section id="rules">
+        <div class="community-section">
+            <h2 class="section-heading">&#128220; Lab Rules &amp; Regulations</h2>
+            <p class="section-subtext">All students must comply with the following rules during sit-in sessions.</p>
+            <div class="rules-wrap">
+                <p class="rules-intro-text">
+                    The CCS Computer Laboratories are shared academic resources. To maintain a productive and respectful environment for all users, the following rules are strictly enforced. Violations may result in the suspension of sit-in privileges.
+                </p>
+                <ul class="rules-list">
+                    <li><span class="rule-num">1</span>Students must log in to the Sit-in Monitoring System before using any laboratory computer. Unauthorized use without a logged session is not permitted.</li>
+                    <li><span class="rule-num">2</span>Maintain silence and proper decorum at all times. Mobile phones must be set to silent mode. Loud conversations and disruptive behavior are not allowed.</li>
+                    <li><span class="rule-num">3</span>Playing computer games, watching non-academic videos, or accessing social media is strictly prohibited during sit-in sessions.</li>
+                    <li><span class="rule-num">4</span>Downloading, installing, or uninstalling any software is not allowed without prior permission from the laboratory-in-charge.</li>
+                    <li><span class="rule-num">5</span>Do not alter system settings, desktop configurations, or any computer files that do not belong to your work.</li>
+                    <li><span class="rule-num">6</span>Food and drinks are strictly prohibited inside the laboratory at all times.</li>
+                    <li><span class="rule-num">7</span>Keep the laboratory clean and orderly. Place all bags and personal belongings in the designated area, not on the computer tables.</li>
+                    <li><span class="rule-num">8</span>Report any damaged equipment, hardware malfunctions, or technical issues immediately to the laboratory-in-charge.</li>
+                    <li><span class="rule-num">9</span>Students must log out of the system and properly shut down the computer before leaving. Inform the laboratory-in-charge when your session ends.</li>
+                    <li><span class="rule-num">10</span>Respect the property of others. Accessing another student's files, accounts, or personal data is a serious violation subject to disciplinary action.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ═══════════════════════════════════
+         FAQs
+         ═══════════════════════════════════ -->
+    <section id="faqs">
+        <div class="community-section">
+            <h2 class="section-heading">&#10067; Frequently Asked Questions</h2>
+            <p class="section-subtext">Got questions? Find quick answers below.</p>
+            <div class="faq-list">
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        What is a sit-in session?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        A sit-in session is a recorded instance of a student using the CCS computer laboratory outside of their regular class schedule. Each visit is logged in the system and counted against your semester session limit.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        How many sit-in sessions am I allowed per semester?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        CCS students (BSIT and BSCS) are allowed <strong>30 sit-in sessions</strong> per semester. Students from all other courses are allowed <strong>15 sit-in sessions</strong> per semester. Sessions reset at the start of each new semester.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        How do I register for an account?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        Click the <strong>Register</strong> button in the top navigation bar. Fill in your ID number, name, course, year level, email, and password. Once submitted, your account will be active and you can log in immediately.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        I forgot my password. What should I do?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        Go to the <strong>Login</strong> page and click <strong>"Forgot Password?"</strong>. Enter your ID number and registered email address. A password reset link will be sent to your email. Follow the link to set a new password.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        Can I use the laboratory without registering in the system?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        No. All students must have a registered account and be logged in the Sit-in Monitoring System before they can use the laboratory. The laboratory-in-charge will verify your session in the system before granting access.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        How is my session counted — when I enter or when I leave?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        Your session is deducted from your remaining count when the laboratory-in-charge <strong>logs you out</strong> of the system, not when you enter. Make sure to inform the in-charge before leaving so your session is properly ended.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        Where can I check my remaining sit-in sessions?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        After logging in to your student account, go to your <strong>Dashboard</strong>. Your remaining session count is displayed in the Student Information panel on the home tab.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        Can I use any computer laboratory in the CCS building?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        You may use any of the available CCS laboratories (524, 526, 528, 530, 542, 544, or the Mac Laboratory), subject to availability. The laboratory-in-charge will assign you a specific room when you check in.
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        What happens when I run out of sit-in sessions?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        Once your session count reaches zero, you will no longer be admitted for sit-in access until the sessions are reset at the beginning of the next semester. Sessions cannot be carried over, transferred, or topped up.
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ═══════════════════════════════════
+         STUDENT LEADERBOARD
+         ═══════════════════════════════════ -->
+    <section id="leaderboard">
+        <div class="community-section">
+            <h2 class="section-heading">&#127942; Student Leaderboard</h2>
+            <p class="section-subtext">Top students by total sit-in sessions this semester. Keep it up!</p>
+            <div class="leaderboard-wrap">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th style="width:80px;">Rank</th>
+                            <th>Student Name</th>
+                            <th>Course</th>
+                            <th>Total Sit-in Sessions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="rank-badge rank-1">1</span></td>
+                            <td><strong>Dela Cruz, Juan Miguel</strong></td>
+                            <td>BSIT</td>
+                            <td>
+                                <div class="session-bar-wrap">
+                                    28
+                                    <div class="session-bar"><div class="session-bar-fill" style="width:100%;"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-2">2</span></td>
+                            <td><strong>Santos, Maria Cristina</strong></td>
+                            <td>BSCS</td>
+                            <td>
+                                <div class="session-bar-wrap">
+                                    25
+                                    <div class="session-bar"><div class="session-bar-fill" style="width:89%;"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-3">3</span></td>
+                            <td><strong>Reyes, Carlo Jose</strong></td>
+                            <td>BSIT</td>
+                            <td>
+                                <div class="session-bar-wrap">
+                                    23
+                                    <div class="session-bar"><div class="session-bar-fill" style="width:82%;"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-other">4</span></td>
+                            <td>Garcia, Leia Anne</td>
+                            <td>BSCS</td>
+                            <td>
+                                <div class="session-bar-wrap">
+                                    21
+                                    <div class="session-bar"><div class="session-bar-fill" style="width:75%;"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-other">5</span></td>
+                            <td>Bautista, Mark Andrei</td>
+                            <td>BSIT</td>
+                            <td>
+                                <div class="session-bar-wrap">
+                                    19
+                                    <div class="session-bar"><div class="session-bar-fill" style="width:68%;"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-other">6</span></td>
+                            <td>Flores, Alyssa Mae</td>
+                            <td>BSIT</td>
+                            <td>
+                                <div class="session-bar-wrap">
+                                    17
+                                    <div class="session-bar"><div class="session-bar-fill" style="width:61%;"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-other">7</span></td>
+                            <td>Mendoza, Patrick Luis</td>
+                            <td>BSCS</td>
+                            <td>
+                                <div class="session-bar-wrap">
+                                    15
+                                    <div class="session-bar"><div class="session-bar-fill" style="width:54%;"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-other">8</span></td>
+                            <td>Torres, Janine Claire</td>
+                            <td>BSIT</td>
+                            <td>
+                                <div class="session-bar-wrap">
+                                    13
+                                    <div class="session-bar"><div class="session-bar-fill" style="width:46%;"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-other">9</span></td>
+                            <td>Navarro, Francis Dave</td>
+                            <td>BSCS</td>
+                            <td>
+                                <div class="session-bar-wrap">
+                                    11
+                                    <div class="session-bar"><div class="session-bar-fill" style="width:39%;"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-other">10</span></td>
+                            <td>Villanueva, Sofia Jean</td>
+                            <td>BSIT</td>
+                            <td>
+                                <div class="session-bar-wrap">
+                                    9
+                                    <div class="session-bar"><div class="session-bar-fill" style="width:32%;"></div></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p style="font-size:0.8rem; color:#aaa; margin-top:0.8rem; text-align:center;">
+                * Sample leaderboard data for demonstration purposes only.
+            </p>
+        </div>
+    </section>
+
+    <hr class="section-divider">
+
+    <!-- ═══════════════════════════════════
+         CONTACT US
+         ═══════════════════════════════════ -->
+    <section id="contact">
+        <div class="community-section">
+            <h2 class="section-heading">&#128222; Contact Us</h2>
+            <p class="section-subtext">Reach out to the College of Computer Studies for assistance.</p>
+            <div class="contact-grid">
+
+                <div class="contact-card">
+                    <span class="contact-icon">&#127968;</span>
+                    <div class="contact-label">Office Location</div>
+                    <div class="contact-value">CCS Building, 3rd Floor<br>University of Cebu<br>Sanciangko St., Cebu City</div>
+                </div>
+
+                <div class="contact-card">
+                    <span class="contact-icon">&#128140;</span>
+                    <div class="contact-label">Email Address</div>
+                    <div class="contact-value"><a href="mailto:ccs@uc.edu.ph">ccs@uc.edu.ph</a></div>
+                </div>
+
+                <div class="contact-card">
+                    <span class="contact-icon">&#128222;</span>
+                    <div class="contact-label">Phone Number</div>
+                    <div class="contact-value">(032) 255-7777<br>local 123</div>
+                </div>
+
+                <div class="contact-card">
+                    <span class="contact-icon">&#128336;</span>
+                    <div class="contact-label">Office Hours</div>
+                    <div class="contact-value">Monday – Friday<br>8:00 AM – 5:00 PM<br><span style="font-size:0.82rem;color:#aaa;">Closed on weekends &amp; holidays</span></div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
     <footer>
         <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
     </footer>
+
+    <script>
+        function toggleFaq(btn) {
+            const answer = btn.nextElementSibling;
+            const isOpen = answer.classList.contains('open');
+
+            // Close all
+            document.querySelectorAll('.faq-answer').forEach(a => a.classList.remove('open'));
+            document.querySelectorAll('.faq-question').forEach(b => b.classList.remove('open'));
+
+            // Open clicked if it was closed
+            if (!isOpen) {
+                answer.classList.add('open');
+                btn.classList.add('open');
+            }
+        }
+    </script>
 
 </body>
 </html>

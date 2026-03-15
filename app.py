@@ -1,8 +1,8 @@
 import os
-import secrets
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+# import secrets                                  # needed for forgot password
+# import smtplib                                  # needed for forgot password
+# from email.mime.text import MIMEText            # needed for forgot password
+# from email.mime.multipart import MIMEMultipart  # needed for forgot password
 from flask import Flask, request, redirect, render_template, render_template_string, session, jsonify
 from dbhelper import (
     init_db,
@@ -35,26 +35,32 @@ app = Flask(__name__)
 app.secret_key = 'ccs_sitin_secret_key'
 
 # ══════════════════════════════════════════
-# EMAIL CONFIG — no library needed!
+# FORGOT PASSWORD — currently disabled
+# To re-enable: uncomment everything below,
+# set your Gmail + App Password, then also
+# uncomment the /forgot-password and
+# /reset-password routes further down.
 # ══════════════════════════════════════════
-GMAIL_ADDRESS  = 'aprilescuadro2004@gmail.com'
-GMAIL_PASSWORD = 'hhbr mpwx dhxz qyhq'
-
-def send_email(to_address, subject, body):
-    """Send an email using Python's built-in smtplib — no Flask-Mail needed."""
-    msg = MIMEMultipart()
-    msg['From']    = GMAIL_ADDRESS
-    msg['To']      = to_address
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
-
-    with smtplib.SMTP('smtp.gmail.com', 587) as server:
-        server.starttls()
-        server.login(GMAIL_ADDRESS, GMAIL_PASSWORD)
-        server.send_message(msg)
-
-# In-memory token store { token: id_number }
-reset_tokens = {}
+# import secrets
+# import smtplib
+# from email.mime.text import MIMEText
+# from email.mime.multipart import MIMEMultipart
+#
+# GMAIL_ADDRESS  = 'your_gmail@gmail.com'
+# GMAIL_PASSWORD = 'your_app_password_here'
+#
+# def send_email(to_address, subject, body):
+#     msg = MIMEMultipart()
+#     msg['From']    = GMAIL_ADDRESS
+#     msg['To']      = to_address
+#     msg['Subject'] = subject
+#     msg.attach(MIMEText(body, 'plain'))
+#     with smtplib.SMTP('smtp.gmail.com', 587) as server:
+#         server.starttls()
+#         server.login(GMAIL_ADDRESS, GMAIL_PASSWORD)
+#         server.send_message(msg)
+#
+# reset_tokens = {}  # in-memory token store { token: id_number }
 
 
 # ══════════════════════════════════════════
@@ -118,58 +124,6 @@ ERROR_PAGE = """
 </html>
 """
 
-RESET_PASSWORD_PAGE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Reset Password - CCS Sit-in System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-content">
-            <div class="logo-section">
-                <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}"
-                     alt="CCS Logo" class="navbar-logo">
-                <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
-            </div>
-        </div>
-    </nav>
-    <main class="register-container">
-        <div class="register-card">
-            <div class="form-content">
-                <h1>Reset Password</h1>
-                <p class="form-subtitle">Enter your new password below.</p>
-
-                {% if error %}
-                <div class="error-message">⚠️ {{ error }}</div>
-                {% endif %}
-
-                <form action="/reset-password/{{ token }}" method="post">
-                    <div class="form-field">
-                        <label>New Password</label>
-                        <input type="password" name="newPassword"
-                               required minlength="6" placeholder="Minimum 6 characters">
-                    </div>
-                    <div class="form-field">
-                        <label>Confirm New Password</label>
-                        <input type="password" name="confirmPassword"
-                               required minlength="6" placeholder="Repeat new password">
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-full">
-                        Reset Password
-                    </button>
-                </form>
-            </div>
-        </div>
-    </main>
-    <footer>
-        <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
-    </footer>
-</body>
-</html>
-"""
-
 
 # ══════════════════════════════════════════
 # ROUTES — PAGES
@@ -190,22 +144,6 @@ def login_page():
         return redirect('/admin/dashboard')
     return render_template('login.html')
 
-@app.route('/admin/sitin/add-ajax', methods=['POST'])
-def admin_add_sitin_ajax():
-    if not session.get('admin'):
-        return jsonify({'success': False, 'message': 'Not logged in.'}), 401
-    id_number = request.form.get('idNumber', '').strip()
-    purpose   = request.form.get('purpose', '').strip()
-    lab       = request.form.get('lab', '').strip()
-    if not id_number or not purpose or not lab:
-        return jsonify({'success': False, 'message': 'All fields are required.'})
-    student = get_student_by_id(id_number)
-    if not student:
-        return jsonify({'success': False, 'message': f"Student ID '{id_number}' not found."})
-    if student['sitin_count'] <= 0:
-        return jsonify({'success': False, 'message': 'Student has no remaining sit-in sessions.'})
-    session_id = add_sitin(id_number, purpose, lab)  # ✅ capture returned ID
-    return jsonify({'success': True, 'message': 'Sit-in successfully.', 'sessionId': session_id})  # ✅ send it back
 
 # ══════════════════════════════════════════
 # ROUTE — REGISTER
@@ -246,7 +184,6 @@ def register():
             message="ID Number already registered!", back_page="/register.html")
 
     sitin_count = get_sitin_count(course)
-
     register_student(id_number, first_name, last_name, middle_name,
                      course_level, password, email, course, address, sitin_count)
 
@@ -280,110 +217,67 @@ def login():
 
 
 # ══════════════════════════════════════════
-# ROUTE — FORGOT PASSWORD (sends real Gmail)
+# ROUTE — FORGOT PASSWORD (disabled)
+# Uncomment this entire block to re-enable.
 # ══════════════════════════════════════════
-@app.route('/forgot-password', methods=['POST'])
-def forgot_password():
-    id_number = request.form.get('forgotId', '').strip()
-    email     = request.form.get('forgotEmail', '').strip()
-
-    student = get_student_by_id(id_number)
-    if student:
-        student = dict(student)
-
-    if student and student.get('email', '').lower() == email.lower():
-        # Generate a secure one-time token
-        token = secrets.token_urlsafe(32)
-        reset_tokens[token] = id_number
-
-        reset_link = f"http://localhost:5000/reset-password/{token}"
-
-        # Build the email body
-        body = f"""Hello {student['firstName']},
-
-We received a request to reset the password for your CCS Sit-in System account.
-
-Click the link below to set a new password:
-
-{reset_link}
-
-This link is valid for one use only. If you did not request a password reset, you can safely ignore this email.
-
-— CCS Sit-in Monitoring System
-   College of Computer Studies, University of Cebu
-"""
-
-        try:
-            send_email(
-                to_address = email,
-                subject    = 'CCS Sit-in System — Password Reset Request',
-                body       = body
-            )
-            return jsonify({
-                'success': True,
-                'message': '✓ A password reset link has been sent to your email.'
-            })
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'message': f'Could not send email. Error: {str(e)}'
-            })
-
-    return jsonify({
-        'success': False,
-        'message': '✗ No account found with that ID and email combination.'
-    })
+# @app.route('/forgot-password', methods=['POST'])
+# def forgot_password():
+#     id_number = request.form.get('forgotId', '').strip()
+#     email     = request.form.get('forgotEmail', '').strip()
+#     student = get_student_by_id(id_number)
+#     if student:
+#         student = dict(student)
+#     if student and student.get('email', '').lower() == email.lower():
+#         token = secrets.token_urlsafe(32)
+#         reset_tokens[token] = id_number
+#         reset_link = f"http://localhost:5000/reset-password/{token}"
+#         body = (f"Hello {student['firstName']},\n\n"
+#                 f"Click to reset your password:\n{reset_link}\n\n"
+#                 f"One-time use only.\n\n— CCS Sit-in System")
+#         try:
+#             send_email(email, 'CCS Sit-in System — Password Reset Request', body)
+#             return jsonify({'success': True, 'message': '✓ Reset link sent to your email.'})
+#         except Exception as e:
+#             return jsonify({'success': False, 'message': f'Could not send email: {str(e)}'})
+#     return jsonify({'success': False, 'message': '✗ No account found with that ID and email.'})
 
 
 # ══════════════════════════════════════════
-# ROUTE — RESET PASSWORD PAGE
+# ROUTE — RESET PASSWORD (disabled)
+# Uncomment this entire block to re-enable.
 # ══════════════════════════════════════════
-@app.route('/reset-password/<token>', methods=['GET'])
-def reset_password_page(token):
-    id_number = reset_tokens.get(token)
-    if not id_number:
-        return render_template_string(ERROR_PAGE,
-            message="This reset link is invalid or has already been used.",
-            back_page="/login")
-    return render_template_string(RESET_PASSWORD_PAGE, token=token, error=None)
-
-
-@app.route('/reset-password/<token>', methods=['POST'])
-def reset_password_submit(token):
-    id_number = reset_tokens.get(token)
-    if not id_number:
-        return render_template_string(ERROR_PAGE,
-            message="This reset link is invalid or has already been used.",
-            back_page="/login")
-
-    new_password = request.form.get('newPassword', '').strip()
-    confirm      = request.form.get('confirmPassword', '').strip()
-
-    if len(new_password) < 6:
-        return render_template_string(RESET_PASSWORD_PAGE,
-            token=token, error="Password must be at least 6 characters.")
-    if new_password != confirm:
-        return render_template_string(RESET_PASSWORD_PAGE,
-            token=token, error="Passwords do not match.")
-
-    import hashlib
-    hashed = hashlib.sha256(new_password.encode()).hexdigest()
-
-    conn = _sqlite3.connect('database.db')
-    conn.execute(
-        "UPDATE students SET password = ? WHERE idNumber = ?",
-        (hashed, id_number)
-    )
-    conn.commit()
-    conn.close()
-
-    # Invalidate token — one-time use
-    del reset_tokens[token]
-
-    return render_template_string(SUCCESS_PAGE,
-        title="Password Reset Successful!",
-        message="Your password has been updated. You can now log in with your new password.",
-        next_page="/login")
+# @app.route('/reset-password/<token>', methods=['GET'])
+# def reset_password_page(token):
+#     if token not in reset_tokens:
+#         return render_template_string(ERROR_PAGE,
+#             message="Invalid or expired reset link.", back_page="/login")
+#     return render_template_string(RESET_PASSWORD_PAGE, token=token, error=None)
+#
+# @app.route('/reset-password/<token>', methods=['POST'])
+# def reset_password_submit(token):
+#     id_number = reset_tokens.get(token)
+#     if not id_number:
+#         return render_template_string(ERROR_PAGE,
+#             message="Invalid or expired reset link.", back_page="/login")
+#     new_password = request.form.get('newPassword', '').strip()
+#     confirm      = request.form.get('confirmPassword', '').strip()
+#     if len(new_password) < 6:
+#         return render_template_string(RESET_PASSWORD_PAGE,
+#             token=token, error="Password must be at least 6 characters.")
+#     if new_password != confirm:
+#         return render_template_string(RESET_PASSWORD_PAGE,
+#             token=token, error="Passwords do not match.")
+#     import hashlib
+#     hashed = hashlib.sha256(new_password.encode()).hexdigest()
+#     conn = _sqlite3.connect('database.db')
+#     conn.execute("UPDATE students SET password = ? WHERE idNumber = ?", (hashed, id_number))
+#     conn.commit()
+#     conn.close()
+#     del reset_tokens[token]
+#     return render_template_string(SUCCESS_PAGE,
+#         title="Password Reset Successful!",
+#         message="Your password has been updated. You can now log in.",
+#         next_page="/login")
 
 
 # ══════════════════════════════════════════
@@ -448,7 +342,6 @@ def student_update_profile():
         if new_password and len(new_password) < 6:
             return jsonify({'success': False, 'message': 'Password must be at least 6 characters.'})
 
-        # Recalculate sit-in count based on course
         new_sitin_count = get_sitin_count(course)
 
         # ── Photo upload ──────────────────────────────────────────────────
@@ -505,16 +398,9 @@ def student_update_profile():
 
         session['student_name'] = f"{first_name} {last_name}"
 
-        if middle_name:
-            full_name = f"{first_name} {middle_name} {last_name}"
-        else:
-            full_name = f"{first_name} {last_name}"
+        full_name = f"{first_name} {middle_name} {last_name}" if middle_name else f"{first_name} {last_name}"
 
-        return jsonify({
-            'success':  True,
-            'fullName': full_name,
-            'photoUrl': photo_url
-        })
+        return jsonify({'success': True, 'fullName': full_name, 'photoUrl': photo_url})
 
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -551,7 +437,28 @@ def admin_dashboard():
 
 
 # ══════════════════════════════════════════
-# ROUTE — ADMIN ADD SIT-IN
+# ROUTE — ADMIN ADD SIT-IN (AJAX)
+# ══════════════════════════════════════════
+@app.route('/admin/sitin/add-ajax', methods=['POST'])
+def admin_add_sitin_ajax():
+    if not session.get('admin'):
+        return jsonify({'success': False, 'message': 'Not logged in.'}), 401
+    id_number = request.form.get('idNumber', '').strip()
+    purpose   = request.form.get('purpose', '').strip()
+    lab       = request.form.get('lab', '').strip()
+    if not id_number or not purpose or not lab:
+        return jsonify({'success': False, 'message': 'All fields are required.'})
+    student = get_student_by_id(id_number)
+    if not student:
+        return jsonify({'success': False, 'message': f"Student ID '{id_number}' not found."})
+    if student['sitin_count'] <= 0:
+        return jsonify({'success': False, 'message': 'Student has no remaining sit-in sessions.'})
+    session_id = add_sitin(id_number, purpose, lab)
+    return jsonify({'success': True, 'message': 'Sit-in successful.', 'sessionId': session_id})
+
+
+# ══════════════════════════════════════════
+# ROUTE — ADMIN ADD SIT-IN (FORM POST)
 # ══════════════════════════════════════════
 @app.route('/admin/sitin/add', methods=['POST'])
 def admin_add_sitin():
@@ -666,11 +573,7 @@ def admin_edit_student():
     address      = request.form.get('address', '').strip() or None
     sitin_count  = request.form.get('sitin_count', '').strip()
 
-    # If admin manually set a count use it, otherwise recalculate from course
-    if sitin_count:
-        sitin_count = int(sitin_count)
-    else:
-        sitin_count = get_sitin_count(course)
+    sitin_count = int(sitin_count) if sitin_count else get_sitin_count(course)
 
     conn = _sqlite3.connect('database.db')
     conn.execute(
