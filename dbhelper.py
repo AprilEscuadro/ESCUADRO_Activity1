@@ -11,23 +11,10 @@ def get_db():
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-CCS_COURSES = {'BSIT', 'BSCS'}
+CCS_COURSES = {'BSIT', 'BSCS', 'BSCoE', 'CISCO'}
 
 def get_sitin_count(course):
-    """Return correct sit-in count: 30 for CCS, 15 for all others."""
     return 30 if course in CCS_COURSES else 15
-
-
-def ensure_photo_url_column():
-    """Safely add photo_url column to students table if it doesn't exist yet."""
-    conn = get_db()
-    try:
-        conn.execute("ALTER TABLE students ADD COLUMN photo_url TEXT")
-        conn.commit()
-        print("✓ photo_url column added to students table.")
-    except Exception:
-        pass  # Column already exists — that's fine
-    conn.close()
 
 
 def init_db():
@@ -79,6 +66,7 @@ def init_db():
             title       TEXT NOT NULL,
             content     TEXT NOT NULL,
             posted_by   TEXT NOT NULL,
+            is_pinned   INTEGER DEFAULT 0,
             created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -95,11 +83,15 @@ def init_db():
         )
     """)
 
-    # Safely migrate existing DB: add photo_url if missing
-    try:
-        conn.execute("ALTER TABLE students ADD COLUMN photo_url TEXT")
-    except Exception:
-        pass
+    # Migrations: safely add columns if missing
+    for migration in [
+        "ALTER TABLE students ADD COLUMN photo_url TEXT",
+        "ALTER TABLE announcements ADD COLUMN is_pinned INTEGER DEFAULT 0",
+    ]:
+        try:
+            conn.execute(migration)
+        except Exception:
+            pass
 
     existing_admin = conn.execute("SELECT * FROM admin WHERE username = 'admin'").fetchone()
     if not existing_admin:
@@ -129,7 +121,6 @@ def get_student_by_id(id_number):
 
 def register_student(idNumber, firstName, lastName, middleName,
                      courseLevel, password, email, course, address, sitin_count):
-    """Register student — password is hashed before saving."""
     hashed = hash_password(password)
     conn = get_db()
     conn.execute("""
@@ -143,7 +134,6 @@ def register_student(idNumber, firstName, lastName, middleName,
     conn.close()
 
 def login_student(id_number, password):
-    """Login — hash the input password before comparing."""
     hashed = hash_password(password)
     conn = get_db()
     student = conn.execute(
@@ -152,62 +142,6 @@ def login_student(id_number, password):
     ).fetchone()
     conn.close()
     return student
-
-
-def update_student_profile(id_number, first_name, last_name, middle_name,
-                            email, address, course, course_level,
-                            new_password=None, photo_url=None):
-    conn = get_db()
-
-    # Always recalculate sit-in count based on course
-    sitin_count = get_sitin_count(course)
-
-    if new_password and photo_url:
-        conn.execute("""
-            UPDATE students
-            SET firstName=?, lastName=?, middleName=?,
-                email=?, address=?, course=?, courseLevel=?,
-                password=?, photo_url=?, sitin_count=?
-            WHERE idNumber=?
-        """, (first_name, last_name, middle_name,
-              email, address, course, course_level,
-              hash_password(new_password), photo_url, sitin_count, id_number))
-
-    elif new_password:
-        conn.execute("""
-            UPDATE students
-            SET firstName=?, lastName=?, middleName=?,
-                email=?, address=?, course=?, courseLevel=?,
-                password=?, sitin_count=?
-            WHERE idNumber=?
-        """, (first_name, last_name, middle_name,
-              email, address, course, course_level,
-              hash_password(new_password), sitin_count, id_number))
-
-    elif photo_url:
-        conn.execute("""
-            UPDATE students
-            SET firstName=?, lastName=?, middleName=?,
-                email=?, address=?, course=?, courseLevel=?,
-                photo_url=?, sitin_count=?
-            WHERE idNumber=?
-        """, (first_name, last_name, middle_name,
-              email, address, course, course_level,
-              photo_url, sitin_count, id_number))
-
-    else:
-        conn.execute("""
-            UPDATE students
-            SET firstName=?, lastName=?, middleName=?,
-                email=?, address=?, course=?, courseLevel=?,
-                sitin_count=?
-            WHERE idNumber=?
-        """, (first_name, last_name, middle_name,
-              email, address, course, course_level,
-              sitin_count, id_number))
-
-    conn.commit()
-    conn.close()
 
 
 # ══════════════════════════════════════════
@@ -263,15 +197,13 @@ def add_sitin(id_number, purpose, lab):
         INSERT INTO sitin_sessions (idNumber, purpose, lab)
         VALUES (?, ?, ?)
     """, (id_number, purpose, lab))
-    session_id = cursor.lastrowid  # ✅ get the new ID
+    session_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    return session_id  # ✅ return it
+    return session_id
 
 def end_sitin(session_id):
-    """Mark sit-in as done AND deduct one session from the student."""
     conn = get_db()
-    # Get the student ID from this session
     row = conn.execute(
         "SELECT idNumber FROM sitin_sessions WHERE id = ?", (session_id,)
     ).fetchone()
@@ -295,7 +227,7 @@ def end_sitin(session_id):
 def get_all_announcements():
     conn = get_db()
     announcements = conn.execute(
-        "SELECT * FROM announcements ORDER BY created_at DESC"
+        "SELECT * FROM announcements ORDER BY is_pinned DESC, created_at DESC"
     ).fetchall()
     conn.close()
     return announcements
@@ -309,12 +241,38 @@ def add_announcement(title, content, posted_by):
     conn.commit()
     conn.close()
 
+def edit_announcement(ann_id, title, content):
+    conn = get_db()
+    conn.execute(
+        "UPDATE announcements SET title=?, content=? WHERE id=?",
+        (title, content, ann_id)
+    )
+    conn.commit()
+    conn.close()
+
+def delete_announcement(ann_id):
+    conn = get_db()
+    conn.execute("DELETE FROM announcements WHERE id=?", (ann_id,))
+    conn.commit()
+    conn.close()
+
+def toggle_pin_announcement(ann_id):
+    conn = get_db()
+    row = conn.execute("SELECT is_pinned FROM announcements WHERE id=?", (ann_id,)).fetchone()
+    if row:
+        new_val = 0 if row['is_pinned'] else 1
+        conn.execute("UPDATE announcements SET is_pinned=? WHERE id=?", (new_val, ann_id))
+        conn.commit()
+        conn.close()
+        return new_val
+    conn.close()
+    return None
+
 
 # ══════════════════════════════════════════
 # PURPOSE COUNTS (for pie chart)
 # ══════════════════════════════════════════
 def get_purpose_counts():
-    """Returns a dict like {'C Programming': 5, 'Java Programming': 3, ...}"""
     conn = get_db()
     rows = conn.execute("""
         SELECT purpose, COUNT(*) as cnt

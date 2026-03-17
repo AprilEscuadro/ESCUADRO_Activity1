@@ -1,8 +1,4 @@
 import os
-# import secrets                                  # needed for forgot password
-# import smtplib                                  # needed for forgot password
-# from email.mime.text import MIMEText            # needed for forgot password
-# from email.mime.multipart import MIMEMultipart  # needed for forgot password
 from flask import Flask, request, redirect, render_template, render_template_string, session, jsonify
 from dbhelper import (
     init_db,
@@ -10,19 +6,18 @@ from dbhelper import (
     login_admin, get_all_students,
     get_all_sessions, get_student_sessions, add_sitin, end_sitin,
     get_all_announcements, add_announcement,
+    edit_announcement, delete_announcement, toggle_pin_announcement,
     get_purpose_counts,
 )
 
 import sqlite3 as _sqlite3
 
-CCS_COURSES = {'BSIT', 'BSCS'}
+CCS_COURSES = {'BSIT', 'BSCS', 'BSCoE', 'CISCO'}
 
 def get_sitin_count(course):
-    """Return correct sit-in count based on course: 30 for CCS, 15 for others."""
     return 30 if course in CCS_COURSES else 15
 
 def reset_all_sessions():
-    """Reset each student's sit-in count based on their course (CCS=30, others=15)."""
     conn = _sqlite3.connect('database.db')
     students = conn.execute("SELECT idNumber, course FROM students").fetchall()
     for s in students:
@@ -34,38 +29,7 @@ def reset_all_sessions():
 app = Flask(__name__)
 app.secret_key = 'ccs_sitin_secret_key'
 
-# ══════════════════════════════════════════
-# FORGOT PASSWORD — currently disabled
-# To re-enable: uncomment everything below,
-# set your Gmail + App Password, then also
-# uncomment the /forgot-password and
-# /reset-password routes further down.
-# ══════════════════════════════════════════
-# import secrets
-# import smtplib
-# from email.mime.text import MIMEText
-# from email.mime.multipart import MIMEMultipart
-#
-# GMAIL_ADDRESS  = 'your_gmail@gmail.com'
-# GMAIL_PASSWORD = 'your_app_password_here'
-#
-# def send_email(to_address, subject, body):
-#     msg = MIMEMultipart()
-#     msg['From']    = GMAIL_ADDRESS
-#     msg['To']      = to_address
-#     msg['Subject'] = subject
-#     msg.attach(MIMEText(body, 'plain'))
-#     with smtplib.SMTP('smtp.gmail.com', 587) as server:
-#         server.starttls()
-#         server.login(GMAIL_ADDRESS, GMAIL_PASSWORD)
-#         server.send_message(msg)
-#
-# reset_tokens = {}  # in-memory token store { token: id_number }
 
-
-# ══════════════════════════════════════════
-# PAGE TEMPLATES
-# ══════════════════════════════════════════
 SUCCESS_PAGE = """
 <!DOCTYPE html>
 <html>
@@ -162,26 +126,19 @@ def register():
     address      = request.form.get('address', '').strip()
 
     if not id_number:
-        return render_template_string(ERROR_PAGE,
-            message="ID Number is required!", back_page="/register.html")
+        return render_template_string(ERROR_PAGE, message="ID Number is required!", back_page="/register.html")
     if len(password) < 6:
-        return render_template_string(ERROR_PAGE,
-            message="Password must be at least 6 characters!", back_page="/register.html")
+        return render_template_string(ERROR_PAGE, message="Password must be at least 6 characters!", back_page="/register.html")
     if password != confirm_pass:
-        return render_template_string(ERROR_PAGE,
-            message="Passwords do not match!", back_page="/register.html")
+        return render_template_string(ERROR_PAGE, message="Passwords do not match!", back_page="/register.html")
     if '@' not in email:
-        return render_template_string(ERROR_PAGE,
-            message="Invalid email format!", back_page="/register.html")
+        return render_template_string(ERROR_PAGE, message="Invalid email format!", back_page="/register.html")
     if course_level not in ['1', '2', '3', '4']:
-        return render_template_string(ERROR_PAGE,
-            message="Please select a valid course level!", back_page="/register.html")
+        return render_template_string(ERROR_PAGE, message="Please select a valid course level!", back_page="/register.html")
     if not course:
-        return render_template_string(ERROR_PAGE,
-            message="Please select a course!", back_page="/register.html")
+        return render_template_string(ERROR_PAGE, message="Please select a course!", back_page="/register.html")
     if get_student_by_id(id_number):
-        return render_template_string(ERROR_PAGE,
-            message="ID Number already registered!", back_page="/register.html")
+        return render_template_string(ERROR_PAGE, message="ID Number already registered!", back_page="/register.html")
 
     sitin_count = get_sitin_count(course)
     register_student(id_number, first_name, last_name, middle_name,
@@ -214,70 +171,6 @@ def login():
         return redirect('/dashboard')
 
     return render_template('login.html', error="Invalid ID Number or Password!")
-
-
-# ══════════════════════════════════════════
-# ROUTE — FORGOT PASSWORD (disabled)
-# Uncomment this entire block to re-enable.
-# ══════════════════════════════════════════
-# @app.route('/forgot-password', methods=['POST'])
-# def forgot_password():
-#     id_number = request.form.get('forgotId', '').strip()
-#     email     = request.form.get('forgotEmail', '').strip()
-#     student = get_student_by_id(id_number)
-#     if student:
-#         student = dict(student)
-#     if student and student.get('email', '').lower() == email.lower():
-#         token = secrets.token_urlsafe(32)
-#         reset_tokens[token] = id_number
-#         reset_link = f"http://localhost:5000/reset-password/{token}"
-#         body = (f"Hello {student['firstName']},\n\n"
-#                 f"Click to reset your password:\n{reset_link}\n\n"
-#                 f"One-time use only.\n\n— CCS Sit-in System")
-#         try:
-#             send_email(email, 'CCS Sit-in System — Password Reset Request', body)
-#             return jsonify({'success': True, 'message': '✓ Reset link sent to your email.'})
-#         except Exception as e:
-#             return jsonify({'success': False, 'message': f'Could not send email: {str(e)}'})
-#     return jsonify({'success': False, 'message': '✗ No account found with that ID and email.'})
-
-
-# ══════════════════════════════════════════
-# ROUTE — RESET PASSWORD (disabled)
-# Uncomment this entire block to re-enable.
-# ══════════════════════════════════════════
-# @app.route('/reset-password/<token>', methods=['GET'])
-# def reset_password_page(token):
-#     if token not in reset_tokens:
-#         return render_template_string(ERROR_PAGE,
-#             message="Invalid or expired reset link.", back_page="/login")
-#     return render_template_string(RESET_PASSWORD_PAGE, token=token, error=None)
-#
-# @app.route('/reset-password/<token>', methods=['POST'])
-# def reset_password_submit(token):
-#     id_number = reset_tokens.get(token)
-#     if not id_number:
-#         return render_template_string(ERROR_PAGE,
-#             message="Invalid or expired reset link.", back_page="/login")
-#     new_password = request.form.get('newPassword', '').strip()
-#     confirm      = request.form.get('confirmPassword', '').strip()
-#     if len(new_password) < 6:
-#         return render_template_string(RESET_PASSWORD_PAGE,
-#             token=token, error="Password must be at least 6 characters.")
-#     if new_password != confirm:
-#         return render_template_string(RESET_PASSWORD_PAGE,
-#             token=token, error="Passwords do not match.")
-#     import hashlib
-#     hashed = hashlib.sha256(new_password.encode()).hexdigest()
-#     conn = _sqlite3.connect('database.db')
-#     conn.execute("UPDATE students SET password = ? WHERE idNumber = ?", (hashed, id_number))
-#     conn.commit()
-#     conn.close()
-#     del reset_tokens[token]
-#     return render_template_string(SUCCESS_PAGE,
-#         title="Password Reset Successful!",
-#         message="Your password has been updated. You can now log in.",
-#         next_page="/login")
 
 
 # ══════════════════════════════════════════
@@ -342,16 +235,22 @@ def student_update_profile():
         if new_password and len(new_password) < 6:
             return jsonify({'success': False, 'message': 'Password must be at least 6 characters.'})
 
-        new_sitin_count = get_sitin_count(course)
+        # ── FIXED: preserve sitin_count, only reset if CCS category changes ──
+        old_course = current.get('course', '')
+        old_is_ccs = old_course in CCS_COURSES
+        new_is_ccs = course in CCS_COURSES
 
-        # ── Photo upload ──────────────────────────────────────────────────
+        if old_is_ccs != new_is_ccs:
+            new_sitin_count = get_sitin_count(course)
+        else:
+            new_sitin_count = current.get('sitin_count', get_sitin_count(course))
+
         photo_url  = current.get('photo_url') or None
         photo_file = request.files.get('photo')
         if photo_file and photo_file.filename:
             ext = os.path.splitext(photo_file.filename)[1].lower()
             if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
-                return jsonify({'success': False,
-                                'message': 'Invalid image type. Use JPG, PNG, GIF, or WEBP.'})
+                return jsonify({'success': False, 'message': 'Invalid image type.'})
             upload_folder = os.path.join(app.root_path, 'static', 'uploads', 'profiles')
             os.makedirs(upload_folder, exist_ok=True)
             filename  = f"profile_{id_number}{ext}"
@@ -359,7 +258,6 @@ def student_update_profile():
             photo_file.save(save_path)
             photo_url = f"/static/uploads/profiles/{filename}"
 
-        # ── Write to SQLite3 ──────────────────────────────────────────────
         conn = _sq3.connect('database.db')
         conn.row_factory = _sq3.Row
 
@@ -397,7 +295,6 @@ def student_update_profile():
         conn.close()
 
         session['student_name'] = f"{first_name} {last_name}"
-
         full_name = f"{first_name} {middle_name} {last_name}" if middle_name else f"{first_name} {last_name}"
 
         return jsonify({'success': True, 'fullName': full_name, 'photoUrl': photo_url})
@@ -458,33 +355,6 @@ def admin_add_sitin_ajax():
 
 
 # ══════════════════════════════════════════
-# ROUTE — ADMIN ADD SIT-IN (FORM POST)
-# ══════════════════════════════════════════
-@app.route('/admin/sitin/add', methods=['POST'])
-def admin_add_sitin():
-    if not session.get('admin'):
-        return redirect('/login')
-
-    id_number = request.form.get('idNumber', '').strip()
-    purpose   = request.form.get('purpose', '').strip()
-    lab       = request.form.get('lab', '').strip()
-
-    student = get_student_by_id(id_number)
-    if not student:
-        return render_template_string(ERROR_PAGE,
-            message=f"Student ID '{id_number}' not found!",
-            back_page="/admin/dashboard")
-
-    if student['sitin_count'] <= 0:
-        return render_template_string(ERROR_PAGE,
-            message=f"Student {id_number} has no remaining sit-in sessions!",
-            back_page="/admin/dashboard")
-
-    add_sitin(id_number, purpose, lab)
-    return redirect('/admin/dashboard')
-
-
-# ══════════════════════════════════════════
 # ROUTE — ADMIN END SIT-IN
 # ══════════════════════════════════════════
 @app.route('/admin/sitin/end/<int:session_id>', methods=['POST'])
@@ -513,17 +383,59 @@ def admin_reset_all_sessions():
 def admin_add_announcement():
     if not session.get('admin'):
         return redirect('/login')
-
     title   = request.form.get('title', '').strip()
     content = request.form.get('content', '').strip()
-
     if not title or not content:
         return render_template_string(ERROR_PAGE,
-            message="Title and content are required!",
-            back_page="/admin/dashboard")
-
+            message="Title and content are required!", back_page="/admin/dashboard")
     add_announcement(title, content, session['admin_name'])
     return redirect('/admin/dashboard')
+
+
+# ══════════════════════════════════════════
+# ROUTE — ADMIN EDIT ANNOUNCEMENT (AJAX)
+# ══════════════════════════════════════════
+@app.route('/admin/announcement/edit', methods=['POST'])
+def admin_edit_announcement():
+    if not session.get('admin'):
+        return jsonify({'success': False, 'message': 'Not logged in.'}), 401
+    ann_id  = request.form.get('id', '').strip()
+    title   = request.form.get('title', '').strip()
+    content = request.form.get('content', '').strip()
+    if not ann_id or not title or not content:
+        return jsonify({'success': False, 'message': 'All fields are required.'})
+    edit_announcement(int(ann_id), title, content)
+    return jsonify({'success': True, 'id': int(ann_id), 'title': title, 'content': content})
+
+
+# ══════════════════════════════════════════
+# ROUTE — ADMIN DELETE ANNOUNCEMENT (AJAX)
+# ══════════════════════════════════════════
+@app.route('/admin/announcement/delete', methods=['POST'])
+def admin_delete_announcement():
+    if not session.get('admin'):
+        return jsonify({'success': False, 'message': 'Not logged in.'}), 401
+    ann_id = request.form.get('id', '').strip()
+    if not ann_id:
+        return jsonify({'success': False, 'message': 'ID required.'})
+    delete_announcement(int(ann_id))
+    return jsonify({'success': True, 'id': int(ann_id)})
+
+
+# ══════════════════════════════════════════
+# ROUTE — ADMIN TOGGLE PIN ANNOUNCEMENT (AJAX)
+# ══════════════════════════════════════════
+@app.route('/admin/announcement/pin', methods=['POST'])
+def admin_pin_announcement():
+    if not session.get('admin'):
+        return jsonify({'success': False, 'message': 'Not logged in.'}), 401
+    ann_id = request.form.get('id', '').strip()
+    if not ann_id:
+        return jsonify({'success': False, 'message': 'ID required.'})
+    new_val = toggle_pin_announcement(int(ann_id))
+    if new_val is None:
+        return jsonify({'success': False, 'message': 'Announcement not found.'})
+    return jsonify({'success': True, 'id': int(ann_id), 'is_pinned': new_val})
 
 
 # ══════════════════════════════════════════
@@ -533,18 +445,14 @@ def admin_add_announcement():
 def admin_search_student():
     if not session.get('admin'):
         return jsonify({'success': False, 'message': 'Not logged in.'}), 401
-
     id_number = request.args.get('idNumber', '').strip()
     if not id_number:
         return jsonify({'success': False, 'message': 'Please enter a Student ID.'})
-
     student = get_student_by_id(id_number)
     if not student:
         return jsonify({'success': False, 'message': 'NO RECORDS AVAILABLE'})
-
     if not isinstance(student, dict):
         student = dict(student)
-
     return jsonify({
         'success':    True,
         'idNumber':   student.get('idNumber', ''),
@@ -562,7 +470,6 @@ def admin_search_student():
 def admin_edit_student():
     if not session.get('admin'):
         return redirect('/login')
-
     id_number    = request.form.get('idNumber', '').strip()
     first_name   = request.form.get('firstName', '').strip()
     last_name    = request.form.get('lastName', '').strip()
@@ -572,8 +479,7 @@ def admin_edit_student():
     course_level = request.form.get('courseLevel', '').strip()
     address      = request.form.get('address', '').strip() or None
     sitin_count  = request.form.get('sitin_count', '').strip()
-
-    sitin_count = int(sitin_count) if sitin_count else get_sitin_count(course)
+    sitin_count  = int(sitin_count) if sitin_count else get_sitin_count(course)
 
     conn = _sqlite3.connect('database.db')
     conn.execute(
@@ -596,7 +502,6 @@ def admin_edit_student():
 def admin_delete_student():
     if not session.get('admin'):
         return redirect('/login')
-
     id_number = request.form.get('idNumber', '').strip()
     conn = _sqlite3.connect('database.db')
     conn.execute("DELETE FROM students WHERE idNumber = ?", (id_number,))

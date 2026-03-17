@@ -50,7 +50,6 @@
         .ham-dropdown { display: none; position: absolute; top: calc(100% + 10px); right: 0; min-width: 200px; background: white; border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,0.18); z-index: 3000; overflow: hidden; border: 1px solid rgba(0,0,0,0.08); animation: dropIn 0.18s ease; }
         .ham-dropdown.open { display: block; }
         @keyframes dropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
         .ham-dropdown a { display: block; padding: 0.75rem 1.25rem; color: #0F3E7D; font-size: 0.92rem; font-weight: 500; text-decoration: none; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.15s, padding-left 0.15s; font-family: Arial, sans-serif; }
         .ham-dropdown a:last-child { border-bottom: none; }
         .ham-dropdown a:hover { background: #f0f5ff; padding-left: 1.6rem; }
@@ -67,8 +66,13 @@
         .panel-tab-header, .panel-card-header { background: #0F3E7D; color: white; padding: 0.75rem 1.1rem; font-size: 0.92rem; font-weight: 700; letter-spacing: 0.01em; flex-shrink: 0; text-align: center; }
         .panel-body, .panel-card-body { padding: 1.1rem 1.25rem; flex: 1; overflow-y: auto; max-height: 480px; }
 
-        .announcement-card { border-bottom: 1px solid #f0f0f0; padding-bottom: 0.85rem; margin-bottom: 0.85rem; }
+        /* Pinned announcement style on student side */
+        .announcement-card { border-bottom: 1px solid #f0f0f0; padding-bottom: 0.85rem; margin-bottom: 0.85rem; border-radius: 6px; }
         .announcement-card:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+        .announcement-card.is-pinned { background: #fffbf0; border-left: 3px solid #F4B942; padding: 0.6rem 0.75rem; }
+        .ann-pin-label { font-size: 0.72rem; font-weight: 800; color: #7a5800; background: #F4B942; border-radius: 10px; padding: 0.1rem 0.45rem; margin-left: 0.4rem; }
+        .ann-title-row { display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.3rem; }
+        .ann-title-text { font-size: 0.88rem; font-weight: 700; color: #0F3E7D; }
         .ann-meta { font-size: 0.78rem; color: #888; margin-bottom: 0.3rem; display: flex; gap: 0.4rem; align-items: center; }
         .ann-author { font-weight: 700; color: #0F3E7D; }
         .ann-date   { color: #aaa; }
@@ -147,6 +151,22 @@
         .btn-modal-close  { background: #e0e0e0; color: #333; border: none; padding: 0.55rem 1.2rem; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: Arial, sans-serif; }
         .btn-modal-submit { background: #0F3E7D; color: white; border: none; padding: 0.55rem 1.2rem; border-radius: 6px; font-weight: 700; cursor: pointer; font-family: Arial, sans-serif; }
 
+        /* Unsaved changes banner */
+        .unsaved-banner {
+            display: none;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 0.65rem 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.88rem;
+            color: #856404;
+            font-weight: 600;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .unsaved-banner.visible { display: flex; }
+
         @media (max-width: 1024px) { .student-panel-grid { grid-template-columns: 1fr 1fr; } .student-panel-grid .panel-card:last-child { grid-column: 1 / -1; } }
         @media (max-width: 700px)  { .student-panel-grid { grid-template-columns: 1fr; } .student-panel-grid .panel-card:last-child { grid-column: auto; } }
         @media (max-width: 600px)  { .student-name-label { display: none; } .profile-grid { grid-template-columns: 1fr; } .admin-main { padding: 1rem; } .profile-edit-card { padding: 1.5rem 1.25rem; } }
@@ -198,11 +218,10 @@
                     <span class="bar"></span><span class="bar"></span><span class="bar"></span>
                 </button>
                 <div class="ham-dropdown" id="hamDropdown">
-                    <a class="ham-active" onclick="navTo('section-home',       this)">Home</a>
-                    <a                    onclick="navTo('section-profile',     this)">Edit Profile</a>
-                    <a                    onclick="navTo('section-history',     this)">History</a>
-                    <a                    onclick="navTo('section-reservation', this)">Reservation</a>
-                    <!-- Logout now opens confirmation modal -->
+                    <a class="ham-active" onclick="navTo('section-home', this)">Home</a>
+                    <a onclick="navTo('section-profile', this)">Edit Profile</a>
+                    <a onclick="navTo('section-history', this)">History</a>
+                    <a onclick="navTo('section-reservation', this)">Reservation</a>
                     <a class="ham-logout" onclick="confirmStudentLogout()">Logout</a>
                 </div>
             </div>
@@ -241,7 +260,7 @@
                                 <div class="info-row"><span class="info-label">Address</span><span class="info-value" id="dashAddressDisplay">{{ student.address }}</span></div>
                                 <div class="info-row">
                                     <span class="info-label">Sessions Remaining</span>
-                                    <span class="info-value session-count-val {% if student.sitin_count <= 5 %}session-low{% elif student.sitin_count <= 10 %}session-mid{% else %}session-ok{% endif %}">
+                                    <span id="dashSessionCount" class="info-value session-count-val {% if student.sitin_count <= 5 %}session-low{% elif student.sitin_count <= 10 %}session-mid{% else %}session-ok{% endif %}">
                                         {{ student.sitin_count }}
                                     </span>
                                 </div>
@@ -253,7 +272,11 @@
                         <div class="panel-card-header">Announcement</div>
                         <div class="panel-card-body">
                             {% for a in announcements %}
-                            <div class="announcement-card">
+                            <div class="announcement-card {% if a.is_pinned %}is-pinned{% endif %}">
+                                <div class="ann-title-row">
+                                    <span class="ann-title-text">{{ a.title if a.title else '' }}</span>
+                                    {% if a.is_pinned %}<span class="ann-pin-label">📌 Pinned</span>{% endif %}
+                                </div>
                                 <div class="ann-meta"><span class="ann-author">{{ a.posted_by }}</span><span class="ann-date">| {{ a.created_at }}</span></div>
                                 <p class="ann-body">{{ a.content }}</p>
                             </div>
@@ -288,6 +311,12 @@
                 <div class="profile-edit-wrap">
                     <div class="profile-edit-card">
                         <p class="profile-edit-title">Update Your Information</p>
+
+                        <!-- Unsaved changes banner -->
+                        <div class="unsaved-banner" id="unsavedBanner">
+                            ⚠️ You have unsaved changes. Click "Save Changes" to keep them.
+                        </div>
+
                         <div class="avatar-edit-wrap">
                             <img src="{{ student.photo_url if student.photo_url else url_for('static', filename='images/ucmainccslogo.jpg') }}"
                                  alt="Profile" class="avatar-preview-img" id="avatarPreview">
@@ -326,50 +355,41 @@
                                 <div class="form-field full">
                                     <label class="field-label">Course <span style="color:#e74c3c;">*</span></label>
                                     <select name="course" id="f_course" class="field-select" required>
-                                        <optgroup label="College of Computer Studies">
-                                            <option value="BSIT" {% if student.course=='BSIT' %}selected{% endif %}>BS Information Technology</option>
-                                            <option value="BSCS" {% if student.course=='BSCS' %}selected{% endif %}>BS Computer Science</option>
+                                        <optgroup label="🖥️ College of Computer Studies">
+                                            <option value="BSIT"  {% if student.course=='BSIT'  %}selected{% endif %}>BS Information Technology</option>
+                                            <option value="BSCS"  {% if student.course=='BSCS'  %}selected{% endif %}>BS Computer Science</option>
+                                            <option value="BSCoE" {% if student.course=='BSCoE' %}selected{% endif %}>BS Computer Engineering</option>
+                                            <option value="CISCO" {% if student.course=='CISCO' %}selected{% endif %}>CISCO Networking Academy (Module 1-4)</option>
                                         </optgroup>
-                                        <optgroup label="College of Business and Accountancy">
-                                            <option value="BSA"      {% if student.course=='BSA'      %}selected{% endif %}>BS Accountancy</option>
-                                            <option value="BSBA-FM"  {% if student.course=='BSBA-FM'  %}selected{% endif %}>BSBA - Financial Management</option>
-                                            <option value="BSBA-MM"  {% if student.course=='BSBA-MM'  %}selected{% endif %}>BSBA - Marketing Management</option>
-                                            <option value="BSBA-HRM" {% if student.course=='BSBA-HRM' %}selected{% endif %}>BSBA - Human Resource Management</option>
-                                            <option value="BSBA-OM"  {% if student.course=='BSBA-OM'  %}selected{% endif %}>BSBA - Operations Management</option>
-                                            <option value="BSMA"     {% if student.course=='BSMA'     %}selected{% endif %}>BS Management Accounting</option>
-                                            <option value="BSEntrep" {% if student.course=='BSEntrep' %}selected{% endif %}>BS Entrepreneurship</option>
+                                        <optgroup label="⚙️ College of Engineering">
+                                            <option value="BSCE"   {% if student.course=='BSCE'   %}selected{% endif %}>BS Civil Engineering</option>
+                                            <option value="BSME"   {% if student.course=='BSME'   %}selected{% endif %}>BS Mechanical Engineering</option>
+                                            <option value="BSEE"   {% if student.course=='BSEE'   %}selected{% endif %}>BS Electrical Engineering</option>
+                                            <option value="BSIE"   {% if student.course=='BSIE'   %}selected{% endif %}>BS Industrial Engineering</option>
+                                            <option value="BSNAME" {% if student.course=='BSNAME' %}selected{% endif %}>BS Naval Architecture and Marine Engineering</option>
                                         </optgroup>
-                                        <optgroup label="College of Engineering">
-                                            <option value="BSCE"  {% if student.course=='BSCE'  %}selected{% endif %}>BS Civil Engineering</option>
-                                            <option value="BSEE"  {% if student.course=='BSEE'  %}selected{% endif %}>BS Electrical Engineering</option>
-                                            <option value="BSME"  {% if student.course=='BSME'  %}selected{% endif %}>BS Mechanical Engineering</option>
-                                            <option value="BSIE"  {% if student.course=='BSIE'  %}selected{% endif %}>BS Industrial Engineering</option>
-                                            <option value="BSECE" {% if student.course=='BSECE' %}selected{% endif %}>BS Electronics Engineering</option>
+                                        <optgroup label="📚 College of Education">
+                                            <option value="BEED" {% if student.course=='BEED' %}selected{% endif %}>Bachelor of Elementary Education</option>
+                                            <option value="BSED" {% if student.course=='BSED' %}selected{% endif %}>Bachelor of Secondary Education</option>
                                         </optgroup>
-                                        <optgroup label="College of Education">
-                                            <option value="BEED"        {% if student.course=='BEED'        %}selected{% endif %}>Bachelor of Elementary Education</option>
-                                            <option value="BSED-ENG"    {% if student.course=='BSED-ENG'    %}selected{% endif %}>BSED - English</option>
-                                            <option value="BSED-MATH"   {% if student.course=='BSED-MATH'   %}selected{% endif %}>BSED - Mathematics</option>
-                                            <option value="BSED-SCI"    {% if student.course=='BSED-SCI'    %}selected{% endif %}>BSED - Science</option>
-                                            <option value="BSED-FIL"    {% if student.course=='BSED-FIL'    %}selected{% endif %}>BSED - Filipino</option>
-                                            <option value="BSED-SOSHIL" {% if student.course=='BSED-SOSHIL' %}selected{% endif %}>BSED - Social Studies</option>
-                                            <option value="BPED"        {% if student.course=='BPED'        %}selected{% endif %}>BS Physical Education</option>
-                                        </optgroup>
-                                        <optgroup label="Other Colleges">
-                                            <option value="BSN"    {% if student.course=='BSN'    %}selected{% endif %}>BS Nursing</option>
-                                            <option value="ABCOM"  {% if student.course=='ABCOM'  %}selected{% endif %}>AB Communication</option>
-                                            <option value="BSPSY"  {% if student.course=='BSPSY'  %}selected{% endif %}>BS Psychology</option>
-                                            <option value="BSARCH" {% if student.course=='BSARCH' %}selected{% endif %}>BS Architecture</option>
-                                            <option value="BSTM"   {% if student.course=='BSTM'   %}selected{% endif %}>BS Tourism Management</option>
-                                            <option value="BSHM"   {% if student.course=='BSHM'   %}selected{% endif %}>BS Hospitality Management</option>
+                                        <optgroup label="⚖️ College of Criminal Justice Education">
                                             <option value="BSCRIM" {% if student.course=='BSCRIM' %}selected{% endif %}>BS Criminology</option>
-                                            <option value="JD"     {% if student.course=='JD'     %}selected{% endif %}>Juris Doctor</option>
                                         </optgroup>
-                                        <optgroup label="Senior High School">
-                                            <option value="SHS-STEM"  {% if student.course=='SHS-STEM'  %}selected{% endif %}>SHS - STEM</option>
-                                            <option value="SHS-ABM"   {% if student.course=='SHS-ABM'   %}selected{% endif %}>SHS - ABM</option>
-                                            <option value="SHS-HUMSS" {% if student.course=='SHS-HUMSS' %}selected{% endif %}>SHS - HUMSS</option>
-                                            <option value="SHS-TVL"   {% if student.course=='SHS-TVL'   %}selected{% endif %}>SHS - TVL</option>
+                                        <optgroup label="💼 College of Business and Accountancy">
+                                            <option value="BSCOM" {% if student.course=='BSCOM' %}selected{% endif %}>BS Commerce</option>
+                                            <option value="BSA"   {% if student.course=='BSA'   %}selected{% endif %}>BS Accountancy</option>
+                                            <option value="BSCA"  {% if student.course=='BSCA'  %}selected{% endif %}>BS Customs Administration</option>
+                                            <option value="BSHRM" {% if student.course=='BSHRM' %}selected{% endif %}>BS Hotel and Restaurant Management</option>
+                                        </optgroup>
+                                        <optgroup label="🎨 College of Arts and Sciences">
+                                            <option value="ABPOLSCI" {% if student.course=='ABPOLSCI' %}selected{% endif %}>AB Political Science</option>
+                                            <option value="ABENG"    {% if student.course=='ABENG'    %}selected{% endif %}>AB English</option>
+                                            <option value="BSINDPSY" {% if student.course=='BSINDPSY' %}selected{% endif %}>BS Industrial Psychology</option>
+                                        </optgroup>
+                                        <optgroup label="💻 Vocational / Short Courses">
+                                            <option value="COMPSEC" {% if student.course=='COMPSEC' %}selected{% endif %}>Computer Secretarial</option>
+                                            <option value="ECS"     {% if student.course=='ECS'     %}selected{% endif %}>English Communication Skills</option>
+                                            <option value="KOREAN"  {% if student.course=='KOREAN'  %}selected{% endif %}>Conversational Korean</option>
                                         </optgroup>
                                     </select>
                                 </div>
@@ -393,7 +413,7 @@
                             </div>
                             <div class="save-row">
                                 <button type="button" class="btn btn-primary" onclick="confirmSave()">Save Changes</button>
-                                <button type="button" class="btn" style="background:#e0e0e0;color:#333;" onclick="navTo('section-home',null)">Cancel</button>
+                                <button type="button" class="btn" style="background:#e0e0e0;color:#333;" onclick="cancelProfileEdit()">Cancel</button>
                             </div>
                         </form>
                     </div>
@@ -413,6 +433,22 @@
                 </div>
             </div>
 
+            <!-- Unsaved Changes Warning Modal -->
+            <div id="unsavedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9001; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:12px; padding:2rem 2.25rem; max-width:400px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.25); text-align:center;">
+                    <div style="font-size:2rem; margin-bottom:0.75rem;">⚠️</div>
+                    <h3 style="color:#e67e22; margin:0 0 0.6rem; font-size:1.1rem;">Unsaved Changes</h3>
+                    <p style="color:#555; font-size:0.9rem; margin:0 0 1.5rem; line-height:1.5;">
+                        You have unsaved changes on your profile.<br>
+                        Are you sure you want to leave? Your changes will be lost.
+                    </p>
+                    <div style="display:flex; gap:0.75rem; justify-content:center;">
+                        <button id="unsavedLeaveBtn" style="background:#c0392b; color:white; border:none; padding:0.65rem 1.6rem; border-radius:7px; font-size:0.9rem; font-weight:700; cursor:pointer; font-family:Arial,sans-serif;">Leave without saving</button>
+                        <button onclick="closeUnsavedModal()" style="background:#e0e0e0; color:#333; border:none; padding:0.65rem 1.6rem; border-radius:7px; font-size:0.9rem; font-weight:700; cursor:pointer; font-family:Arial,sans-serif;">Stay &amp; Save</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- SUCCESS / ERROR TOASTS -->
             <div id="successToast" style="display:none; position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); background:#1e7e34; color:white; padding:0.85rem 1.8rem; border-radius:8px; font-size:0.92rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,0.2); z-index:9999; white-space:nowrap;">&#10003; Profile updated successfully.</div>
             <div id="errorToast"   style="display:none; position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); background:#c0392b; color:white; padding:0.85rem 1.8rem; border-radius:8px; font-size:0.92rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,0.2); z-index:9999; white-space:nowrap;">&#10007; <span id="errorToastMsg">Something went wrong.</span></div>
@@ -425,14 +461,9 @@
                         <table class="dashboard-table">
                             <thead>
                                 <tr>
-                                    <th>ID Number</th>
-                                    <th>Name</th>
-                                    <th>Sit-in Purpose</th>
-                                    <th>Laboratory</th>
-                                    <th>Login</th>
-                                    <th>Logout</th>
-                                    <th>Date</th>
-                                    <th>Action</th>
+                                    <th>ID Number</th><th>Name</th><th>Sit-in Purpose</th>
+                                    <th>Laboratory</th><th>Login</th><th>Logout</th>
+                                    <th>Date</th><th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -483,17 +514,11 @@
             </div>
             <div class="modal-body" style="text-align:center; padding:2rem 1.5rem;">
                 <div style="font-size:2.5rem; margin-bottom:0.75rem;">&#128274;</div>
-                <p style="color:#333; font-size:0.95rem; margin-bottom:1.5rem;">
-                    Are you sure you want to log out?
-                </p>
+                <p style="color:#333; font-size:0.95rem; margin-bottom:1.5rem;">Are you sure you want to log out?</p>
                 <div style="display:flex; gap:0.8rem; justify-content:center;">
-                    <button type="button" class="btn-modal-close"
-                            onclick="closeStudentLogoutModal()">No, Cancel</button>
+                    <button type="button" class="btn-modal-close" onclick="closeStudentLogoutModal()">No, Cancel</button>
                     <a href="/logout"
-                       style="background:#c0392b; color:white; border:none;
-                              padding:0.55rem 1.4rem; border-radius:6px;
-                              font-weight:700; cursor:pointer; font-family:Arial,sans-serif;
-                              text-decoration:none; display:inline-block;">
+                       style="background:#c0392b; color:white; border:none; padding:0.55rem 1.4rem; border-radius:6px; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; text-decoration:none; display:inline-block;">
                         Yes, Logout
                     </a>
                 </div>
@@ -539,7 +564,84 @@
             'section-reservation': 'Reservation'
         };
 
+        // ══════════════════════════════════════
+        // PROFILE DIRTY TRACKING
+        // ══════════════════════════════════════
+        let profileDirty   = false;   // true when user has changed something without saving
+        let pendingSection = null;    // section to navigate to if user confirms leaving
+
+        // Capture original form values so we can restore them on cancel
+        const _origValues = {};
+
+        function captureOriginalValues() {
+            const ids = ['f_idNumber','f_firstName','f_middleName','f_lastName',
+                         'f_courseLevel','f_course','f_email','f_address','f_newPassword'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) _origValues[id] = el.value;
+            });
+        }
+
+        function restoreOriginalValues() {
+            Object.entries(_origValues).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            });
+            // Reset avatar preview to dashboard image
+            const dash = document.getElementById('dashAvatar');
+            if (dash) document.getElementById('avatarPreview').src = dash.src;
+            // Clear file input
+            const fi = document.getElementById('photoInput');
+            if (fi) fi.value = '';
+        }
+
+        function markDirty() {
+            profileDirty = true;
+            document.getElementById('unsavedBanner').classList.add('visible');
+        }
+
+        function clearDirty() {
+            profileDirty = false;
+            document.getElementById('unsavedBanner').classList.remove('visible');
+        }
+
+        // Attach change listeners to all profile fields
+        window.addEventListener('DOMContentLoaded', function() {
+            captureOriginalValues();
+
+            const watchIds = ['f_idNumber','f_firstName','f_middleName','f_lastName',
+                              'f_courseLevel','f_course','f_email','f_address','f_newPassword'];
+            watchIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input',  markDirty);
+                if (el) el.addEventListener('change', markDirty);
+            });
+            // Also watch file input
+            const photoInput = document.getElementById('photoInput');
+            if (photoInput) photoInput.addEventListener('change', markDirty);
+        });
+
+        // ── Section Navigation (with unsaved-changes guard) ──
         function navTo(sectionId, clickedLink) {
+            // If we're leaving the profile section and have unsaved changes → warn
+            const profileSection = document.getElementById('section-profile');
+            if (profileDirty && profileSection && profileSection.classList.contains('active') && sectionId !== 'section-profile') {
+                pendingSection   = { sectionId, clickedLink };
+                document.getElementById('unsavedLeaveBtn').onclick = function() {
+                    closeUnsavedModal();
+                    restoreOriginalValues();
+                    clearDirty();
+                    _doNavTo(pendingSection.sectionId, pendingSection.clickedLink);
+                    pendingSection = null;
+                };
+                document.getElementById('unsavedModal').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                return;
+            }
+            _doNavTo(sectionId, clickedLink);
+        }
+
+        function _doNavTo(sectionId, clickedLink) {
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
             const target = document.getElementById(sectionId);
             if (target) target.classList.add('active');
@@ -549,8 +651,26 @@
             if (lbl) lbl.textContent = LABELS[sectionId] || sectionId;
             closeAll();
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Capture fresh originals when entering profile
+            if (sectionId === 'section-profile') {
+                captureOriginalValues();
+                clearDirty();
+            }
         }
 
+        function closeUnsavedModal() {
+            document.getElementById('unsavedModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Cancel button on edit profile: restore originals and go home
+        function cancelProfileEdit() {
+            restoreOriginalValues();
+            clearDirty();
+            _doNavTo('section-home', null);
+        }
+
+        // ── Hamburger ──
         const hamBtn  = document.getElementById('hamburgerBtn');
         const hamDrop = document.getElementById('hamDropdown');
         function toggleHam() {
@@ -559,6 +679,7 @@
             document.getElementById('notifDropdown').classList.remove('open');
         }
 
+        // ── Notifications ──
         const notifBtn  = document.getElementById('notifBtn');
         const notifDrop = document.getElementById('notifDropdown');
         const badge     = document.getElementById('notifBadge');
@@ -602,14 +723,20 @@
             if (e.key === 'Escape') {
                 closeAll();
                 closeConfirmModal();
+                closeUnsavedModal();
                 closeFeedbackModal();
                 closeStudentLogoutModal();
             }
         });
 
-        /* ── Student Logout Confirmation ── */
+        // ── Student Logout Confirmation ──
         function confirmStudentLogout() {
             closeAll();
+            // If there are unsaved profile changes, warn before logging out
+            const profileSection = document.getElementById('section-profile');
+            if (profileDirty && profileSection && profileSection.classList.contains('active')) {
+                if (!confirm('You have unsaved profile changes. Log out anyway?')) return;
+            }
             document.getElementById('studentLogoutModal').style.display = 'flex';
             document.body.style.overflow = 'hidden';
         }
@@ -621,20 +748,18 @@
             if (e.target === this) closeStudentLogoutModal();
         });
 
-        /* ── Photo Preview ── */
+        // ── Photo Preview ──
         function previewPhoto(event) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = e => {
                 document.getElementById('avatarPreview').src = e.target.result;
-                const d = document.getElementById('dashAvatar');
-                if (d) d.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        /* ── Save Profile Confirmation ── */
+        // ── Save Profile Confirmation ──
         function confirmSave() {
             const msgBox  = document.getElementById('formValidationMsg');
             const msgText = document.getElementById('formValidationText');
@@ -650,8 +775,8 @@
                     document.getElementById(id).focus(); return;
                 }
             }
-            if (!document.getElementById('f_course').value)      { msgText.textContent = 'Please select a Course.';     msgBox.style.display = 'block'; return; }
-            if (!document.getElementById('f_courseLevel').value)  { msgText.textContent = 'Please select a Year Level.'; msgBox.style.display = 'block'; return; }
+            if (!document.getElementById('f_course').value)     { msgText.textContent = 'Please select a Course.';     msgBox.style.display = 'block'; return; }
+            if (!document.getElementById('f_courseLevel').value) { msgText.textContent = 'Please select a Year Level.'; msgBox.style.display = 'block'; return; }
             const pw = document.getElementById('f_newPassword').value;
             if (pw && pw.length < 6) { msgText.textContent = 'New password must be at least 6 characters.'; msgBox.style.display = 'block'; return; }
             msgBox.style.display = 'none';
@@ -669,11 +794,16 @@
             const saveBtn  = form.querySelector('button.btn-primary');
             const origText = saveBtn.textContent;
             saveBtn.textContent = 'Saving…'; saveBtn.disabled = true;
+
             fetch('/student/update-profile', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 saveBtn.textContent = origText; saveBtn.disabled = false;
                 if (data.success) {
+                    // Mark as saved: capture new state and clear dirty
+                    clearDirty();
+                    captureOriginalValues();
+
                     if (data.fullName) {
                         const nl = document.querySelector('.student-name-label');
                         if (nl) nl.textContent = data.fullName;
@@ -704,7 +834,7 @@
             }
         }
 
-        /* ── Feedback Modal ── */
+        // ── Feedback Modal ──
         function openFeedbackModal(sessionId) {
             document.getElementById('feedbackSessionId').value    = sessionId;
             document.getElementById('feedbackText').value         = '';
