@@ -103,7 +103,7 @@ def register_page():
 @app.route('/login', methods=['GET'])
 def login_page():
     if session.get('student_id'):
-        return redirect('/dashboard')
+        return redirect('/dashboard?loggedin=1')
     if session.get('admin'):
         return redirect('/admin/dashboard')
     return render_template('login.html')
@@ -118,36 +118,50 @@ def register():
     first_name   = request.form.get('firstName', '').strip()
     last_name    = request.form.get('lastName', '').strip()
     middle_name  = request.form.get('middleName', '').strip()
-    course_level = request.form.get('courseLevel', '').strip()
+    course_level = request.form.get('yearLevel', '').strip()
     password     = request.form.get('password', '').strip()
     confirm_pass = request.form.get('confirmPassword', '').strip()
     email        = request.form.get('email', '').strip()
     course       = request.form.get('course', '').strip()
     address      = request.form.get('address', '').strip()
 
-    if not id_number:
-        return render_template_string(ERROR_PAGE, message="ID Number is required!", back_page="/register.html")
+    # Keep all submitted values so the form stays filled on error
+    form_data = {
+        'idNumber':   id_number,
+        'firstName':  first_name,
+        'lastName':   last_name,
+        'middleName': middle_name,
+        'yearLevel':  course_level,
+        'email':      email,
+        'course':     course,
+        'address':    address,
+    }
+
+    def render_error(msg):
+        return render_template('register.html', error=msg, form_data=form_data)
+
+    if not id_number.isdigit():
+        return render_error("ID Number must contain numbers only.")
+    if len(id_number) != 8:
+        return render_error("ID Number must be exactly 8 digits.")
     if len(password) < 6:
-        return render_template_string(ERROR_PAGE, message="Password must be at least 6 characters!", back_page="/register.html")
+        return render_error("Password must be at least 6 characters.")
     if password != confirm_pass:
-        return render_template_string(ERROR_PAGE, message="Passwords do not match!", back_page="/register.html")
+        return render_error("Passwords do not match.")
     if '@' not in email:
-        return render_template_string(ERROR_PAGE, message="Invalid email format!", back_page="/register.html")
+        return render_error("Invalid email format.")
     if course_level not in ['1', '2', '3', '4']:
-        return render_template_string(ERROR_PAGE, message="Please select a valid course level!", back_page="/register.html")
+        return render_error("Please select a valid year level.")
     if not course:
-        return render_template_string(ERROR_PAGE, message="Please select a course!", back_page="/register.html")
+        return render_error("Please select a course.")
     if get_student_by_id(id_number):
-        return render_template_string(ERROR_PAGE, message="ID Number already registered!", back_page="/register.html")
+        return render_error("ID Number already registered! Please use a different ID or login instead.")
 
     sitin_count = get_sitin_count(course)
     register_student(id_number, first_name, last_name, middle_name,
                      course_level, password, email, course, address, sitin_count)
 
-    return render_template_string(SUCCESS_PAGE,
-        title="Registration Successful!",
-        message=f"Welcome, {first_name}! You have {sitin_count} sit-in sessions this semester.",
-        next_page="/login")
+    return redirect('/login?registered=1')
 
 
 # ══════════════════════════════════════════
@@ -162,13 +176,13 @@ def login():
     if admin:
         session['admin']      = True
         session['admin_name'] = id_number
-        return redirect('/admin/dashboard')
+        return redirect('/admin/dashboard?loggedin=1')
 
     student = login_student(id_number, password)
     if student:
         session['student_id']   = student['idNumber']
         session['student_name'] = f"{student['firstName']} {student['lastName']}"
-        return redirect('/dashboard')
+        return redirect('/dashboard?loggedin=1')
 
     return render_template('login.html', error="Invalid ID Number or Password!")
 
@@ -224,11 +238,24 @@ def student_update_profile():
         email        = field('email',       current.get('email', ''))
         address      = request.form.get('address', '').strip() or None
         course       = field('course',      current.get('course') or '')
-        course_level = field('courseLevel', current.get('courseLevel') or '')
+        course_level = field('yearLevel', current.get('yearLevel') or '')
         new_password = request.form.get('newPassword', '').strip()
 
         submitted_middle = request.form.get('middleName', '').strip()
         middle_name = submitted_middle if submitted_middle else None
+
+        # Validate ID number format
+        new_id = request.form.get('idNumber', '').strip()
+        if not new_id.isdigit():
+            return jsonify({'success': False, 'message': 'ID Number must contain numbers only.'})
+        if len(new_id) != 8:
+            return jsonify({'success': False, 'message': 'ID Number must be exactly 8 digits.'})
+
+        # Check if new ID already exists (and it's not their own current ID)
+        if new_id != id_number:
+            existing = get_student_by_id(new_id)
+            if existing:
+                return jsonify({'success': False, 'message': 'That ID Number is already taken by another student!'})
 
         if '@' not in email:
             return jsonify({'success': False, 'message': 'Invalid email format.'})
@@ -272,7 +299,7 @@ def student_update_profile():
             conn.execute('''
                 UPDATE students
                 SET firstName=?, lastName=?, middleName=?,
-                    email=?, address=?, course=?, courseLevel=?,
+                    email=?, address=?, course=?, yearLevel=?,
                     password=?, sitin_count=?,
                     photo_url=COALESCE(?, photo_url)
                 WHERE idNumber=?
@@ -283,7 +310,7 @@ def student_update_profile():
             conn.execute('''
                 UPDATE students
                 SET firstName=?, lastName=?, middleName=?,
-                    email=?, address=?, course=?, courseLevel=?,
+                    email=?, address=?, course=?, yearLevel=?,
                     sitin_count=?,
                     photo_url=COALESCE(?, photo_url)
                 WHERE idNumber=?
@@ -297,7 +324,16 @@ def student_update_profile():
         session['student_name'] = f"{first_name} {last_name}"
         full_name = f"{first_name} {middle_name} {last_name}" if middle_name else f"{first_name} {last_name}"
 
-        return jsonify({'success': True, 'fullName': full_name, 'photoUrl': photo_url})
+        return jsonify({
+            'success':    True,
+            'fullName':   full_name,
+            'photoUrl':   photo_url,
+            'course':     course,
+            'yearLevel':  course_level,
+            'email':      email,
+            'address':    address or '',
+            'sitinCount': new_sitin_count
+        })
 
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -476,7 +512,7 @@ def admin_edit_student():
     middle_name  = request.form.get('middleName', '').strip() or None
     email        = request.form.get('email', '').strip()
     course       = request.form.get('course', '').strip()
-    course_level = request.form.get('courseLevel', '').strip()
+    course_level = request.form.get('yearLevel', '').strip()
     address      = request.form.get('address', '').strip() or None
     sitin_count  = request.form.get('sitin_count', '').strip()
     sitin_count  = int(sitin_count) if sitin_count else get_sitin_count(course)
@@ -485,7 +521,7 @@ def admin_edit_student():
     conn.execute(
         '''UPDATE students
            SET firstName=?, lastName=?, middleName=?,
-               email=?, course=?, courseLevel=?, address=?, sitin_count=?
+               email=?, course=?, yearLevel=?, address=?, sitin_count=?
            WHERE idNumber=?''',
         (first_name, last_name, middle_name, email,
          course, course_level, address, sitin_count, id_number)

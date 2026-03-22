@@ -27,7 +27,7 @@ def init_db():
             firstName   TEXT NOT NULL,
             lastName    TEXT NOT NULL,
             middleName  TEXT,
-            courseLevel TEXT,
+            yearLevel   TEXT,
             password    TEXT NOT NULL,
             email       TEXT NOT NULL,
             course      TEXT,
@@ -93,6 +93,13 @@ def init_db():
         except Exception:
             pass
 
+    # Rename courseLevel to yearLevel if it still exists
+    try:
+        conn.execute("ALTER TABLE students RENAME COLUMN courseLevel TO yearLevel")
+        conn.commit()
+    except Exception:
+        pass
+
     existing_admin = conn.execute("SELECT * FROM admin WHERE username = 'admin'").fetchone()
     if not existing_admin:
         conn.execute("INSERT INTO admin (username, password) VALUES (?, ?)", ('admin', 'admin123'))
@@ -120,15 +127,15 @@ def get_student_by_id(id_number):
     return student
 
 def register_student(idNumber, firstName, lastName, middleName,
-                     courseLevel, password, email, course, address, sitin_count):
+                     yearLevel, password, email, course, address, sitin_count):
     hashed = hash_password(password)
     conn = get_db()
     conn.execute("""
         INSERT INTO students
-        (idNumber, firstName, lastName, middleName, courseLevel,
+        (idNumber, firstName, lastName, middleName, yearLevel,
          password, email, course, address, sitin_count)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (idNumber, firstName, lastName, middleName, courseLevel,
+    """, (idNumber, firstName, lastName, middleName, yearLevel,
           hashed, email, course, address, sitin_count))
     conn.commit()
     conn.close()

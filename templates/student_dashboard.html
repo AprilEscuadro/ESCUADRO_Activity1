@@ -232,6 +232,18 @@
         <aside class="admin-sidebar" aria-hidden="true"></aside>
         <main class="admin-main">
 
+                {% if request.args.get('loggedin') %}
+                <div id="loginSuccessToast" style="position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); background:#1e7e34; color:white; padding:0.85rem 1.8rem; border-radius:8px; font-size:0.92rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,0.2); z-index:9999; white-space:nowrap;">
+                    ✓ Logged in successfully!
+                </div>
+                <script>
+                    setTimeout(() => {
+                        const t = document.getElementById('loginSuccessToast');
+                        if (t) t.style.display = 'none';
+                    }, 3000);
+                </script>
+                {% endif %}
+
             <p class="page-breadcrumb">Dashboard &rsaquo; <span id="activeLabel">Home</span></p>
 
             <!-- HOME -->
@@ -254,7 +266,7 @@
                                 <div class="info-row"><span class="info-label">Course</span><span class="info-value" id="dashCourseDisplay">{{ student.course }}</span></div>
                                 <div class="info-row">
                                     <span class="info-label">Year</span>
-                                    <span class="info-value">{{ student.courseLevel }}{% if student.courseLevel == '1' %}st{% elif student.courseLevel == '2' %}nd{% elif student.courseLevel == '3' %}rd{% else %}th{% endif %}</span>
+                                    <span class="info-value" id="dashYearDisplay">{{ student.yearLevel }}{% if student.yearLevel == '1' %}st{% elif student.yearLevel == '2' %}nd{% elif student.yearLevel == '3' %}rd{% else %}th{% endif %}</span>
                                 </div>
                                 <div class="info-row"><span class="info-label">Email</span><span class="info-value" id="dashEmailDisplay">{{ student.email }}</span></div>
                                 <div class="info-row"><span class="info-label">Address</span><span class="info-value" id="dashAddressDisplay">{{ student.address }}</span></div>
@@ -328,7 +340,11 @@
                             <div class="profile-grid">
                                 <div class="form-field full">
                                     <label class="field-label">ID Number <span style="color:#e74c3c;">*</span></label>
-                                    <input type="text" name="idNumber" id="f_idNumber" class="field-input" required value="{{ student.idNumber }}">
+                                    <input type="text" name="idNumber" id="f_idNumber" class="field-input" required
+                                        value="{{ student.idNumber }}"
+                                        maxlength="8"
+                                        inputmode="numeric"
+                                        oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                                 </div>
                                 <div class="form-field full">
                                     <label class="field-label">First Name <span style="color:#e74c3c;">*</span></label>
@@ -341,16 +357,6 @@
                                 <div class="form-field full">
                                     <label class="field-label">Last Name <span style="color:#e74c3c;">*</span></label>
                                     <input type="text" name="lastName" id="f_lastName" class="field-input" required value="{{ student.lastName }}">
-                                </div>
-                                <div class="form-field full">
-                                    <label class="field-label">Year Level <span style="color:#e74c3c;">*</span></label>
-                                    <select name="courseLevel" id="f_courseLevel" class="field-select" required>
-                                        {% for yr in ['1','2','3','4'] %}
-                                        <option value="{{ yr }}" {% if student.courseLevel == yr %}selected{% endif %}>
-                                            {{ yr }}{% if yr=='1' %}st{% elif yr=='2' %}nd{% elif yr=='3' %}rd{% else %}th{% endif %} Year
-                                        </option>
-                                        {% endfor %}
-                                    </select>
                                 </div>
                                 <div class="form-field full">
                                     <label class="field-label">Course <span style="color:#e74c3c;">*</span></label>
@@ -391,6 +397,16 @@
                                             <option value="ECS"     {% if student.course=='ECS'     %}selected{% endif %}>English Communication Skills</option>
                                             <option value="KOREAN"  {% if student.course=='KOREAN'  %}selected{% endif %}>Conversational Korean</option>
                                         </optgroup>
+                                    </select>
+                                </div>
+                                                                <div class="form-field full">
+                                    <label class="field-label">Year Level <span style="color:#e74c3c;">*</span></label>
+                                    <select name="yearLevel" id="f_yearLevel" class="field-select" required>
+                                        {% for yr in ['1','2','3','4'] %}
+                                        <option value="{{ yr }}" {% if student.yearLevel == yr %}selected{% endif %}>
+                                            {{ yr }}{% if yr=='1' %}st{% elif yr=='2' %}nd{% elif yr=='3' %}rd{% else %}th{% endif %} Year
+                                        </option>
+                                        {% endfor %}
                                     </select>
                                 </div>
                                 <div class="form-field full">
@@ -575,7 +591,7 @@
 
         function captureOriginalValues() {
             const ids = ['f_idNumber','f_firstName','f_middleName','f_lastName',
-                         'f_courseLevel','f_course','f_email','f_address','f_newPassword'];
+                         'f_yearLevel','f_course','f_email','f_address','f_newPassword'];
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) _origValues[id] = el.value;
@@ -610,7 +626,7 @@
             captureOriginalValues();
 
             const watchIds = ['f_idNumber','f_firstName','f_middleName','f_lastName',
-                              'f_courseLevel','f_course','f_email','f_address','f_newPassword'];
+                              'f_yearLevel','f_course','f_email','f_address','f_newPassword'];
             watchIds.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('input',  markDirty);
@@ -769,6 +785,13 @@
                 ['f_firstName', 'First Name is required.'],
                 ['f_email',     'Email is required.'],
             ];
+            const idVal = document.getElementById('f_idNumber').value.trim();
+            if (!/^\d{8}$/.test(idVal)) {
+                msgText.textContent = 'ID Number must be exactly 8 digits, numbers only.';
+                msgBox.style.display = 'block';
+                document.getElementById('f_idNumber').focus();
+                return;
+            }
             for (const [id, msg] of checks) {
                 if (!document.getElementById(id).value.trim()) {
                     msgText.textContent = msg; msgBox.style.display = 'block';
@@ -776,7 +799,7 @@
                 }
             }
             if (!document.getElementById('f_course').value)     { msgText.textContent = 'Please select a Course.';     msgBox.style.display = 'block'; return; }
-            if (!document.getElementById('f_courseLevel').value) { msgText.textContent = 'Please select a Year Level.'; msgBox.style.display = 'block'; return; }
+            if (!document.getElementById('f_yearLevel').value) { msgText.textContent = 'Please select a Year Level.'; msgBox.style.display = 'block'; return; }
             const pw = document.getElementById('f_newPassword').value;
             if (pw && pw.length < 6) { msgText.textContent = 'New password must be at least 6 characters.'; msgBox.style.display = 'block'; return; }
             msgBox.style.display = 'none';
@@ -800,24 +823,59 @@
             .then(data => {
                 saveBtn.textContent = origText; saveBtn.disabled = false;
                 if (data.success) {
-                    // Mark as saved: capture new state and clear dirty
                     clearDirty();
                     captureOriginalValues();
 
+                    // Update name
                     if (data.fullName) {
                         const nl = document.querySelector('.student-name-label');
                         if (nl) nl.textContent = data.fullName;
                         const nd = document.getElementById('dashNameDisplay');
                         if (nd) nd.textContent = data.fullName;
                     }
+
+                    // Update photo
                     if (data.photoUrl) {
                         const src = data.photoUrl + '?t=' + Date.now();
                         document.getElementById('avatarPreview').src = src;
                         const da = document.getElementById('dashAvatar');
                         if (da) da.src = src;
                     }
+
+                    // Update course
+                    const dashCourse = document.getElementById('dashCourseDisplay');
+                    if (dashCourse) dashCourse.textContent = data.course;
+
+                    // Update email
+                    const dashEmail = document.getElementById('dashEmailDisplay');
+                    if (dashEmail) dashEmail.textContent = data.email;
+
+                    // Update address
+                    const dashAddress = document.getElementById('dashAddressDisplay');
+                    if (dashAddress) dashAddress.textContent = data.address || '';
+
+                    // Update year level
+                    const suffixes = {'1':'st','2':'nd','3':'rd','4':'th'};
+                    const yearText = data.yearLevel + (suffixes[data.yearLevel] || 'th');
+                    const dashYear = document.getElementById('dashYearDisplay');
+                    if (dashYear) dashYear.textContent = yearText;
+
+                    // Update sessions remaining
+                    if (data.sitinCount !== undefined) {
+                        const dashSession = document.getElementById('dashSessionCount');
+                        if (dashSession) {
+                            dashSession.textContent = data.sitinCount;
+                            dashSession.className = 'info-value session-count-val';
+                            if (data.sitinCount <= 5)       dashSession.classList.add('session-low');
+                            else if (data.sitinCount <= 10) dashSession.classList.add('session-mid');
+                            else                            dashSession.classList.add('session-ok');
+                        }
+                    }
+
                     showToast('success');
-                } else { showToast('error', data.message); }
+                } else {
+                    showToast('error', data.message);
+                }
             })
             .catch(() => { saveBtn.textContent = origText; saveBtn.disabled = false; showToast('error'); });
         }

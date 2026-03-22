@@ -41,6 +41,12 @@
                 <h1>Login</h1>
                 <p class="form-subtitle">Enter your credentials to continue</p>
 
+                {% if request.args.get('registered') %}
+                <div style="background:#d4edda; border-left:4px solid #1e7e34; color:#1e7e34; padding:0.75rem 1rem; border-radius:6px; margin-bottom:1rem; font-size:0.9rem; font-weight:600;">
+                    ✓ Registration successful! You can now log in.
+                </div>
+                {% endif %}
+
                 {% if error %}
                 <div class="error-message">
                     ⚠️ {{ error }}
