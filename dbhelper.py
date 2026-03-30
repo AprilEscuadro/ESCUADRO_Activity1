@@ -76,6 +76,8 @@ def init_db():
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             idNumber    TEXT NOT NULL,
             session_id  INTEGER,
+            lab         TEXT,
+            rating      INTEGER DEFAULT 0,
             message     TEXT NOT NULL,
             created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (idNumber) REFERENCES students(idNumber),
@@ -87,6 +89,8 @@ def init_db():
     for migration in [
         "ALTER TABLE students ADD COLUMN photo_url TEXT",
         "ALTER TABLE announcements ADD COLUMN is_pinned INTEGER DEFAULT 0",
+        "ALTER TABLE feedback ADD COLUMN lab TEXT",
+        "ALTER TABLE feedback ADD COLUMN rating INTEGER DEFAULT 0",
     ]:
         try:
             conn.execute(migration)
@@ -288,3 +292,43 @@ def get_purpose_counts():
     """).fetchall()
     conn.close()
     return {row['purpose']: row['cnt'] for row in rows}
+
+
+# ══════════════════════════════════════════
+# FEEDBACK QUERIES
+# ══════════════════════════════════════════
+def save_feedback(id_number, session_id, lab, message, rating=0):
+    conn = get_db()
+    conn.execute("""
+        INSERT INTO feedback (idNumber, session_id, lab, rating, message)
+        VALUES (?, ?, ?, ?, ?)
+    """, (id_number, session_id, lab, rating, message))
+    conn.commit()
+    conn.close()
+
+def get_all_feedback():
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT f.id,
+               f.idNumber,
+               f.session_id,
+               COALESCE(f.lab, s.lab, '—') AS lab,
+               COALESCE(f.rating, 0)        AS rating,
+               f.message,
+               DATE(f.created_at)           AS date,
+               f.created_at
+        FROM feedback f
+        LEFT JOIN sitin_sessions s ON f.session_id = s.id
+        ORDER BY f.created_at DESC
+    """).fetchall()
+    conn.close()
+    return rows
+
+def has_feedback(session_id):
+    """Check if feedback already submitted for a session."""
+    conn = get_db()
+    row = conn.execute(
+        "SELECT id FROM feedback WHERE session_id = ?", (session_id,)
+    ).fetchone()
+    conn.close()
+    return row is not None

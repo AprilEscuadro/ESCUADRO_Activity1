@@ -8,6 +8,7 @@ from dbhelper import (
     get_all_announcements, add_announcement,
     edit_announcement, delete_announcement, toggle_pin_announcement,
     get_purpose_counts,
+    save_feedback, get_all_feedback, has_feedback,
 )
 
 import sqlite3 as _sqlite3
@@ -125,7 +126,6 @@ def register():
     course       = request.form.get('course', '').strip()
     address      = request.form.get('address', '').strip()
 
-    # Keep all submitted values so the form stays filled on error
     form_data = {
         'idNumber':   id_number,
         'firstName':  first_name,
@@ -202,11 +202,65 @@ def dashboard():
 
     sessions      = get_student_sessions(session['student_id'])
     announcements = get_all_announcements()
+
+    # Build set of session IDs that already have feedback
+    submitted_ids = set()
+    for s in sessions:
+        if has_feedback(s['id']):
+            submitted_ids.add(s['id'])
+
     return render_template('student_dashboard.html',
         student=student,
         sessions=sessions,
-        announcements=announcements
+        announcements=announcements,
+        submitted_feedback_ids=submitted_ids
     )
+
+
+# ══════════════════════════════════════════
+# ROUTE — STUDENT SUBMIT FEEDBACK (AJAX)
+# ══════════════════════════════════════════
+@app.route('/student/submit-feedback', methods=['POST'])
+def student_submit_feedback():
+    if not session.get('student_id'):
+        return jsonify({'success': False, 'message': 'Not logged in.'}), 401
+
+    id_number  = session['student_id']
+    session_id = request.form.get('session_id', '').strip()
+    message    = request.form.get('message', '').strip()
+    rating_raw = request.form.get('rating', '0').strip()
+
+    try:
+        rating = int(rating_raw)
+        if rating < 0 or rating > 5:
+            rating = 0
+    except (ValueError, TypeError):
+        rating = 0
+
+    if not session_id or not message:
+        return jsonify({'success': False, 'message': 'Feedback message is required.'})
+
+    # Prevent duplicate feedback
+    if has_feedback(int(session_id)):
+        return jsonify({'success': False, 'message': 'You already submitted feedback for this session.'})
+
+    # Get the lab from the session
+    import sqlite3 as _sq
+    conn = _sq.connect('database.db')
+    conn.row_factory = _sq.Row
+    row = conn.execute(
+        "SELECT lab FROM sitin_sessions WHERE id = ? AND idNumber = ?",
+        (session_id, id_number)
+    ).fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({'success': False, 'message': 'Session not found.'})
+
+    lab = row['lab']
+    save_feedback(id_number, int(session_id), lab, message, rating)
+
+    return jsonify({'success': True, 'message': 'Feedback submitted successfully!'})
 
 
 # ══════════════════════════════════════════
@@ -244,14 +298,12 @@ def student_update_profile():
         submitted_middle = request.form.get('middleName', '').strip()
         middle_name = submitted_middle if submitted_middle else None
 
-        # Validate ID number format
         new_id = request.form.get('idNumber', '').strip()
         if not new_id.isdigit():
             return jsonify({'success': False, 'message': 'ID Number must contain numbers only.'})
         if len(new_id) != 8:
             return jsonify({'success': False, 'message': 'ID Number must be exactly 8 digits.'})
 
-        # Check if new ID already exists (and it's not their own current ID)
         if new_id != id_number:
             existing = get_student_by_id(new_id)
             if existing:
@@ -262,7 +314,6 @@ def student_update_profile():
         if new_password and len(new_password) < 6:
             return jsonify({'success': False, 'message': 'Password must be at least 6 characters.'})
 
-        # ── FIXED: preserve sitin_count, only reset if CCS category changes ──
         old_course = current.get('course', '')
         old_is_ccs = old_course in CCS_COURSES
         new_is_ccs = course in CCS_COURSES
@@ -360,12 +411,14 @@ def admin_dashboard():
     sessions       = get_all_sessions()
     announcements  = get_all_announcements()
     purpose_counts = get_purpose_counts()
+    feedback_list  = get_all_feedback()
 
     return render_template('admin_dashboard.html',
         students=students,
         sessions=sessions,
         announcements=announcements,
-        purpose_counts=purpose_counts
+        purpose_counts=purpose_counts,
+        feedback_list=feedback_list
     )
 
 

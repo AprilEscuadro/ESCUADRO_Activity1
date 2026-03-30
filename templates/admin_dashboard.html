@@ -161,6 +161,9 @@
         .pg-btn:disabled { background: #f5f5f5; color: #ccc; border-color: #eee; cursor: not-allowed; }
         .pg-dots { color: #aaa; font-size: 0.82rem; padding: 0 2px; }
 
+        /* ── Star display (admin feedback table) ── */
+        .star-display { white-space: nowrap; }
+
         @media (max-width: 900px) { .admin-dashboard-grid { grid-template-columns: 1fr; } .records-charts-row { grid-template-columns: 1fr; } .admin-main { padding: 1.25rem; } }
         @media (max-width: 600px) { .admin-name-display { display: none; } }
     </style>
@@ -382,7 +385,6 @@
                             </tbody>
                         </table>
                     </div>
-                    <!-- ✅ SIT-IN PAGINATION -->
                     <div class="pagination-wrap">
                         <div class="pagination-info" id="sitinInfo"></div>
                         <div class="pagination-btns" id="sitinPgBtns"></div>
@@ -477,10 +479,66 @@
                 </div>
             </div>
 
-            <!-- FEEDBACK -->
+            <!-- FEEDBACK REPORTS -->
             <div id="section-feedback" class="page-section">
                 <h2 class="admin-section-title">Feedback Reports</h2>
-                <div class="admin-card"><p class="no-data" style="padding:3rem 0;">No feedback data available yet.</p></div>
+                <div class="admin-card">
+                    <div class="table-top-bar">
+                        <div class="table-top-right" style="margin-left:auto;">
+                            <input type="text" id="feedbackSearch" placeholder="Search..." onkeyup="filterFeedbackTable()" class="table-search-input">
+                        </div>
+                    </div>
+                    <div class="table-scroll">
+                        <table class="dashboard-table" id="feedbackTable">
+                            <thead>
+                                <tr>
+                                    <th>Student ID Number</th>
+                                    <th>Name</th>
+                                    <th>Laboratory</th>
+                                    <th>Rating</th>
+                                    <th>Message</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="feedbackTableBody">
+                                {% for f in feedback_list %}
+                                <tr>
+                                    <td>{{ f.idNumber }}</td>
+                                    <td>
+                                        {% set found = namespace(name='—') %}
+                                        {% for s in students %}
+                                            {% if s.idNumber == f.idNumber %}
+                                                {% set found.name = s.firstName ~ ' ' ~ s.lastName %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ found.name }}
+                                    </td>
+                                    <td>{{ f.lab }}</td>
+                                    <td>
+                                        <span class="star-display" title="{{ f.rating }} out of 5">
+                                            {% for i in range(1, 6) %}
+                                                {% if i <= f.rating %}
+                                                    <span style="color:#F4B942; font-size:1rem;">★</span>
+                                                {% else %}
+                                                    <span style="color:#ddd; font-size:1rem;">★</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </span>
+                                    </td>
+                                    <td style="max-width:300px; white-space:normal; word-break:break-word;">{{ f.message }}</td>
+                                    <td style="white-space:nowrap;">{{ f.date }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="6" class="no-data">No feedback submitted yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-wrap">
+                        <div class="pagination-info" id="feedbackInfo"></div>
+                        <div class="pagination-btns" id="feedbackPgBtns"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- RECOMMENDATION -->
@@ -776,24 +834,27 @@
         function doSearchMain() { const q = document.getElementById('searchInputMain').value.trim().toLowerCase(); document.querySelectorAll('#searchResultBody .search-row').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'; }); }
 
         // ══════════════════════════════════════
-        // ✅ PAGINATION SYSTEM — Records, Students, Sit-in
+        // PAGINATION SYSTEM
         // ══════════════════════════════════════
         const PER_PAGE = 10;
 
-        let allRecordsRows  = [], allStudentsRows = [], allSitinRows  = [];
-        let recordsPage     = 1,  studentsPage    = 1,  sitinPage     = 1;
-        let recordsFiltered = [], studentsFiltered = [], sitinFiltered = [];
+        let allRecordsRows  = [], allStudentsRows  = [], allSitinRows    = [], allFeedbackRows  = [];
+        let recordsPage     = 1,  studentsPage     = 1,  sitinPage       = 1,  feedbackPage     = 1;
+        let recordsFiltered = [], studentsFiltered = [], sitinFiltered   = [], feedbackFiltered = [];
 
         function initPagination() {
-            allRecordsRows  = [...document.querySelectorAll('#recordsTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
-            allStudentsRows = [...document.querySelectorAll('#studentTable tbody tr')].filter(r => !r.querySelector('td[colspan]'));
-            allSitinRows    = [...document.querySelectorAll('#sitinTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
+            allRecordsRows   = [...document.querySelectorAll('#recordsTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
+            allStudentsRows  = [...document.querySelectorAll('#studentTable tbody tr')].filter(r => !r.querySelector('td[colspan]'));
+            allSitinRows     = [...document.querySelectorAll('#sitinTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
+            allFeedbackRows  = [...document.querySelectorAll('#feedbackTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
             recordsFiltered  = [...allRecordsRows];
             studentsFiltered = [...allStudentsRows];
             sitinFiltered    = [...allSitinRows];
+            feedbackFiltered = [...allFeedbackRows];
             renderTable('records');
             renderTable('students');
             renderTable('sitin');
+            renderTable('feedback');
         }
 
         function renderTable(type) {
@@ -801,6 +862,7 @@
                 records:  { filtered: recordsFiltered,  page: recordsPage,  allRows: allRecordsRows,  infoId: 'recordsInfo',  pgId: 'recordsPgBtns'  },
                 students: { filtered: studentsFiltered, page: studentsPage, allRows: allStudentsRows, infoId: 'studentsInfo', pgId: 'studentsPgBtns' },
                 sitin:    { filtered: sitinFiltered,    page: sitinPage,    allRows: allSitinRows,    infoId: 'sitinInfo',    pgId: 'sitinPgBtns'    },
+                feedback: { filtered: feedbackFiltered, page: feedbackPage, allRows: allFeedbackRows, infoId: 'feedbackInfo', pgId: 'feedbackPgBtns' },
             }[type];
             if (!cfg) return;
 
@@ -824,6 +886,7 @@
                 if (type === 'records')  recordsPage  = p;
                 if (type === 'students') studentsPage = p;
                 if (type === 'sitin')    sitinPage    = p;
+                if (type === 'feedback') feedbackPage = p;
                 renderTable(type);
             }
 
@@ -836,17 +899,14 @@
             }
 
             makeBtn('&#8592;', () => setPage(page - 1), false, page === 1);
-
             const delta = 2, range = [];
             for (let i = Math.max(1, page - delta); i <= Math.min(pages, page + delta); i++) range.push(i);
             if (range[0] > 1) { makeBtn('1', () => setPage(1), false, false); if (range[0] > 2) makeBtn('', null, false, false, true); }
             range.forEach(i => makeBtn(i, () => setPage(i), i === page, false));
             if (range[range.length-1] < pages) { if (range[range.length-1] < pages - 1) makeBtn('', null, false, false, true); makeBtn(pages, () => setPage(pages), false, false); }
-
             makeBtn('&#8594;', () => setPage(page + 1), false, page === pages);
         }
 
-        // ✅ All 3 search functions work across ALL pages
         function filterStudentTable() {
             const q = document.getElementById('studentSearch').value.toLowerCase().trim();
             studentsFiltered = q ? allStudentsRows.filter(r => r.textContent.toLowerCase().includes(q)) : [...allStudentsRows];
@@ -861,6 +921,11 @@
             const q = document.getElementById('sitinSearch').value.toLowerCase().trim();
             sitinFiltered = q ? allSitinRows.filter(r => r.textContent.toLowerCase().includes(q)) : [...allSitinRows];
             sitinPage = 1; renderTable('sitin');
+        }
+        function filterFeedbackTable() {
+            const q = document.getElementById('feedbackSearch').value.toLowerCase().trim();
+            feedbackFiltered = q ? allFeedbackRows.filter(r => r.textContent.toLowerCase().includes(q)) : [...allFeedbackRows];
+            feedbackPage = 1; renderTable('feedback');
         }
 
         function openSearchModal() { document.getElementById('searchModalInput').value = ''; document.getElementById('searchModalMsg').style.display = 'none'; document.getElementById('searchModalBtn').disabled = false; document.getElementById('searchModalBtn').textContent = 'Search'; document.getElementById('searchModal').style.display = 'flex'; document.body.style.overflow = 'hidden'; setTimeout(() => document.getElementById('searchModalInput').focus(), 100); }
