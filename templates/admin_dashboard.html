@@ -6,7 +6,38 @@
     <title>Admin Dashboard - CCS Sit-in System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
+        body {
+            margin: 0;
+            padding-top: 70px;
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        footer {
+            margin-top: auto;
+            background-color: #0F3E7D;
+            padding: 1rem 0;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+            color: white;
+            font-size: 0.85rem;
+        }
+        .page-breadcrumb {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 1.4rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid #e5e5e5;
+        }
+        .page-breadcrumb span {
+            color: #0F3E7D;
+            font-weight: 600;
+        }
         .page-section        { display: none; }
         .page-section.active { display: block; }
 
@@ -30,9 +61,9 @@
         .ham-dropdown a.ham-logout { color: #c0392b; border-top: 2px solid #f0f0f0; font-weight: 700; }
         .ham-dropdown a.ham-logout:hover { background: #fdecea; }
 
-        .admin-wrapper { display: block; }
+        .admin-wrapper { display: block; flex: 1; }
         .admin-sidebar { display: none !important; }
-        .admin-main { padding: 2rem 2.5rem; background: #f5f7fa; min-height: calc(100vh - 70px); }
+        .admin-main { padding: 2rem 2.5rem; background: #f5f7fa; min-height: 100%; }
         .admin-section-title { font-size: 1.2rem; font-weight: 800; color: #0F3E7D; margin: 0 0 1.4rem; padding-bottom: 0.6rem; border-bottom: 2px solid #e4ecf8; }
         .admin-dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: stretch; }
         .admin-stat-panel, .admin-ann-panel { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); overflow: hidden; height: 100%; }
@@ -40,7 +71,9 @@
         .stat-header { background: linear-gradient(135deg, #0F3E7D, #1a6fbc); color: white; }
         .ann-header  { background: linear-gradient(135deg, #0F3E7D, #1a6fbc); color: white; }
         .admin-panel-body { padding: 1.25rem; }
-
+        #addStudentModal .modal-box {
+            overflow: visible;
+        }
         .stat-summary-list { margin-bottom: 1.2rem; }
         .stat-summary-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem; }
         .stat-summary-row:last-child { border-bottom: none; }
@@ -90,7 +123,7 @@
 
         .admin-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); padding: 1.5rem; overflow: hidden; }
         .table-scroll { overflow-x: auto; }
-        .dashboard-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        .dashboard-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; white-space: nowrap; }
         .dashboard-table thead th { background: #0F3E7D; color: white; padding: 0.75rem 1rem; text-align: left; font-weight: 700; white-space: nowrap; }
         .dashboard-table tbody td { padding: 0.7rem 1rem; border-bottom: 1px solid #f0f0f0; color: #333; }
         .dashboard-table tbody tr:last-child td { border-bottom: none; }
@@ -99,7 +132,7 @@
 
         .table-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.6rem; }
         .table-top-left { display: flex; gap: 0.5rem; align-items: center; }
-        .table-top-right { display: flex; align-items: center; }
+        .table-top-right { display: flex; align-items: center; gap: 0.6rem; }
         .table-search-input { padding: 0.5rem 0.8rem; border: 1.5px solid #ddd; border-radius: 5px; font-size: 0.88rem; }
 
         .btn { padding: 0.5rem 1.1rem; border-radius: 5px; font-size: 0.85rem; font-family: Arial, sans-serif; font-weight: 700; cursor: pointer; border: none; transition: opacity 0.18s; }
@@ -151,7 +184,6 @@
         .admin-toast.error { background: #c0392b; color: white; }
         @keyframes toastSlideUp { from { opacity: 0; transform: translateX(-50%) translateY(16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
-        /* ── Pagination ── */
         .pagination-wrap { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.5rem; }
         .pagination-info { font-size: 0.8rem; color: #0F3E7D; font-weight: 600; background: #e8f0fb; padding: 4px 14px; border-radius: 20px; }
         .pagination-btns { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
@@ -161,12 +193,55 @@
         .pg-btn:disabled { background: #f5f5f5; color: #ccc; border-color: #eee; cursor: not-allowed; }
         .pg-dots { color: #aaa; font-size: 0.82rem; padding: 0 2px; }
 
-        /* ── Star display (admin feedback table) ── */
         .star-display { white-space: nowrap; }
 
+        .filter-select {
+            padding: 0.4rem 0.6rem;
+            border: 1.5px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.83rem;
+            font-family: Arial, sans-serif;
+            color: #333;
+            background: white;
+            cursor: pointer;
+        }
+        .filter-select:focus { outline: none; border-color: #0F3E7D; }
+
         @media (max-width: 900px) { .admin-dashboard-grid { grid-template-columns: 1fr; } .records-charts-row { grid-template-columns: 1fr; } .admin-main { padding: 1.25rem; } }
+        @media (max-width: 700px) { .table-top-bar { flex-direction: column; align-items: flex-start; } .table-top-right { flex-wrap: wrap; } }
         @media (max-width: 600px) { .admin-name-display { display: none; } }
-    </style>
+    
+    .res-tab-btn {
+    padding: 0.65rem 1.25rem;
+    background: none;
+    border: none;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #555;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    font-family: Arial, sans-serif;
+    transition: color 0.2s, border-color 0.2s;
+}
+.res-tab-btn:hover { color: #0F3E7D; }
+.res-tab-btn.res-tab-active { color: #0F3E7D; border-bottom-color: #0F3E7D; }
+    
+.lab-mgmt-btn {
+    padding: 0.45rem 1rem;
+    border: 2px solid #ddd;
+    border-radius: 7px;
+    background: white;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #333;
+    transition: all 0.18s;
+    font-family: Arial, sans-serif;
+}
+.lab-mgmt-btn:hover { border-color: #0F3E7D; color: #0F3E7D; }
+.lab-mgmt-btn.lab-mgmt-active { background: #0F3E7D; color: white; border-color: #0F3E7D; }
+</style>
 </head>
 <body>
 
@@ -189,7 +264,7 @@
                     <a onclick="showSection('section-records', this)">VIEW SIT-IN RECORDS</a>
                     <a onclick="showSection('section-reports', this)">SIT-IN REPORTS</a>
                     <a onclick="showSection('section-feedback', this)">FEEDBACK REPORTS</a>
-                    <a onclick="showSection('section-recommendation', this)">RECOMMENDATION</a>
+                    <a onclick="showSection('section-reservation', this)">RESERVATION</a>
                     <a onclick="confirmAdminLogout()" class="ham-logout">LOGOUT</a>
                 </div>
             </div>
@@ -199,7 +274,7 @@
     <div class="admin-wrapper">
         <aside class="admin-sidebar" aria-hidden="true"></aside>
         <main class="admin-main">
-
+        <p class="page-breadcrumb">Dashboard &rsaquo; <span id="adminActiveLabel">Home</span></p>
             {% if request.args.get('loggedin') %}
             <div id="loginSuccessToast" style="position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); background:#1e7e34; color:white; padding:0.85rem 1.8rem; border-radius:8px; font-size:0.92rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,0.2); z-index:9999; white-space:nowrap;">
                 ✓ Logged in successfully!
@@ -316,10 +391,12 @@
                 <div class="admin-card">
                     <div class="table-top-bar">
                         <div class="table-top-left">
-                            <button class="btn btn-primary btn-sm">Add Students</button>
-                            <form action="/admin/sessions/reset-all" method="post" style="display:inline;" onsubmit="return confirm('Reset ALL students to 30 sessions?')">
-                                <button type="submit" class="btn btn-danger btn-sm">Reset All Sessions</button>
-                            </form>
+                        <button onclick="showModal('addStudentModal')" style="background:#1e7e34;color:white;border:none;padding:0.5rem 1.2rem;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">
+                            ➕ Add Student
+                        </button>
+                        <button onclick="confirmResetAll()" style="background:#e67e22;color:white;border:none;padding:0.5rem 1.2rem;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">
+                            🔄 Reset All Sessions
+                        </button>
                         </div>
                         <div class="table-top-right">
                             <input type="text" id="studentSearch" placeholder="Search..." onkeyup="filterStudentTable()" class="table-search-input">
@@ -365,14 +442,14 @@
                     </div>
                     <div class="table-scroll">
                         <table class="dashboard-table" id="sitinTable">
-                            <thead><tr><th>Sit ID Number</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Sit Lab</th><th>Session</th><th>Status</th><th>Actions</th></tr></thead>
-                            <tbody id="sitinTableBody">
+                        <thead><tr><th>Sit ID Number</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Sit Lab</th><th>PC Number</th><th>Session</th><th>Status</th><th>Actions</th></tr></thead>                            <tbody id="sitinTableBody">
                                 {% for s in sessions %}
                                 {% if s.status == 'active' %}
                                 <tr>
                                     <td>{{ s.id }}</td><td>{{ s.idNumber }}</td>
                                     <td>{{ s.firstName }}{% if s.middleName %} {{ s.middleName }}{% endif %} {{ s.lastName }}</td>
                                     <td>{{ s.purpose }}</td><td>{{ s.lab }}</td>
+                                    <td>{{ s.pc_number if s.pc_number else '—' }}</td>
                                     <td>{{ s.sitin_count if s.sitin_count else '—' }}</td>
                                     <td><span class="status-badge status-active">Active</span></td>
                                     <td><button class="btn-action btn-logout" data-id="{{ s.id }}" onclick="confirmLogout(this.dataset.id)">Logout</button></td>
@@ -425,13 +502,14 @@
                     </div>
                     <div class="table-scroll">
                         <table class="dashboard-table" id="recordsTable">
-                            <thead><tr><th>Sit-in Number</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Lab</th><th>Login</th><th>Logout</th><th>Date</th></tr></thead>
+                            <thead><tr><th>Sit-in Number</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Lab</th><th>PC</th><th>Login</th><th>Logout</th><th>Date</th></tr></thead>
                             <tbody id="recordsTableBody">
                                 {% for s in sessions %}
                                 <tr>
                                     <td>{{ s.id }}</td><td>{{ s.idNumber }}</td>
                                     <td>{{ s.firstName }} {{ s.lastName }}</td>
                                     <td>{{ s.purpose }}</td><td>{{ s.lab }}</td>
+                                    <td>{{ s.pc_number if s.pc_number else '—' }}</td>
                                     <td>{{ s.time_in }}</td>
                                     <td>{{ s.time_out if s.time_out else '—' }}</td>
                                     <td>{{ s.date if s.date is defined else s.time_in }}</td>
@@ -453,29 +531,80 @@
             <div id="section-reports" class="page-section">
                 <h2 class="admin-section-title">Sit-in Reports</h2>
                 <div class="admin-card">
-                    <div class="admin-dashboard-grid">
-                        <div class="admin-stat-panel">
-                            <div class="admin-panel-header stat-header">Usage by Purpose</div>
-                            <div class="admin-panel-body" style="display:flex;flex-direction:column;align-items:center;gap:0.75rem;">
-                                <div class="donut-wrap" style="width:180px;height:180px;">
-                                    <canvas id="reportPieChart"></canvas>
-                                    <div class="donut-center"><div class="donut-center-val" id="reportPieVal">—</div><div class="donut-center-lbl" id="reportPieLbl">total</div></div>
-                                </div>
-                                <div class="donut-legend" id="reportPieLegend" style="width:100%;"></div>
+                    
+                        <!-- Date filter + export buttons -->
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
+                            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                <button onclick="showModal('confirmExportReportsCSVModal')" style="background:#1e7e34; color:white; border:none; padding:0.4rem 0.9rem; border-radius:5px; font-size:0.82rem; font-weight:700; cursor:pointer;">CSV</button>
+                                <button onclick="showModal('confirmExportReportsExcelModal')" style="background:#217346; color:white; border:none; padding:0.4rem 0.9rem; border-radius:5px; font-size:0.82rem; font-weight:700; cursor:pointer;">Excel</button>
+                                <button onclick="showModal('confirmExportReportsPDFModal')" style="background:#c0392b; color:white; border:none; padding:0.4rem 0.9rem; border-radius:5px; font-size:0.82rem; font-weight:700; cursor:pointer;">PDF</button>
+                                <button onclick="showModal('confirmPrintReportsModal')" style="background:#555; color:white; border:none; padding:0.4rem 0.9rem; border-radius:5px; font-size:0.82rem; font-weight:700; cursor:pointer;">Print</button>
+                            </div>
+                            <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                                <input type="text" id="reportFilterSearch" placeholder="Search..." class="table-search-input" oninput="filterReportsTable()" style="width:140px;">
+                                <input type="date" id="reportDateFrom" class="table-search-input" style="width:145px;" onchange="filterReportsTable()">
+                                <span style="font-size:0.85rem; color:#555;">to</span>
+                                <input type="date" id="reportDateTo" class="table-search-input" style="width:145px;" onchange="filterReportsTable()">
+                                <select id="reportFilterLab" class="filter-select" onchange="filterReportsTable()">
+                                    <option value="">All Laboratories</option>
+                                    <option value="524">Lab 524</option>
+                                    <option value="526">Lab 526</option>
+                                    <option value="530">Lab 530</option>
+                                    <option value="544">Lab 544</option>
+                                </select>
+                                <select id="reportFilterPurpose" class="filter-select" onchange="filterReportsTable()">
+                                    <option value="">All Purposes</option>
+                                    <option value="C Programming">C Programming</option>
+                                    <option value="Java Programming">Java Programming</option>
+                                    <option value="C# Programming">C# Programming</option>
+                                    <option value="PHP Programming">PHP Programming</option>
+                                    <option value="ASP.Net Programming">ASP.Net Programming</option>
+                                    <option value="Python Programming">Python Programming</option>
+                                    <option value="Web Development">Web Development</option>
+                                    <option value="Database">Database</option>
+                                    <option value="Research">Research</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
                         </div>
-                        <div class="admin-stat-panel">
-                            <div class="admin-panel-header stat-header">Summary</div>
-                            <div class="admin-panel-body">
-                                <div class="stat-summary-list">
-                                    <div class="stat-summary-row"><span class="stat-summary-label">Total Students:</span><span class="stat-summary-val">{{ students|length }}</span></div>
-                                    <div class="stat-summary-row"><span class="stat-summary-label">Total Sessions:</span><span class="stat-summary-val">{{ sessions|length }}</span></div>
-                                    <div class="stat-summary-row"><span class="stat-summary-label">Active Now:</span><span class="stat-summary-val">{{ sessions|selectattr('status','equalto','active')|list|length }}</span></div>
-                                    <div class="stat-summary-row"><span class="stat-summary-label">Completed:</span><span class="stat-summary-val">{{ sessions|selectattr('status','equalto','done')|list|length }}</span></div>
-                                </div>
-                            </div>
+
+                        <div class="table-scroll">
+                            <table class="dashboard-table" id="reportsTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID Number</th>
+                                        <th>Name</th>
+                                        <th>Purpose</th>
+                                        <th>Laboratory</th>
+                                        <th>PC</th>
+                                        <th>Login</th>
+                                        <th>Logout</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportsTableBody">
+                                    {% for s in sessions %}
+                                    <tr data-date="{{ s.time_in.split(' ')[0] if s.time_in and ' ' in s.time_in else '' }}">
+                                        <td>{{ s.idNumber }}</td>
+                                        <td>{{ s.firstName }} {{ s.lastName }}</td>
+                                        <td>{{ s.purpose }}</td>
+                                        <td>{{ s.lab }}</td>
+                                        <td>{{ s.pc_number if s.pc_number else '—' }}</td>
+                                        <td>{{ s.time_in.split(' ')[1] if s.time_in and ' ' in s.time_in else s.time_in }}</td>
+                                        <td>{{ s.time_out.split(' ')[1] if s.time_out and ' ' in s.time_out else '—' }}</td>
+                                        <td>{{ s.time_in.split(' ')[0] if s.time_in and ' ' in s.time_in else '—' }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr><td colspan="7" class="no-data">No sit-in records yet.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
+
+                        <div class="pagination-wrap">
+                            <div class="pagination-info" id="reportsInfo"></div>
+                            <div class="pagination-btns" id="reportsPgBtns"></div>
+                        </div>
                 </div>
             </div>
 
@@ -483,11 +612,36 @@
             <div id="section-feedback" class="page-section">
                 <h2 class="admin-section-title">Feedback Reports</h2>
                 <div class="admin-card">
-                    <div class="table-top-bar">
-                        <div class="table-top-right" style="margin-left:auto;">
-                            <input type="text" id="feedbackSearch" placeholder="Search..." onkeyup="filterFeedbackTable()" class="table-search-input">
-                        </div>
-                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <button onclick="showModal('confirmExportFeedbackCSVModal')" style="background:#1e7e34; color:white; border:none; padding:0.4rem 0.9rem; border-radius:5px; font-size:0.82rem; font-weight:700; cursor:pointer;">CSV</button>
+                    <button onclick="showModal('confirmExportFeedbackExcelModal')" style="background:#217346; color:white; border:none; padding:0.4rem 0.9rem; border-radius:5px; font-size:0.82rem; font-weight:700; cursor:pointer;">Excel</button>
+                    <button onclick="showModal('confirmExportFeedbackPDFModal')" style="background:#c0392b; color:white; border:none; padding:0.4rem 0.9rem; border-radius:5px; font-size:0.82rem; font-weight:700; cursor:pointer;">PDF</button>
+                    <button onclick="showModal('confirmPrintFeedbackReportModal')" style="background:#555; color:white; border:none; padding:0.4rem 0.9rem; border-radius:5px; font-size:0.82rem; font-weight:700; cursor:pointer;">Print</button>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                    <input type="text" id="feedbackSearch" placeholder="Search..." oninput="filterFeedbackTable()" class="table-search-input" style="width:140px;">
+                    <input type="date" id="feedbackDateFrom" class="table-search-input" style="width:145px;" onchange="filterFeedbackTable()">
+                    <span style="font-size:0.85rem; color:#555;">to</span>
+                    <input type="date" id="feedbackDateTo" class="table-search-input" style="width:145px;" onchange="filterFeedbackTable()">
+                    <select id="feedbackFilterLab" class="filter-select" onchange="filterFeedbackTable()">
+                        <option value="">All Laboratories</option>
+                        <option value="524">Lab 524</option>
+                        <option value="526">Lab 526</option>
+                        <option value="530">Lab 530</option>
+                        <option value="544">Lab 544</option>
+                    </select>
+                    <select id="feedbackFilterRating" class="filter-select" onchange="filterFeedbackTable()">
+                        <option value="">All Ratings</option>
+                        <option value="5">★★★★★ (5)</option>
+                        <option value="4">★★★★☆ (4)</option>
+                        <option value="3">★★★☆☆ (3)</option>
+                        <option value="2">★★☆☆☆ (2)</option>
+                        <option value="1">★☆☆☆☆ (1)</option>
+                        <option value="0">☆☆☆☆☆ (0)</option>
+                    </select>
+                </div>
+            </div>
                     <div class="table-scroll">
                         <table class="dashboard-table" id="feedbackTable">
                             <thead>
@@ -495,14 +649,16 @@
                                     <th>Student ID Number</th>
                                     <th>Name</th>
                                     <th>Laboratory</th>
+                                    <th>PC</th>
                                     <th>Rating</th>
                                     <th>Message</th>
                                     <th>Date</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody id="feedbackTableBody">
                                 {% for f in feedback_list %}
-                                <tr>
+                                <tr data-id="{{ f.id }}">
                                     <td>{{ f.idNumber }}</td>
                                     <td>
                                         {% set found = namespace(name='—') %}
@@ -514,6 +670,7 @@
                                         {{ found.name }}
                                     </td>
                                     <td>{{ f.lab }}</td>
+                                    <td>{{ f.pc_number if f.pc_number else '—' }}</td>
                                     <td>
                                         <span class="star-display" title="{{ f.rating }} out of 5">
                                             {% for i in range(1, 6) %}
@@ -527,9 +684,12 @@
                                     </td>
                                     <td style="max-width:300px; white-space:normal; word-break:break-word;">{{ f.message }}</td>
                                     <td style="white-space:nowrap;">{{ f.date }}</td>
+                                    <td>
+                                        <button onclick="deleteFeedback({{ f.id }})" title="Delete" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:#c0392b;">🗑️</button>
+                                    </td>
                                 </tr>
                                 {% else %}
-                                <tr><td colspan="6" class="no-data">No feedback submitted yet.</td></tr>
+                                <tr><td colspan="7" class="no-data">No feedback submitted yet.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -541,43 +701,277 @@
                 </div>
             </div>
 
-            <!-- RECOMMENDATION -->
-            <div id="section-recommendation" class="page-section">
-                <h2 class="admin-section-title">Recommendation</h2>
-                <div class="admin-card"><p class="no-data" style="padding:3rem 0;">No recommendations available yet.</p></div>
-            </div>
+<!-- RESERVATION -->
+<div id="section-reservation" class="page-section">
+    <h2 class="admin-section-title">Reservation</h2>
 
-        </main>
+    <!-- ── TAB BAR ── -->
+    <div style="display:flex; gap:0; margin-bottom:1.5rem; border-bottom:2px solid #e4ecf8;">
+        <button class="res-tab-btn res-tab-active" onclick="switchResTab('res-panel-status', this)">
+            🔘 Reservation Status
+        </button>
+        <button class="res-tab-btn" onclick="switchResTab('res-panel-requests', this)">
+            📋 Reservation Requests
+            <span id="pendingBadge" style="background:#e74c3c;color:white;font-size:0.72rem;font-weight:700;padding:0.1rem 0.45rem;border-radius:10px;margin-left:6px;">
+                {{ all_reservations | selectattr('status','equalto','pending') | list | length }}
+            </span>
+        </button>
+        <button class="res-tab-btn" onclick="switchResTab('res-panel-log', this)">
+            📜 Log / History
+        </button>
     </div>
 
-    <!-- MODALS -->
-    <div class="modal-overlay" id="editAnnModal" style="display:none;">
-        <div class="modal-box modal-sm">
-            <div class="modal-header"><h3>Edit Announcement</h3><button class="modal-close" onclick="closeModal('editAnnModal')">&#10005;</button></div>
-            <div class="modal-body">
-                <input type="hidden" id="editAnnId">
-                <div style="margin-bottom:0.9rem;"><label style="display:block;font-size:0.85rem;font-weight:700;color:#444;margin-bottom:0.35rem;">Title</label><input type="text" id="editAnnTitle" class="sitin-form-input" placeholder="Announcement title..."></div>
-                <div><label style="display:block;font-size:0.85rem;font-weight:700;color:#444;margin-bottom:0.35rem;">Content</label><textarea id="editAnnContent" rows="4" style="width:100%;padding:0.6rem;border:1.5px solid #ddd;border-radius:5px;font-size:0.88rem;resize:vertical;font-family:inherit;box-sizing:border-box;" placeholder="Announcement content..."></textarea></div>
-                <div id="editAnnError" style="display:none;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;margin-top:0.8rem;"></div>
-                <div class="sitin-form-btns"><button type="button" class="btn-modal-close" onclick="closeModal('editAnnModal')">Cancel</button><button type="button" class="btn-modal-submit" onclick="submitEditAnn()">Save Changes</button></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="deleteAnnModal" style="display:none;">
-        <div class="modal-box modal-sm">
-            <div class="modal-header" style="background:#c0392b;"><h3>Delete Announcement</h3><button class="modal-close" onclick="closeModal('deleteAnnModal')">&#10005;</button></div>
-            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
-                <div style="font-size:2.5rem;margin-bottom:0.75rem;">🗑️</div>
-                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Are you sure you want to delete this announcement?<br><span style="color:#999;font-size:0.85rem;">This cannot be undone.</span></p>
-                <input type="hidden" id="deleteAnnId">
-                <div style="display:flex;gap:0.8rem;justify-content:center;">
-                    <button type="button" class="btn-modal-close" onclick="closeModal('deleteAnnModal')">No, Cancel</button>
-                    <button type="button" onclick="submitDeleteAnn()" style="background:#c0392b;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Delete</button>
+    <!-- ══════════════════════════════
+         PANEL 1 — STATUS & TABLE
+         ══════════════════════════════ -->
+    <div id="res-panel-status" class="res-tab-panel">
+        <div class="admin-card" style="margin-bottom:1.5rem; padding:0.85rem 1.5rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+                <div>
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                        <div id="resStatusLabel" style="font-size:0.82rem; padding:0.25rem 0.75rem; border-radius:20px; border:1.5px solid #27ae60; color:#1e7e34; font-weight:700; background:#eafaf1;">Loading...</div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:0.6rem;">
+                    <button onclick="showModal('confirmEnableResModal')" id="btnEnableRes" style="background:#1e7e34;color:white;border:none;padding:0.5rem 1.2rem;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">✅ Enable</button>
+                    <button onclick="showModal('confirmDisableResModal')" id="btnDisableRes" style="background:#c0392b;color:white;border:none;padding:0.5rem 1.2rem;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">🚫 Disable</button>
                 </div>
             </div>
+            <div style="margin-top:1rem;">
+                <label style="font-size:0.85rem;font-weight:700;color:#444;display:block;margin-bottom:0.35rem;">Disable Message (shown to students)</label>
+                <input type="text" id="resDisableMsg" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid #ddd;border-radius:6px;font-size:0.88rem;box-sizing:border-box;" placeholder="e.g. Reservations are closed during Major Exams Week." value="Reservations are currently closed during Major Exams Week. Sit-ins are not allowed.">
+            </div>
+        </div>
+        <div class="admin-card" style="margin-top:1.5rem;">
+            <h3 style="font-size:1rem;font-weight:700;color:#0F3E7D;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e8f0fb;">
+                🖥️ PC Availability Management (Computer Control)
+            </h3>
+            <p style="font-size:0.85rem;color:#888;margin-bottom:1rem;">Click a PC to toggle it as unavailable (blocked) or available. Blocked PCs cannot be reserved by students.</p>
+            <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+                <button class="lab-mgmt-btn lab-mgmt-active" onclick="switchMgmtLab('524',this)">🖥️ Lab 524</button>
+                <button class="lab-mgmt-btn" onclick="switchMgmtLab('526',this)">🖥️ Lab 526</button>
+                <button class="lab-mgmt-btn" onclick="switchMgmtLab('530',this)">🖥️ Lab 530</button>
+                <button class="lab-mgmt-btn" onclick="switchMgmtLab('544',this)">🖥️ Lab 544</button>
+            </div>
+            <div style="display:flex;gap:1rem;margin-bottom:0.75rem;flex-wrap:wrap;">
+                <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#eafaf1;border:1.5px solid #27ae60;display:inline-block;"></span>Available</span>
+                <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#f8d7da;border:1.5px solid #c0392b;display:inline-block;"></span>Unavailable</span>
+                <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:50%;background:#c0392b;display:inline-block;"></span>Occupied</span>
+            </div>
+            <div id="mgmt_pc_grid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:8px;"></div>
+            <div id="mgmt_status_msg" style="margin-top:0.75rem;font-size:0.82rem;color:#888;"></div>
         </div>
     </div>
+    
+
+    <!-- ══════════════════════════════
+         PANEL 2 — RESERVATION REQUESTS
+         ══════════════════════════════ -->
+    <div id="res-panel-requests" class="res-tab-panel" style="display:none;">
+        <div class="admin-card">
+        <div class="table-top-bar" style="margin-bottom:1rem;">
+        <div></div>
+        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+        <input type="text" id="reqSearch" placeholder="Search..." class="table-search-input" oninput="filterReqTable()">
+        <select id="reqFilterLab" class="filter-select" onchange="filterReqTable()">
+            <option value="">All Laboratories</option>
+            <option value="524">Lab 524</option>
+            <option value="526">Lab 526</option>
+            <option value="530">Lab 530</option>
+            <option value="544">Lab 544</option>
+        </select>
+        <select id="reqFilterPC" class="filter-select" onchange="filterReqTable()">
+            <option value="">All PCs</option>
+            {% for i in range(1, 51) %}
+            <option value="{{ i }}">PC {{ i }}</option>
+            {% endfor %}
+        </select>
+        <select id="reqFilterStatus" class="filter-select" onchange="filterReqTable()">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+        </select>
+    </div>
+</div>
+            <div class="table-scroll">
+                <table class="dashboard-table" id="reqTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ID Number</th>
+                            <th>Name</th>
+                            <th>Session</th>
+                            <th>Purpose</th>
+                            <th>Lab</th>
+                            <th>PC Number</th>
+                            <th>Time</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reqTableBody">
+                        {% for r in all_reservations %}
+                        {% set student_session = namespace(count='—') %}
+                        {% for s in students %}
+                            {% if s.idNumber == r.idNumber %}
+                                {% set student_session.count = s.sitin_count %}
+                            {% endif %}
+                        {% endfor %}
+                        <tr class="req-row" data-status="{{ r.status }}"
+                            onclick="openReqModal({{ r.id }}, '{{ r.idNumber }}', '{{ r.firstName }} {{ r.lastName }}', '{{ student_session.count }}', '{{ r.purpose }}', '{{ r.lab }}', {{ r.pc_number if r.pc_number else 0 }}, '{{ r.time_in }}', '{{ r.date }}', '{{ r.status }}')"
+                            style="cursor:pointer;"
+                            id="req-row-{{ r.id }}">
+                            <td>{{ r.id }}</td>
+                            <td>{{ r.idNumber }}</td>
+                            <td>{{ r.firstName }} {{ r.lastName }}</td>
+                            <td>{{ student_session.count }}</td>
+                            <td>{{ r.purpose }}</td>
+                            <td>{{ r.lab }}</td>
+                            <td>PC {{ r.pc_number if r.pc_number else '—' }}</td>
+                            <td>{{ r.time_in }}</td>
+                            <td>{{ r.date }}</td>
+                            <td id="req-status-{{ r.id }}">
+                                <span class="status-badge 
+                                    {% if r.status == 'approved' %}status-active
+                                    {% elif r.status == 'rejected' or r.status == 'expired' %}status-done
+                                    {% endif %}"
+                                    style="{% if r.status == 'pending' %}background:#fff3cd;color:#856404;{% elif r.status == 'sitting_in' %}background:#cce5ff;color:#004085;{% endif %}">
+                                    {% if r.status == 'sitting_in' %}Sitting In
+                                    {% elif r.status == 'expired' %}Expired
+                                    {% else %}{{ r.status }}{% endif %}
+                                </span>
+                            </td>
+                            <td onclick="event.stopPropagation()">
+                                <button
+                                    class="btn-action btn-edit sitin-from-res-btn"
+                                    id="sitin-btn-{{ r.id }}"
+                                    data-id="{{ r.idNumber }}"
+                                    data-name="{{ r.firstName }} {{ r.lastName }}"
+                                    data-purpose="{{ r.purpose }}"
+                                    data-lab="{{ r.lab }}"
+                                    data-remaining="{{ student_session.count }}"
+                                    data-res-id="{{ r.id }}"
+                                    data-pc="{{ r.pc_number if r.pc_number else '' }}"
+                                    {% if r.status == 'approved' %}onclick="openSitinFromReservation(this.dataset)"{% else %}disabled style="opacity:0.4;cursor:not-allowed;"{% endif %}>
+                                    {% if r.status == 'sitting_in' %}Logout
+                                    {% elif r.status == 'expired' %}Done
+                                    {% else %}Sit-in{% endif %}
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="11" class="no-data">No reservation requests for today.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination-wrap">
+                <div class="pagination-info" id="reqInfo"></div>
+                <div class="pagination-btns" id="reqPgBtns"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         PANEL 3 — LOG / HISTORY
+         ══════════════════════════════ -->
+    <div id="res-panel-log" class="res-tab-panel" style="display:none;">
+        <div class="admin-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                    <button onclick="showModal('confirmExportLogCSVModal')" style="background:#1e7e34;color:white;border:none;padding:0.4rem 0.9rem;border-radius:5px;font-size:0.82rem;font-weight:700;cursor:pointer;">CSV</button>
+                    <button onclick="showModal('confirmExportLogExcelModal')" style="background:#217346;color:white;border:none;padding:0.4rem 0.9rem;border-radius:5px;font-size:0.82rem;font-weight:700;cursor:pointer;">Excel</button>
+                    <button onclick="showModal('confirmExportLogPDFModal')" style="background:#c0392b;color:white;border:none;padding:0.4rem 0.9rem;border-radius:5px;font-size:0.82rem;font-weight:700;cursor:pointer;">PDF</button>
+                    <button onclick="showModal('confirmPrintLogModal')" style="background:#555;color:white;border:none;padding:0.4rem 0.9rem;border-radius:5px;font-size:0.82rem;font-weight:700;cursor:pointer;">Print</button>
+                </div>
+                <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                    <input type="text" id="logSearch" placeholder="Search..." class="table-search-input" style="width:140px;" oninput="filterLogTable()">
+                    <input type="date" id="logDateFrom" class="table-search-input" style="width:145px;" onchange="filterLogTable()">
+                    <span style="font-size:0.85rem;color:#555;">to</span>
+                    <input type="date" id="logDateTo" class="table-search-input" style="width:145px;" onchange="filterLogTable()">
+                    <select id="logFilterLab" class="filter-select" onchange="filterLogTable()">
+                        <option value="">All Labs</option>
+                        <option value="524">Lab 524</option>
+                        <option value="526">Lab 526</option>
+                        <option value="530">Lab 530</option>
+                        <option value="544">Lab 544</option>
+                    </select>
+                    <select id="logFilterPurpose" class="filter-select" onchange="filterLogTable()">
+                        <option value="">All Purposes</option>
+                        <option value="C Programming">C Programming</option>
+                        <option value="Java Programming">Java Programming</option>
+                        <option value="C# Programming">C# Programming</option>
+                        <option value="PHP Programming">PHP Programming</option>
+                        <option value="ASP.Net Programming">ASP.Net Programming</option>
+                        <option value="Python Programming">Python Programming</option>
+                        <option value="Web Development">Web Development</option>
+                        <option value="Database">Database</option>
+                        <option value="Research">Research</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <select id="logFilterStatus" class="filter-select" onchange="filterLogTable()">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="expired">Expired</option>
+                        <option value="done">Done</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table class="dashboard-table" id="logTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>ID Number</th>
+                            <th>Name</th>
+                            <th>Purpose</th>
+                            <th>Lab</th>
+                            <th>PC</th>
+                            <th>Time</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody">
+                        {% for r in reservation_log %}
+                        <tr data-date="{{ r.date }}">
+                            <td>{{ r.id }}</td>
+                            <td>{{ r.idNumber }}</td>
+                            <td>{{ r.firstName }} {{ r.lastName }}</td>
+                            <td>{{ r.purpose }}</td>
+                            <td>{{ r.lab }}</td>
+                            <td>PC {{ r.pc_number if r.pc_number else '—' }}</td>
+                            <td>{{ r.time_in }}</td>
+                            <td>{{ r.date }}</td>
+                            <td>
+                                <span class="status-badge"
+                                    style="{% if r.status == 'approved' %}background:#d4edda;color:#1e7e34;
+                                        {% elif r.status == 'rejected' %}background:#f8d7da;color:#c0392b;
+                                        {% elif r.status == 'pending' %}background:#fff3cd;color:#856404;
+                                        {% elif r.status == 'expired' %}background:#e2e3e5;color:#6c757d;
+                                        {% elif r.status == 'done' %}background:#cce5ff;color:#004085;
+                                        {% else %}background:#f0f0f0;color:#555;{% endif %}">
+                                    {{ r.status | capitalize }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="9" class="no-data">No reservation history yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination-wrap">
+                <div class="pagination-info" id="logInfo"></div>
+                <div class="pagination-btns" id="logPgBtns"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
     <div class="modal-overlay" id="sitinModal" style="display:none;">
         <div class="modal-box modal-sm">
@@ -600,18 +994,26 @@
         <div class="modal-box" style="max-width:500px;">
             <div class="modal-header"><h3>Edit Student</h3><button class="modal-close" onclick="closeModal('editStudentModal')">&#10005;</button></div>
             <div class="modal-body">
-                <form id="editStudentForm" action="/admin/edit-student" method="post">
+                <form id="editStudentForm" onsubmit="event.preventDefault(); submitEditStudent();">
                     <input type="hidden" name="idNumber" id="edit_id">
                     <table class="sitin-form-table">
-                        <tr><td class="sitin-form-label">ID Number</td><td><input type="text" id="edit_id_display" readonly class="sitin-form-input sitin-readonly"></td></tr>
+                        <tr><td class="sitin-form-label">ID Number</td><td><input type="text" name="newIdNumber" id="edit_id_display" class="sitin-form-input" maxlength="8" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></td></tr>
                         <tr><td class="sitin-form-label">First Name</td><td><input type="text" name="firstName" id="edit_firstname" required class="sitin-form-input"></td></tr>
                         <tr><td class="sitin-form-label">Last Name</td><td><input type="text" name="lastName" id="edit_lastname" required class="sitin-form-input"></td></tr>
                         <tr><td class="sitin-form-label">Middle Name</td><td><input type="text" name="middleName" id="edit_middlename" class="sitin-form-input"></td></tr>
                         <tr><td class="sitin-form-label">Email</td><td><input type="email" name="email" id="edit_email" required class="sitin-form-input"></td></tr>
-                        <tr><td class="sitin-form-label">Course</td><td><input type="text" name="course" id="edit_course" class="sitin-form-input"></td></tr>
+                        <tr><td class="sitin-form-label">Course</td><td>
+                            <select name="course" id="edit_course" class="sitin-form-input">
+                                <optgroup label="CCS"><option value="BSIT">BSIT</option><option value="BSCS">BSCS</option><option value="BSCoE">BSCoE</option><option value="CISCO">CISCO</option></optgroup>
+                                <optgroup label="Engineering"><option value="BSCE">BSCE</option><option value="BSME">BSME</option><option value="BSEE">BSEE</option><option value="BSIE">BSIE</option></optgroup>
+                                <optgroup label="Education"><option value="BEED">BEED</option><option value="BSED">BSED</option></optgroup>
+                                <optgroup label="Business"><option value="BSCOM">BSCOM</option><option value="BSA">BSA</option><option value="BSHRM">BSHRM</option></optgroup>
+                                <optgroup label="Others"><option value="BSCRIM">BSCRIM</option><option value="ABPOLSCI">ABPOLSCI</option><option value="ABENG">ABENG</option></optgroup>
+                            </select>
+                        </td></tr>
                         <tr><td class="sitin-form-label">Year Level</td><td><select name="yearLevel" id="edit_yearlevel" class="sitin-form-input"><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option></select></td></tr>
                         <tr><td class="sitin-form-label">Address</td><td><input type="text" name="address" id="edit_address" class="sitin-form-input"></td></tr>
-                        <tr><td class="sitin-form-label">Remaining Sessions</td><td><input type="number" name="sitin_count" id="edit_sitin" min="0" max="30" class="sitin-form-input"></td></tr>
+                        <tr><td class="sitin-form-label">Remaining Sessions</td><td><input type="text" name="sitin_count" id="edit_sitin" readonly class="sitin-form-input sitin-readonly"></td></tr>
                     </table>
                     <div class="sitin-form-btns" style="margin-top:1.2rem;"><button type="button" class="btn-modal-close" onclick="closeModal('editStudentModal')">Cancel</button><button type="submit" class="btn-modal-submit">Save Changes</button></div>
                 </form>
@@ -652,6 +1054,58 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="confirmAnnModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm" style="max-width: 360px;">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Announcement</h3><button class="modal-close" onclick="closeModal('confirmAnnModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:1.25rem;">
+                <p style="color:#333;font-size:0.9rem;margin-bottom:1rem;">Are you sure you want to post this announcement?</p>
+                <div style="display:flex;gap:0.6rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmAnnModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="submitAnnConfirmed()" style="background:#0F3E7D;color:white;border:none;padding:0.45rem 1.25rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Post</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmSitinModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm" style="max-width: 360px;">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Sit-in</h3><button class="modal-close" onclick="closeModal('confirmSitinModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:1.25rem;">
+                <p style="color:#333;font-size:0.9rem;margin-bottom:1rem;">Proceed with this sit-in submission?</p>
+                <div style="display:flex;gap:0.6rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmSitinModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="submitSitinFormConfirmed()" style="background:#0F3E7D;color:white;border:none;padding:0.45rem 1.25rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmAddStudentModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm" style="max-width: 360px;">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Add Student</h3><button class="modal-close" onclick="closeModal('confirmAddStudentModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:1.25rem;">
+                <p style="color:#333;font-size:0.9rem;margin-bottom:1rem;">Are you sure you want to add this student?</p>
+                <div style="display:flex;gap:0.6rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmAddStudentModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="submitAddStudentConfirmed()" style="background:#0F3E7D;color:white;border:none;padding:0.45rem 1.25rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmEditStudentModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm" style="max-width: 360px;">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Save Changes</h3><button class="modal-close" onclick="closeModal('confirmEditStudentModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:1.25rem;">
+                <p style="color:#333;font-size:0.9rem;margin-bottom:1rem;">Are you sure you want to save changes to this student?</p>
+                <div style="display:flex;gap:0.6rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmEditStudentModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="submitEditStudentConfirmed()" style="background:#0F3E7D;color:white;border:none;padding:0.45rem 1.25rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="searchModal" style="display:none;">
         <div class="modal-box modal-sm">
             <div class="modal-header"><h3>Search Student</h3><button class="modal-close" onclick="closeSearchModal()">&#10005;</button></div>
@@ -673,7 +1127,8 @@
                     <tr><td class="sitin-form-label">ID Number</td><td><input type="text" id="sfm_id" class="sitin-form-input sitin-readonly" readonly></td></tr>
                     <tr><td class="sitin-form-label">Student Name</td><td><input type="text" id="sfm_name" class="sitin-form-input sitin-readonly" readonly></td></tr>
                     <tr><td class="sitin-form-label">Purpose</td><td><select id="sfm_purpose" class="sitin-form-input"><option value="">-- Select purpose --</option><option>C Programming</option><option>Java Programming</option><option>C# Programming</option><option>PHP Programming</option><option>ASP.Net Programming</option><option>Python Programming</option><option>Web Development</option><option>Database</option><option>Research</option><option>Other</option></select></td></tr>
-                    <tr><td class="sitin-form-label">Lab</td><td><select id="sfm_lab" class="sitin-form-input"><option value="">-- Select lab --</option><option>524</option><option>526</option><option>530</option><option>544</option></select></td></tr>
+                    <tr><td class="sitin-form-label">Lab</td><td><select id="sfm_lab" class="sitin-form-input" onchange="loadAvailablePCs()"><option value="">-- Select lab --</option><option>524</option><option>526</option><option>530</option><option>544</option></select></td></tr>
+                    <tr id="sfm_pc_row" style="display:none;"><td class="sitin-form-label">PC Number</td><td><select id="sfm_pc" class="sitin-form-input"><option value="">-- Select PC --</option></select></td></tr>
                     <tr><td class="sitin-form-label">Remaining Session</td><td><input type="text" id="sfm_remaining" class="sitin-form-input sitin-readonly" readonly></td></tr>
                 </table>
                 <div id="sitinFormError" style="display:none;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;margin-top:0.8rem;"></div>
@@ -696,21 +1151,392 @@
         </div>
     </div>
 
+        <div class="modal-overlay" id="resetAllModal" style="display:none;">
+            <div class="modal-box modal-sm">
+                <div class="modal-header" style="background:#e67e22;"><h3>Reset All Sessions</h3><button class="modal-close" onclick="closeModal('resetAllModal')">&#10005;</button></div>
+                <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                    <div style="font-size:2.5rem;margin-bottom:0.75rem;">🔄</div>
+                    <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">This will reset <strong>all students'</strong> sit-in session counts back to their defaults.<br><span style="color:#999;font-size:0.85rem;">This cannot be undone.</span></p>
+                    <form action="/admin/sessions/reset-all" method="post" style="display:inline;">
+                        <div style="display:flex;gap:0.8rem;justify-content:center;">
+                            <button type="button" class="btn-modal-close" onclick="closeModal('resetAllModal')">No, Cancel</button>
+                            <button type="submit" style="background:#e67e22;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Reset All</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="addStudentModal" style="display:none;">
+            <div class="modal-box" style="max-width:520px;">
+                <div class="modal-header"><h3>Add Student</h3><button class="modal-close" onclick="closeModal('addStudentModal')">&#10005;</button></div>
+                <form class="modal-body" padding:1.25rem;" onsubmit="event.preventDefault(); submitAddStudent();">
+                    <div id="modalStudentError" style="display:none;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.7rem 1rem;border-radius:5px;font-size:0.88rem;margin-bottom:1rem;"></div>
+                    <table class="sitin-form-table">
+                        <tr><td class="sitin-form-label">ID Number <span style="color:red">*</span></td><td><input type="text" id="as_id" required class="sitin-form-input" placeholder="e.g. 23456789" maxlength="8" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></td></tr>
+                        <tr><td class="sitin-form-label">First Name <span style="color:red">*</span></td><td><input type="text" id="as_firstname" required class="sitin-form-input" placeholder="First name"></td></tr>
+                        <tr><td class="sitin-form-label">Last Name <span style="color:red">*</span></td><td><input type="text" id="as_lastname" required class="sitin-form-input" placeholder="Last name"></td></tr>
+                        <tr><td class="sitin-form-label">Middle Name</td><td><input type="text" id="as_middlename" class="sitin-form-input" placeholder="Optional"></td></tr>
+                        <tr><td class="sitin-form-label">Course <span style="color:red">*</span></td><td>
+                            <select id="as_course" required class="sitin-form-input">
+                                <option value="">Select course</option>
+                                <optgroup label="CCS"><option value="BSIT">BSIT</option><option value="BSCS">BSCS</option><option value="BSCoE">BSCoE</option><option value="CISCO">CISCO</option></optgroup>
+                                <optgroup label="Engineering"><option value="BSCE">BSCE</option><option value="BSME">BSME</option><option value="BSEE">BSEE</option><option value="BSIE">BSIE</option></optgroup>
+                                <optgroup label="Education"><option value="BEED">BEED</option><option value="BSED">BSED</option></optgroup>
+                                <optgroup label="Business"><option value="BSCOM">BSCOM</option><option value="BSA">BSA</option><option value="BSHRM">BSHRM</option></optgroup>
+                                <optgroup label="Others"><option value="BSCRIM">BSCRIM</option><option value="ABPOLSCI">ABPOLSCI</option><option value="ABENG">ABENG</option></optgroup>
+                            </select>
+                        </td></tr>
+                        <tr><td class="sitin-form-label">Year Level <span style="color:red">*</span></td><td>
+                            <select id="as_year" required class="sitin-form-input">
+                                <option value="">Select year</option>
+                                <option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option>
+                            </select>
+                        </td></tr>
+                        <tr><td class="sitin-form-label">Email <span style="color:red">*</span></td><td><input type="email" id="as_email" required class="sitin-form-input" placeholder="e.g. juan@email.com"></td></tr>
+                        <tr><td class="sitin-form-label">Address</td><td><input type="text" id="as_address" class="sitin-form-input" placeholder="Optional"></td></tr>
+                        <tr><td class="sitin-form-label">Password <span style="color:red">*</span></td><td><input type="password" id="as_password" required minlength="6" class="sitin-form-input" placeholder="Min. 6 characters"></td></tr>
+                    </table>
+                    <div class="sitin-form-btns" style="margin-top:1.2rem;">
+                        <button type="button" class="btn-modal-close" onclick="closeModal('addStudentModal')">Cancel</button>
+                        <button type="submit" class="btn-modal-submit">Add Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+<div class="modal-overlay" id="editAnnModal" style="display:none;">
+    <div class="modal-box modal-sm">
+        <div class="modal-header"><h3>Edit Announcement</h3><button class="modal-close" onclick="closeModal('editAnnModal')">&#10005;</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="editAnnId">
+            <div style="margin-bottom:0.9rem;"><label style="display:block;font-size:0.85rem;font-weight:700;color:#444;margin-bottom:0.35rem;">Title</label><input type="text" id="editAnnTitle" class="sitin-form-input" placeholder="Announcement title..."></div>
+            <div><label style="display:block;font-size:0.85rem;font-weight:700;color:#444;margin-bottom:0.35rem;">Content</label><textarea id="editAnnContent" rows="4" style="width:100%;padding:0.6rem;border:1.5px solid #ddd;border-radius:5px;font-size:0.88rem;resize:vertical;font-family:inherit;box-sizing:border-box;" placeholder="Announcement content..."></textarea></div>
+            <div id="editAnnError" style="display:none;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;margin-top:0.8rem;"></div>
+            <div class="sitin-form-btns"><button type="button" class="btn-modal-close" onclick="closeModal('editAnnModal')">Cancel</button><button type="button" class="btn-modal-submit" onclick="submitEditAnn()">Save Changes</button></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="deleteAnnModal" style="display:none;">
+    <div class="modal-box modal-sm">
+        <div class="modal-header" style="background:#c0392b;"><h3>Delete Announcement</h3><button class="modal-close" onclick="closeModal('deleteAnnModal')">&#10005;</button></div>
+        <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">🗑️</div>
+            <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Are you sure you want to delete this announcement?<br><span style="color:#999;font-size:0.85rem;">This cannot be undone.</span></p>
+            <input type="hidden" id="deleteAnnId">
+            <div style="display:flex;gap:0.8rem;justify-content:center;">
+                <button type="button" class="btn-modal-close" onclick="closeModal('deleteAnnModal')">No, Cancel</button>
+                <button type="button" onclick="submitDeleteAnn()" style="background:#c0392b;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
     <div id="adminToast" class="admin-toast"></div>
-    <div id="purposeDataEl" style="display:none;" data-counts='{% if purpose_counts %}{{ purpose_counts | tojson }}{% else %}{}{% endif %}'></div>
-    <div id="labDataEl" style="display:none;" data-counts='{}'></div>
+    <!-- RESERVATION REQUEST MODAL -->
+<div class="modal-overlay" id="reqModal" style="display:none;">
+    <div class="modal-box" style="max-width:860px; width:95%;">
+        <div class="modal-header"><h3>Reservation Request</h3>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                <button id="reqEditPCBtn" onclick="enablePCEdit()" style="background:#F4B942;color:#0F3E7D;border:none;padding:0.3rem 0.85rem;border-radius:5px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">✏️ Edit PC</button>
+                <button id="reqDeleteBtn" onclick="confirmDeleteReservation()" style="background:#c0392b;color:white;border:none;padding:0.3rem 0.85rem;border-radius:5px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">🗑️ Delete</button>
+                <button class="modal-close" onclick="closeModal('reqModal')">&#10005;</button>
+            </div>
+        </div>
+        <div class="modal-body" style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+            <!-- LEFT: Form -->
+            <div>
+                <h4 style="font-size:0.9rem;font-weight:700;color:#0F3E7D;margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:2px solid #e8f0fb;">Reservation Details</h4>
+                <table class="sitin-form-table">
+                    <tr><td class="sitin-form-label">ID Number</td><td><input type="text" id="rm_id" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                    <tr><td class="sitin-form-label">Name</td><td><input type="text" id="rm_name" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                    <tr><td class="sitin-form-label">Session</td><td><input type="text" id="rm_session" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                    <tr><td class="sitin-form-label">Purpose</td><td><input type="text" id="rm_purpose" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                    <tr><td class="sitin-form-label">Lab</td><td><input type="text" id="rm_lab" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                    <tr><td class="sitin-form-label">PC Number</td><td><input type="text" id="rm_pc" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                    <tr><td class="sitin-form-label">Time</td><td><input type="text" id="rm_time" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                    <tr><td class="sitin-form-label">Date</td><td><input type="text" id="rm_date" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                </table>
+                <div id="rmStatusRow" style="margin-top:1rem;text-align:center;"></div>
+                <div id="rmActionBtns" style="display:flex;gap:0.6rem;justify-content:center;margin-top:0.75rem;"></div>
+            </div>
+            <!-- RIGHT: PC Grid -->
+            <div>
+                <h4 style="font-size:0.9rem;font-weight:700;color:#0F3E7D;margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:2px solid #e8f0fb;">Computer Control</h4>
+                <div style="display:flex;gap:0.6rem;align-items:center;margin-bottom:0.6rem;flex-wrap:wrap;">
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#E6F1FB;border:1px solid #185FA5;display:inline-block;"></span>Available</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#f8d7da;border:1px solid #f5c6cb;display:inline-block;"></span>Taken</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#0F3E7D;display:inline-block;"></span>This Request</span>
+                </div>
+                <div id="rm_pc_grid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:5px;max-height:340px;overflow-y:auto;"></div>
+                    <div id="rmSavePCRow" style="display:none;margin-top:0.75rem;text-align:right;">
+                        <span id="rmNewPCLabel" style="font-size:0.82rem;color:#0F3E7D;font-weight:700;margin-right:0.75rem;"></span>
+                        <button onclick="saveNewPC()" style="background:#1e7e34;color:white;border:none;padding:0.5rem 1.2rem;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">💾 Save PC</button>
+                        <button onclick="cancelPCEdit()" style="background:#e0e0e0;color:#333;border:none;padding:0.5rem 1rem;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;margin-left:0.4rem;">Cancel</button>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SIT-IN FROM RESERVATION MODAL -->
+<div class="modal-overlay" id="sitinFromResModal" style="display:none;">
+    <div class="modal-box modal-sm">
+        <div class="modal-header"><h3>Sit-In Form</h3><button class="modal-close" onclick="closeModal('sitinFromResModal')">&#10005;</button></div>
+        <div class="modal-body">
+            <table class="sitin-form-table">
+                <tr><td class="sitin-form-label">ID Number</td><td><input type="text" id="sfr_id" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                <tr><td class="sitin-form-label">Student Name</td><td><input type="text" id="sfr_name" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                <tr><td class="sitin-form-label">Purpose</td><td><input type="text" id="sfr_purpose" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                <tr><td class="sitin-form-label">Lab</td><td><input type="text" id="sfr_lab" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                <tr><td class="sitin-form-label">Remaining Session</td><td><input type="text" id="sfr_remaining" class="sitin-form-input sitin-readonly" readonly></td></tr>
+            </table>
+            <div id="sfrError" style="display:none;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;margin-top:0.8rem;"></div>
+            <div class="sitin-form-btns"><button type="button" class="btn-modal-close" onclick="closeModal('sitinFromResModal')">Cancel</button><button type="button" class="btn-modal-submit" onclick="submitSitinFromRes()">Sit-In</button></div>
+        </div>
+    </div>
+</div>
+
+    <!-- RESERVATION REQUEST ACTION CONFIRMATION MODALS -->
+    <div class="modal-overlay" id="confirmApproveReqModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Approval</h3><button class="modal-close" onclick="closeModal('confirmApproveReqModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">✅</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Are you sure you want to approve this reservation request?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmApproveReqModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="confirmReqModalAction('approved')">Approve</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmRejectReqModal" style="display:none; z-index: 9999;">
+    <div class="modal-box modal-sm">
+        <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Rejection</h3><button class="modal-close" onclick="closeModal('confirmRejectReqModal')">&#10005;</button></div>
+        <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">❌</div>
+            <p style="color:#333;font-size:0.95rem;margin-bottom:1rem;">Are you sure you want to reject this reservation request?</p>
+            <div style="text-align:left;margin-bottom:1rem;">
+                <label style="font-size:0.85rem;font-weight:700;color:#444;display:block;margin-bottom:0.35rem;">Reason for rejection <span style="font-weight:400;color:#aaa;">(optional)</span></label>
+                <select onchange="applyRejectReason(this)" style="width:100%;padding:0.5rem 0.7rem;border:1.5px solid #ddd;border-radius:6px;font-size:0.83rem;font-family:Arial,sans-serif;margin-bottom:0.5rem;color:#555;background:white;">
+                    <option value="">💬 Quick-select a reason...</option>
+                    <option value="The professor has instructed that no sit-ins are allowed at this time. Please book a reservation in another laboratory. We apologize for the inconvenience.">🚫 Professor disallowed sit-ins</option>
+                    <option value="The PC you selected is currently not functioning. Please book another reservation and choose a different PC. We apologize for the inconvenience.">🖥️ Selected PC is not functioning</option>
+                    <option value="The laboratory is fully occupied at your requested time. Please try reserving at a different time or laboratory. We apologize for the inconvenience.">🔴 Laboratory is fully occupied</option>
+                    <option value="The laboratory is currently scheduled for a class at your requested time. Please choose a different time slot or laboratory. We apologize for the inconvenience.">📚 Lab scheduled for a class</option>
+                    <option value="Your reservation request was submitted outside of allowed hours. Laboratory sit-ins are only allowed from 8:00 AM to 8:00 PM. We apologize for the inconvenience.">⏰ Outside allowed hours</option>
+                    <option value="Your reservation could not be accommodated due to a scheduling conflict. Please try booking at a different date or time. We apologize for the inconvenience.">📅 Scheduling conflict</option>
+                    <option value="The laboratory is temporarily unavailable for maintenance or technical issues. Please try again later or choose another laboratory. We apologize for the inconvenience.">🔧 Lab under maintenance</option>
+                </select>
+                <textarea id="rejectReasonInput" rows="3" placeholder="e.g. Lab is scheduled for a class at this time..." style="width:100%;padding:0.6rem;border:1.5px solid #ddd;border-radius:6px;font-size:0.85rem;font-family:Arial,sans-serif;resize:vertical;box-sizing:border-box;"></textarea>
+            </div>
+            <div style="display:flex;gap:0.8rem;justify-content:center;">
+                <button type="button" class="btn-modal-close" onclick="closeModal('confirmRejectReqModal')">Cancel</button>
+                <button type="button" class="btn-modal-submit" onclick="confirmReqModalAction('rejected')" style="background:#c0392b;">Reject</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- EXPORT CONFIRMATION MODALS -->
+    <div class="modal-overlay" id="confirmExportReportsCSVModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Export</h3><button class="modal-close" onclick="closeModal('confirmExportReportsCSVModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Export Sit-in Reports as CSV file?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmExportReportsCSVModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="exportReportsCSVConfirmed()">Export CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmExportReportsExcelModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Export</h3><button class="modal-close" onclick="closeModal('confirmExportReportsExcelModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Export Sit-in Reports as Excel file?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmExportReportsExcelModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="exportReportsExcelConfirmed()">Export Excel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmExportReportsPDFModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Export</h3><button class="modal-close" onclick="closeModal('confirmExportReportsPDFModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Export Sit-in Reports as PDF file?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmExportReportsPDFModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="exportReportsPDFConfirmed()">Export PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmPrintReportsModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Print</h3><button class="modal-close" onclick="closeModal('confirmPrintReportsModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">🖨️</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Print Sit-in Reports?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmPrintReportsModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="printReportsConfirmed()">Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmExportFeedbackCSVModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Export</h3><button class="modal-close" onclick="closeModal('confirmExportFeedbackCSVModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Export Feedback Reports as CSV file?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmExportFeedbackCSVModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="exportFeedbackCSVConfirmed()">Export CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmExportFeedbackExcelModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Export</h3><button class="modal-close" onclick="closeModal('confirmExportFeedbackExcelModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Export Feedback Reports as Excel file?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmExportFeedbackExcelModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="exportFeedbackExcelConfirmed()">Export Excel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmExportFeedbackPDFModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Export</h3><button class="modal-close" onclick="closeModal('confirmExportFeedbackPDFModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Export Feedback Reports as PDF file?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmExportFeedbackPDFModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="exportFeedbackPDFConfirmed()">Export PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmPrintFeedbackReportModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Print</h3><button class="modal-close" onclick="closeModal('confirmPrintFeedbackReportModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">🖨️</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Print Feedback Reports?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmPrintFeedbackReportModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="printFeedbackReportConfirmed()">Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log History Export Confirmation Modals -->
+    <div class="modal-overlay" id="confirmExportLogCSVModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Export</h3><button class="modal-close" onclick="closeModal('confirmExportLogCSVModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Export Log History as CSV file?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmExportLogCSVModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="exportLogCSVConfirmed()">Export CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmExportLogExcelModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Export</h3><button class="modal-close" onclick="closeModal('confirmExportLogExcelModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Export Log History as Excel file?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmExportLogExcelModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="exportLogExcelConfirmed()">Export Excel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmExportLogPDFModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Export</h3><button class="modal-close" onclick="closeModal('confirmExportLogPDFModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Export Log History as PDF file?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmExportLogPDFModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="exportLogPDFConfirmed()">Export PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="confirmPrintLogModal" style="display:none; z-index: 9999;">
+        <div class="modal-box modal-sm">
+            <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Print</h3><button class="modal-close" onclick="closeModal('confirmPrintLogModal')">&#10005;</button></div>
+            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+                <div style="font-size:2.5rem;margin-bottom:0.75rem;">🖨️</div>
+                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Print Log History?</p>
+                <div style="display:flex;gap:0.8rem;justify-content:center;">
+                    <button type="button" class="btn-modal-close" onclick="closeModal('confirmPrintLogModal')">Cancel</button>
+                    <button type="button" class="btn-modal-submit" onclick="printLogConfirmed()">Print</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+            <div id="purposeDataEl" style="display:none;" data-counts='{% if purpose_counts %}{{ purpose_counts | tojson }}{% else %}{}{% endif %}'></div>
+            <div id="labDataEl" style="display:none;" data-counts='{}'></div>
+        </main>
+    </div>
 
     <footer><p>&copy; 2026 College of Computer Studies - University of Cebu</p></footer>
 
     <script>
-        function showSection(sectionId, clickedLink) {
-            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
-            const target = document.getElementById(sectionId);
-            if (target) target.classList.add('active');
-            document.querySelectorAll('.ham-dropdown a').forEach(l => l.classList.remove('ham-active'));
-            if (clickedLink) clickedLink.classList.add('ham-active');
-            closeAdminHam(); closeAllAnnMenus();
-        }
+        const ADMIN_LABELS = {
+    'section-home':       'Home',
+    'section-students':   'Students',
+    'section-sitin':      'Sit-in',
+    'section-records':    'View Sit-in Records',
+    'section-reports':    'Sit-in Reports',
+    'section-feedback':   'Feedback Reports',
+    'section-reservation':'Reservation'
+};
+
+function showSection(sectionId, clickedLink) {
+    document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+    const target = document.getElementById(sectionId);
+    if (target) target.classList.add('active');
+    document.querySelectorAll('.ham-dropdown a').forEach(l => l.classList.remove('ham-active'));
+    if (clickedLink) clickedLink.classList.add('ham-active');
+    const lbl = document.getElementById('adminActiveLabel');
+    if (lbl) lbl.textContent = ADMIN_LABELS[sectionId] || 'Home';
+    closeAdminHam(); closeAllAnnMenus();
+}
 
         const adminHamBtn  = document.getElementById('adminHamBtn');
         const adminHamDrop = document.getElementById('adminHamDrop');
@@ -815,14 +1641,34 @@
                 else { showToast('✗ ' + (data.message || 'Error.'), 'error'); }
             }).catch(() => showToast('✗ Connection error.', 'error'));
         }
-        function submitAnn() { const title = document.getElementById('newAnnTitle').value.trim(); const content = document.getElementById('newAnnContent').value.trim(); if (!title || !content) { alert('Please fill in both title and content.'); return; } document.getElementById('annTitleHidden').value = title; document.getElementById('annContentHidden').value = content; document.getElementById('annForm').submit(); }
+        let pendingAnnouncement = null;
+
+        function submitAnn() {
+            const title = document.getElementById('newAnnTitle').value.trim();
+            const content = document.getElementById('newAnnContent').value.trim();
+            if (!title || !content) {
+                alert('Please fill in both title and content.');
+                return;
+            }
+            pendingAnnouncement = { title, content };
+            showModal('confirmAnnModal');
+        }
+
+        function submitAnnConfirmed() {
+            if (!pendingAnnouncement) return;
+            document.getElementById('annTitleHidden').value = pendingAnnouncement.title;
+            document.getElementById('annContentHidden').value = pendingAnnouncement.content;
+            pendingAnnouncement = null;
+            closeModal('confirmAnnModal');
+            document.getElementById('annForm').submit();
+        }
 
         function openSitinFormForStudent(id, name, remaining) { document.getElementById('sitinIdInput').value = id; document.getElementById('sitinNameDisplay').value = name; document.getElementById('sitinRemaining').value = remaining; document.getElementById('sitinPurpose').value = ''; document.getElementById('sitinLab').value = ''; document.getElementById('sitinModalError').style.display = 'none'; showModal('sitinModal'); }
         function submitSitinQuick() {
             const idNumber = document.getElementById('sitinIdInput').value.trim(); const name = document.getElementById('sitinNameDisplay').value; const purpose = document.getElementById('sitinPurpose').value; const lab = document.getElementById('sitinLab').value; const remaining = document.getElementById('sitinRemaining').value; const errEl = document.getElementById('sitinModalError');
             if (!purpose || !lab) { errEl.textContent = 'Please select both Purpose and Lab.'; errEl.style.display = 'block'; return; }
             errEl.style.display = 'none'; const fd = new FormData(); fd.append('idNumber', idNumber); fd.append('purpose', purpose); fd.append('lab', lab);
-            fetch('/admin/sitin/add-ajax', { method: 'POST', body: fd }).then(r => r.json()).then(data => { if (data.success) { closeModal('sitinModal'); showToast('✓ Sit-in successful.', 'success'); addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining); } else { errEl.textContent = data.message || 'Something went wrong.'; errEl.style.display = 'block'; } }).catch(() => { errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; });
+            fetch('/admin/sitin/add-ajax', { method: 'POST', body: fd }).then(r => r.json()).then(data => { if (data.success) { closeModal('sitinModal'); showToast('✓ Sit-in successful.', 'success'); addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, data.pc_number || '—'); } else { errEl.textContent = data.message || 'Something went wrong.'; errEl.style.display = 'block'; } })
         }
 
         function openEditModal(data) { document.getElementById('edit_id').value = data.id; document.getElementById('edit_id_display').value = data.id; document.getElementById('edit_firstname').value = data.firstname; document.getElementById('edit_lastname').value = data.lastname; document.getElementById('edit_middlename').value = data.middlename; document.getElementById('edit_email').value = data.email; document.getElementById('edit_course').value = data.course; document.getElementById('edit_yearlevel').value = data.yearlevel; document.getElementById('edit_address').value = data.address; document.getElementById('edit_sitin').value = data.sitin; showModal('editStudentModal'); }
@@ -841,20 +1687,24 @@
         let allRecordsRows  = [], allStudentsRows  = [], allSitinRows    = [], allFeedbackRows  = [];
         let recordsPage     = 1,  studentsPage     = 1,  sitinPage       = 1,  feedbackPage     = 1;
         let recordsFiltered = [], studentsFiltered = [], sitinFiltered   = [], feedbackFiltered = [];
+        let allReportsRows = [], reportsPage = 1, reportsFiltered = [];
 
         function initPagination() {
             allRecordsRows   = [...document.querySelectorAll('#recordsTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
             allStudentsRows  = [...document.querySelectorAll('#studentTable tbody tr')].filter(r => !r.querySelector('td[colspan]'));
             allSitinRows     = [...document.querySelectorAll('#sitinTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
             allFeedbackRows  = [...document.querySelectorAll('#feedbackTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
+            allReportsRows  = [...document.querySelectorAll('#reportsTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
             recordsFiltered  = [...allRecordsRows];
             studentsFiltered = [...allStudentsRows];
             sitinFiltered    = [...allSitinRows];
             feedbackFiltered = [...allFeedbackRows];
+            reportsFiltered = [...allReportsRows];
             renderTable('records');
             renderTable('students');
             renderTable('sitin');
             renderTable('feedback');
+            renderTable('reports');
         }
 
         function renderTable(type) {
@@ -863,6 +1713,7 @@
                 students: { filtered: studentsFiltered, page: studentsPage, allRows: allStudentsRows, infoId: 'studentsInfo', pgId: 'studentsPgBtns' },
                 sitin:    { filtered: sitinFiltered,    page: sitinPage,    allRows: allSitinRows,    infoId: 'sitinInfo',    pgId: 'sitinPgBtns'    },
                 feedback: { filtered: feedbackFiltered, page: feedbackPage, allRows: allFeedbackRows, infoId: 'feedbackInfo', pgId: 'feedbackPgBtns' },
+                reports: { filtered: reportsFiltered, page: reportsPage, allRows: allReportsRows, infoId: 'reportsInfo', pgId: 'reportsPgBtns' },
             }[type];
             if (!cfg) return;
 
@@ -887,6 +1738,7 @@
                 if (type === 'students') studentsPage = p;
                 if (type === 'sitin')    sitinPage    = p;
                 if (type === 'feedback') feedbackPage = p;
+                if (type === 'reports')  reportsPage = p;
                 renderTable(type);
             }
 
@@ -922,11 +1774,151 @@
             sitinFiltered = q ? allSitinRows.filter(r => r.textContent.toLowerCase().includes(q)) : [...allSitinRows];
             sitinPage = 1; renderTable('sitin');
         }
+
+        // ── Feedback filter by Lab + Rating dropdowns ──
         function filterFeedbackTable() {
-            const q = document.getElementById('feedbackSearch').value.toLowerCase().trim();
-            feedbackFiltered = q ? allFeedbackRows.filter(r => r.textContent.toLowerCase().includes(q)) : [...allFeedbackRows];
-            feedbackPage = 1; renderTable('feedback');
-        }
+        const lab      = document.getElementById('feedbackFilterLab').value.trim();
+        const rating   = document.getElementById('feedbackFilterRating').value.trim();
+        const search   = document.getElementById('feedbackSearch').value.toLowerCase().trim();
+        const dateFrom = document.getElementById('feedbackDateFrom').value;
+        const dateTo   = document.getElementById('feedbackDateTo').value;
+
+        feedbackFiltered = allFeedbackRows.filter(row => {
+            const cells = row.querySelectorAll('td');
+            if (!cells.length) return false;
+
+            const rowLab = cells[2]?.innerText.trim() || '';
+            if (lab && rowLab !== lab) return false;
+
+            let ratingVal = 0;
+            cells[4]?.querySelectorAll('span').forEach(s => {
+                if (s.style.color === 'rgb(244, 185, 66)') ratingVal++;
+            });
+            if (rating !== '' && ratingVal !== parseInt(rating)) return false;
+
+            if (search && !row.textContent.toLowerCase().includes(search)) return false;
+
+            const rowDate = cells[6]?.innerText.trim() || '';
+            if (dateFrom && rowDate < dateFrom) return false;
+            if (dateTo   && rowDate > dateTo)   return false;
+
+            return true;
+        });
+        feedbackPage = 1;
+        renderTable('feedback');
+    }
+
+        function deleteFeedback(feedbackId) {
+    showModal('deleteFeedbackModal');
+    document.getElementById('confirmDeleteFeedbackBtn').onclick = function() {
+        closeModal('deleteFeedbackModal');
+        const fd = new FormData();
+        fd.append('id', feedbackId);
+        fetch('/admin/feedback/delete', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const row = document.querySelector(`#feedbackTableBody tr[data-id="${feedbackId}"]`);
+                if (row) {
+                    allFeedbackRows = allFeedbackRows.filter(r => r !== row);
+                    feedbackFiltered = feedbackFiltered.filter(r => r !== row);
+                    row.remove();
+                    renderTable('feedback');
+                }
+                showToast('✓ Feedback deleted.', 'success');
+            } else {
+                showToast('✗ Failed to delete.', 'error');
+            }
+        })
+        .catch(() => showToast('✗ Connection error.', 'error'));
+    };
+}
+
+        function getVisibleFeedbackRows() {
+    return feedbackFiltered;
+}
+
+function exportFeedbackCSVConfirmed() {
+    closeModal('confirmExportFeedbackCSVModal');
+    const headers = ['Student ID','Name','Laboratory','Rating','Message','Date'];
+    const rows = getVisibleFeedbackRows().map(r => {
+        const c = r.querySelectorAll('td');
+        let ratingVal = 0;
+        c[3]?.querySelectorAll('span').forEach(s => { if (s.style.color === 'rgb(244, 185, 66)') ratingVal++; });
+        return [c[0]?.innerText, c[1]?.innerText, c[2]?.innerText, ratingVal+'/5', c[4]?.innerText, c[5]?.innerText];
+    });
+    let csv = headers.join(',') + '\n';
+    rows.forEach(r => { csv += r.map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',') + '\n'; });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'Feedback_Reports_' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+}
+
+function exportFeedbackExcelConfirmed() {
+    closeModal('confirmExportFeedbackExcelModal');
+    const headers = ['Student ID','Name','Laboratory','Rating','Message','Date'];
+    const rows = getVisibleFeedbackRows().map(r => {
+        const c = r.querySelectorAll('td');
+        let ratingVal = 0;
+        c[3]?.querySelectorAll('span').forEach(s => { if (s.style.color === 'rgb(244, 185, 66)') ratingVal++; });
+        return [c[0]?.innerText, c[1]?.innerText, c[2]?.innerText, ratingVal+'/5', c[4]?.innerText, c[5]?.innerText];
+    });
+    let xml = `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Feedback"><Table>`;
+    xml += '<Row>' + headers.map(h => `<Cell><Data ss:Type="String">${h}</Data></Cell>`).join('') + '</Row>';
+    rows.forEach(r => { xml += '<Row>' + r.map(v => `<Cell><Data ss:Type="String">${v||''}</Data></Cell>`).join('') + '</Row>'; });
+    xml += '</Table></Worksheet></Workbook>';
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'Feedback_Reports_' + new Date().toISOString().slice(0,10) + '.xls'; a.click();
+}
+
+function exportFeedbackPDFConfirmed() {
+    closeModal('confirmExportFeedbackPDFModal');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    doc.setFillColor(15, 62, 125);
+    doc.rect(0, 0, 297, 22, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('CCS Sit-in Monitoring System', 148.5, 9, { align:'center' });
+    doc.setFontSize(10); doc.setFont('helvetica','normal');
+    doc.text('Feedback Reports  |  University of Cebu  |  Generated: ' + new Date().toLocaleString(), 148.5, 17, { align:'center' });
+    const rows = getVisibleFeedbackRows().map(r => {
+        const c = r.querySelectorAll('td');
+        const starSpan = c[4]?.querySelector('.star-display');
+        const ratingVal = starSpan ? (starSpan.getAttribute('title') || '').replace(' out of 5','').trim() : '0';
+        return [
+            c[0]?.innerText?.trim() || '—',
+            c[1]?.innerText?.trim() || '—',
+            c[2]?.innerText?.trim() || '—',
+            c[3]?.innerText?.trim() || '—',
+            ratingVal + ' / 5',
+            c[5]?.innerText?.trim() || '—',
+            c[6]?.innerText?.trim() || '—',
+        ];
+    });
+    doc.autoTable({
+    startY: 26,
+    margin: { left: 20, right: 20 },
+    head: [['Student ID','Name','Laboratory','PC','Rating','Message','Date']],
+    body: rows,
+    theme: 'grid',
+    styles: { fontSize:8, cellPadding:4, textColor:[33,33,33], lineColor:[220,220,220], lineWidth:0.2, overflow:'linebreak' },
+    headStyles: { fillColor:[15,62,125], textColor:[255,255,255], fontStyle:'bold' },
+    alternateRowStyles: { fillColor:[245,248,255] },
+    columnStyles: {
+        0: { cellWidth: 30 },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 22 },
+        3: { cellWidth: 15 },
+        4: { cellWidth: 18 },
+        5: { cellWidth: 97 },
+        6: { cellWidth: 35 },
+    },
+    didDrawPage: () => { doc.setFontSize(8); doc.setTextColor(170,170,170); doc.text('College of Computer Studies  |  University of Cebu  © 2026', 148.5, 205, { align:'center' }); }
+});
+    doc.save('Feedback_Reports_' + new Date().toISOString().slice(0,10) + '.pdf');
+}
 
         function openSearchModal() { document.getElementById('searchModalInput').value = ''; document.getElementById('searchModalMsg').style.display = 'none'; document.getElementById('searchModalBtn').disabled = false; document.getElementById('searchModalBtn').textContent = 'Search'; document.getElementById('searchModal').style.display = 'flex'; document.body.style.overflow = 'hidden'; setTimeout(() => document.getElementById('searchModalInput').focus(), 100); }
         function closeSearchModal() { document.getElementById('searchModal').style.display = 'none'; document.body.style.overflow = ''; }
@@ -939,27 +1931,45 @@
         }
 
         function openSitinFormModal(idNumber, name, remaining) { document.getElementById('sfm_id').value = idNumber; document.getElementById('sfm_name').value = name.replace(/\s+/g, ' ').trim(); document.getElementById('sfm_remaining').value = remaining; document.getElementById('sfm_purpose').value = ''; document.getElementById('sfm_lab').value = ''; document.getElementById('sitinFormError').style.display = 'none'; document.getElementById('sfmSubmitBtn').disabled = false; document.getElementById('sfmSubmitBtn').textContent = 'Sit-In'; document.getElementById('sitinFormModal').style.display = 'flex'; document.body.style.overflow = 'hidden'; }
-        function closeSitinFormModal() { document.getElementById('sitinFormModal').style.display = 'none'; document.body.style.overflow = ''; }
+        function closeSitinFormModal() {
+            document.getElementById('sitinFormModal').style.display = 'none';
+            document.body.style.overflow = '';
+            document.getElementById('sfm_pc').innerHTML = '<option value="">-- Select PC --</option>';
+            document.getElementById('sfm_pc_row').style.display = 'none';
+            document.getElementById('sfm_lab').value = '';
+        }
+        let pendingSitin = null;
         function submitSitinForm() {
-            const idNumber = document.getElementById('sfm_id').value; const name = document.getElementById('sfm_name').value; const purpose = document.getElementById('sfm_purpose').value; const lab = document.getElementById('sfm_lab').value; const remaining = document.getElementById('sfm_remaining').value; const errEl = document.getElementById('sitinFormError'); const btn = document.getElementById('sfmSubmitBtn');
+            const idNumber = document.getElementById('sfm_id').value; const name = document.getElementById('sfm_name').value; const purpose = document.getElementById('sfm_purpose').value; const lab = document.getElementById('sfm_lab').value; const remaining = document.getElementById('sfm_remaining').value; const errEl = document.getElementById('sitinFormError');
+            const pc = document.getElementById('sfm_pc').value;
             if (!purpose || !lab) { errEl.textContent = 'Please select both Purpose and Lab.'; errEl.style.display = 'block'; return; }
-            errEl.style.display = 'none'; btn.disabled = true; btn.textContent = 'Saving…';
-            const fd = new FormData(); fd.append('idNumber', idNumber); fd.append('purpose', purpose); fd.append('lab', lab);
-            fetch('/admin/sitin/add-ajax', { method: 'POST', body: fd }).then(r => r.json()).then(data => { btn.disabled = false; btn.textContent = 'Sit-In'; if (data.success) { closeSitinFormModal(); showToast('✓ Sit-in successful.', 'success'); addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining); } else { errEl.textContent = data.message || 'Something went wrong.'; errEl.style.display = 'block'; } }).catch(() => { btn.disabled = false; btn.textContent = 'Sit-In'; errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; });
+            if (!pc) { errEl.textContent = 'Please select a PC number.'; errEl.style.display = 'block'; return; }
+            errEl.style.display = 'none';
+            pendingSitin = { idNumber, name, purpose, lab, remaining, pc };
+            showModal('confirmSitinModal');
         }
 
-        function addSitinRow(sessionId, idNumber, name, purpose, lab, remaining) {
+        function submitSitinFormConfirmed() {
+            if (!pendingSitin) return;
+            const { idNumber, name, purpose, lab, remaining, pc } = pendingSitin;
+            const errEl = document.getElementById('sitinFormError'); const btn = document.getElementById('sfmSubmitBtn');
+            pendingSitin = null;
+            closeModal('confirmSitinModal');
+            btn.disabled = true; btn.textContent = 'Saving…';
+            const fd = new FormData(); fd.append('idNumber', idNumber); fd.append('purpose', purpose); fd.append('lab', lab); fd.append('pc_number', pc || '');
+            fetch('/admin/sitin/add-ajax', { method: 'POST', body: fd }).then(r => r.json()).then(data => { btn.disabled = false; btn.textContent = 'Sit-In'; if (data.success) { closeSitinFormModal(); showToast('✓ Sit-in successful.', 'success'); addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, pc || data.pc_number || '—'); } else { errEl.textContent = data.message || 'Something went wrong.'; errEl.style.display = 'block'; } }).catch(() => { btn.disabled = false; btn.textContent = 'Sit-In'; errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; });
+        }
+
+        function addSitinRow(sessionId, idNumber, name, purpose, lab, remaining, pc) {
             const tbody = document.getElementById('sitinTableBody'); const placeholder = tbody.querySelector('td[colspan="8"]'); if (placeholder) placeholder.closest('tr').remove();
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${sessionId||'—'}</td><td>${idNumber}</td><td>${name}</td><td>${purpose}</td><td>${lab}</td><td>${remaining}</td><td><span class="status-badge status-active">Active</span></td><td><button class="btn-action btn-logout" data-id="${sessionId}" onclick="confirmLogout(this.dataset.id)">Logout</button></td>`;
-            tbody.insertBefore(tr, tbody.firstChild);
+            tr.innerHTML = `<td>${sessionId||'—'}</td><td>${idNumber}</td><td>${name}</td><td>${purpose}</td><td>${lab}</td><td>${pc||'—'}</td><td>${remaining}</td><td><span class="status-badge status-active">Active</span></td><td><button class="btn-action btn-logout" data-id="${sessionId}" onclick="confirmLogout(this.dataset.id)">Logout</button></td>`;            tbody.insertBefore(tr, tbody.firstChild);
             allSitinRows.unshift(tr); sitinFiltered.unshift(tr); renderTable('sitin');
         }
 
         function confirmAdminLogout() { closeAdminHam(); showModal('adminLogoutModal'); }
 
-        ['searchModal','sitinFormModal','sitinModal','editStudentModal','deleteModal','logoutModal','adminLogoutModal','editAnnModal','deleteAnnModal'].forEach(id => {
-            const el = document.getElementById(id);
+        ['searchModal','sitinFormModal','sitinModal','editStudentModal','deleteModal','logoutModal','adminLogoutModal','editAnnModal','deleteAnnModal','reqModal','sitinFromResModal','confirmApproveReqModal','confirmRejectReqModal','confirmExportReportsCSVModal','confirmExportReportsExcelModal','confirmExportReportsPDFModal','confirmPrintReportsModal','confirmExportFeedbackCSVModal','confirmExportFeedbackExcelModal','confirmExportFeedbackPDFModal','confirmPrintFeedbackReportModal','confirmExportLogCSVModal','confirmExportLogExcelModal','confirmExportLogPDFModal','confirmPrintLogModal','deleteFeedbackModal','confirmDeleteReservationModal'].forEach(id => {            const el = document.getElementById(id);
             if (el) el.addEventListener('click', function(e) { if (e.target === this) closeModal(id); });
         });
 
@@ -975,8 +1985,1358 @@
                 }
             }
             initPagination();
+            // Auto-expire approved reservations older than 1 hour
+            fetch('/admin/reservations/auto-expire', { method: 'POST' });
         });
-    </script>
 
+        function printStudentsReport() {
+            if (!confirm('Download Students Report as PDF?')) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            doc.setFillColor(15, 62, 125);
+            doc.rect(0, 0, 297, 22, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+            doc.text('CCS Sit-in Monitoring System', 148.5, 9, { align: 'center' });
+            doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+            doc.text('Students Information  |  University of Cebu  |  Generated: ' + new Date().toLocaleString(), 148.5, 17, { align: 'center' });
+            const rows = [];
+            document.querySelectorAll('#studentTable tbody tr').forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (!cells.length || cells[0].getAttribute('colspan')) return;
+                rows.push([cells[0]?.innerText.trim(), cells[1]?.innerText.trim(), cells[2]?.innerText.trim(), cells[3]?.innerText.trim(), cells[4]?.innerText.trim()]);
+            });
+            doc.autoTable({
+                startY: 26,
+                head: [['ID Number', 'Name', 'Year Level', 'Course', 'Remaining Sessions']],
+                body: rows,
+                theme: 'grid',
+                styles: { fontSize: 9, cellPadding: 4, valign: 'middle', textColor: [33,33,33], lineColor: [220,220,220], lineWidth: 0.2 },
+                headStyles: { fillColor: [15,62,125], textColor: [255,255,255], fontStyle: 'bold', fontSize: 9, halign: 'left' },
+                alternateRowStyles: { fillColor: [245,248,255] },
+                bodyStyles: { fillColor: [255,255,255] },
+                didDrawPage: function() { doc.setFontSize(8); doc.setTextColor(170,170,170); doc.text('College of Computer Studies  |  University of Cebu  © 2026', 148.5, 205, { align: 'center' }); }
+            });
+            doc.save('Students_Report_' + new Date().toISOString().slice(0,10) + '.pdf');
+        }
+
+        function printFeedbackReportConfirmed() {
+            closeModal('confirmPrintFeedbackReportModal');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            doc.setFillColor(15, 62, 125);
+            doc.rect(0, 0, 297, 22, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14); doc.setFont('helvetica', 'bold');
+            doc.text('CCS Sit-in Monitoring System', 148.5, 9, { align: 'center' });
+            doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+            doc.text('Feedback Reports  |  University of Cebu  |  Generated: ' + new Date().toLocaleString(), 148.5, 17, { align: 'center' });
+            const rows = [];
+            document.querySelectorAll('#feedbackTableBody tr').forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (!cells.length || cells[0].getAttribute('colspan')) return;
+                const idNum = cells[0]?.innerText.trim() || '—';
+                const name  = cells[1]?.innerText.trim() || '—';
+                const lab   = cells[2]?.innerText.trim() || '—';
+                let ratingVal = 0;
+                cells[3]?.querySelectorAll('span').forEach(s => { if (s.style.color === 'rgb(244, 185, 66)') ratingVal++; });
+                const stars = ratingVal + ' / 5';
+                const msg   = cells[4]?.innerText.trim() || '—';
+                const date  = cells[5]?.innerText.trim() || '—';
+                rows.push([idNum, name, lab, stars, msg, date]);
+            });
+            doc.autoTable({
+                startY: 26,
+                head: [['Student ID', 'Name', 'Laboratory', 'Rating', 'Message', 'Date']],
+                body: rows,
+                theme: 'grid',
+                styles: { fontSize: 9, cellPadding: 4, valign: 'middle', textColor: [33,33,33], lineColor: [220,220,220], lineWidth: 0.2 },
+                headStyles: { fillColor: [15,62,125], textColor: [255,255,255], fontStyle: 'bold', fontSize: 9, halign: 'left' },
+                alternateRowStyles: { fillColor: [245,248,255] },
+                bodyStyles: { fillColor: [255,255,255] },
+                columnStyles: {
+                    0: { cellWidth: 30, halign: 'center' },
+                    1: { cellWidth: 45 },
+                    2: { cellWidth: 25, halign: 'center' },
+                    3: { cellWidth: 20, halign: 'center' },
+                    4: { cellWidth: 120 },
+                    5: { cellWidth: 30, halign: 'center' },
+                },
+                didDrawPage: function() { doc.setFontSize(8); doc.setTextColor(170,170,170); doc.text('College of Computer Studies  |  University of Cebu  © 2026', 148.5, 205, { align: 'center' }); }
+            });
+            doc.save('Feedback_Reports_' + new Date().toISOString().slice(0,10) + '.pdf');
+        }
+
+        // Log History Export Confirmed Functions
+        function exportLogCSVConfirmed() {
+            closeModal('confirmExportLogCSVModal');
+            exportLogCSV();
+        }
+
+        function exportLogExcelConfirmed() {
+            closeModal('confirmExportLogExcelModal');
+            exportLogExcel();
+        }
+
+        function exportLogPDFConfirmed() {
+            closeModal('confirmExportLogPDFModal');
+            exportLogPDF();
+        }
+
+        function printLogConfirmed() {
+            closeModal('confirmPrintLogModal');
+            printLog();
+        }
+
+        function filterReportsTable() {
+            const from    = document.getElementById('reportDateFrom').value;
+            const to      = document.getElementById('reportDateTo').value;
+            const search  = document.getElementById('reportFilterSearch').value.toLowerCase().trim();
+            const lab     = document.getElementById('reportFilterLab').value.trim();
+            const purpose = document.getElementById('reportFilterPurpose').value.trim();
+
+            reportsFiltered = allReportsRows.filter(row => {
+                const rowDate = row.getAttribute('data-date') || '';
+                if (from && rowDate < from) return false;
+                if (to   && rowDate > to)   return false;
+                if (search && !row.textContent.toLowerCase().includes(search)) return false;
+                const cells = row.querySelectorAll('td');
+                if (lab     && (cells[3]?.innerText.trim() !== lab))     return false;
+                if (purpose && (cells[2]?.innerText.trim() !== purpose)) return false;
+                return true;
+            });
+            reportsPage = 1;
+            renderTable('reports');
+        }
+
+    function resetReportsFilter() {
+    document.getElementById('reportDateFrom').value = '';
+    document.getElementById('reportDateTo').value   = '';
+    document.getElementById('reportFilterSearch').value = '';
+    document.getElementById('reportFilterLab').value = '';
+    document.getElementById('reportFilterPurpose').value = '';
+    reportsFiltered = [...allReportsRows];
+    reportsPage = 1;
+    renderTable('reports');
+}
+
+    function getVisibleReportsRows() {
+        return reportsFiltered;
+    }
+
+    function exportReportsCSVConfirmed() {
+        closeModal('confirmExportReportsCSVModal');
+        const headers = ['ID Number','Name','Purpose','Laboratory','PC','Login','Logout','Date'];
+        const rows = getVisibleReportsRows().map(r => {
+            const c = r.querySelectorAll('td');
+            return [c[0]?.innerText, c[1]?.innerText, c[2]?.innerText, c[3]?.innerText, c[4]?.innerText, c[5]?.innerText, c[6]?.innerText, c[7]?.innerText];
+        });
+        let csv = headers.join(',') + '\n';
+        rows.forEach(r => { csv += r.map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',') + '\n'; });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'Sitin_Reports_' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+    }
+
+    function exportReportsExcelConfirmed() {
+        closeModal('confirmExportReportsExcelModal');
+        const headers = ['ID Number','Name','Purpose','Laboratory','PC','Login','Logout','Date'];
+        const rows = getVisibleReportsRows().map(r => {
+            const c = r.querySelectorAll('td');
+            return [c[0]?.innerText, c[1]?.innerText, c[2]?.innerText, c[3]?.innerText, c[4]?.innerText, c[5]?.innerText, c[6]?.innerText, c[7]?.innerText];
+        });
+        let xml = `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Sit-in Reports"><Table>`;
+        xml += '<Row>' + headers.map(h => `<Cell><Data ss:Type="String">${h}</Data></Cell>`).join('') + '</Row>';
+        rows.forEach(r => { xml += '<Row>' + r.map(v => `<Cell><Data ss:Type="String">${v||''}</Data></Cell>`).join('') + '</Row>'; });
+        xml += '</Table></Worksheet></Workbook>';
+        const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = 'Sitin_Reports_' + new Date().toISOString().slice(0,10) + '.xls'; a.click();
+    }
+
+    function exportReportsPDFConfirmed() {
+        closeModal('confirmExportReportsPDFModal');
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        doc.setFillColor(15, 62, 125);
+        doc.rect(0, 0, 297, 22, 'F');
+        doc.setTextColor(255,255,255);
+        doc.setFontSize(14); doc.setFont('helvetica','bold');
+        doc.text('CCS Sit-in Monitoring System', 148.5, 9, { align:'center' });
+        doc.setFontSize(10); doc.setFont('helvetica','normal');
+        doc.text('Sit-in Reports  |  University of Cebu  |  Generated: ' + new Date().toLocaleString(), 148.5, 17, { align:'center' });
+        const rows = getVisibleReportsRows().map(r => {
+            const c = r.querySelectorAll('td');
+            return [c[0]?.innerText, c[1]?.innerText, c[2]?.innerText, c[3]?.innerText, c[4]?.innerText, c[5]?.innerText, c[6]?.innerText, c[7]?.innerText];
+        });
+        doc.autoTable({
+            startY: 26,
+            head: [['ID Number','Name','Purpose','Laboratory','PC','Login','Logout','Date']],
+            body: rows,
+            theme: 'grid',
+            styles: { fontSize:9, cellPadding:4, textColor:[33,33,33], lineColor:[220,220,220], lineWidth:0.2 },
+            headStyles: { fillColor:[15,62,125], textColor:[255,255,255], fontStyle:'bold' },
+            alternateRowStyles: { fillColor:[245,248,255] },
+            didDrawPage: () => { doc.setFontSize(8); doc.setTextColor(170,170,170); doc.text('College of Computer Studies  |  University of Cebu  © 2026', 148.5, 205, { align:'center' }); }
+        });
+        doc.save('Sitin_Reports_' + new Date().toISOString().slice(0,10) + '.pdf');
+    }
+
+        function printReportsConfirmed() {
+            closeModal('confirmPrintReportsModal');
+            const rows = getVisibleReportsRows().map(r => {
+                const c = r.querySelectorAll('td');
+                return `<tr><td>${c[0]?.innerText||''}</td><td>${c[1]?.innerText||''}</td><td>${c[2]?.innerText||''}</td><td>${c[3]?.innerText||''}</td><td>${c[4]?.innerText||''}</td><td>${c[5]?.innerText||''}</td><td>${c[6]?.innerText||''}</td><td>${c[7]?.innerText||''}</td></tr>`;
+            }).join('');
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html><head><title>Sit-in Reports</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; }
+                    h2 { color: #0F3E7D; text-align:center; }
+                    p  { text-align:center; color:#888; font-size:0.85rem; }
+                    table { width:100%; border-collapse:collapse; font-size:12px; margin-top:1rem; }
+                    th { background:#0F3E7D; color:white; padding:8px; text-align:left; }
+                    td { padding:7px 8px; border-bottom:1px solid #eee; }
+                    tr:nth-child(even) { background:#f5f8ff; }
+                </style></head>
+                <body>
+                    <h2>CCS Sit-in Monitoring System</h2>
+                    <p>Sit-in Reports &nbsp;|&nbsp; University of Cebu &nbsp;|&nbsp; Generated: ${new Date().toLocaleString()}</p>
+                    <table>
+                        <thead><tr><th>ID Number</th>
+                                    <th>Name</th>
+                                    <th>Purpose</th>
+                                    <th>Laboratory</th>
+                                    <th>PC</th>
+                                    <th>Login</th>
+                                    <th>Logout</th>
+                                    <th>Date</th>
+                                </tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                    <script>window.onload = () => { window.print(); window.close(); }<\/script>
+                </body></html>
+            `);
+            win.document.close();
+        }
+
+        function confirmResetAll() {
+    showModal('resetAllModal');
+}
+
+        let pendingAddStudent = null;
+        let pendingEditStudent = null;
+
+            function submitAddStudent() {
+            const id       = document.getElementById('as_id').value.trim();
+            const fname    = document.getElementById('as_firstname').value.trim();
+            const lname    = document.getElementById('as_lastname').value.trim();
+            const mname    = document.getElementById('as_middlename').value.trim();
+            const course   = document.getElementById('as_course').value;
+            const year     = document.getElementById('as_year').value;
+            const email    = document.getElementById('as_email').value.trim();
+            const address  = document.getElementById('as_address').value.trim();
+            const password = document.getElementById('as_password').value;
+            const errEl    = document.getElementById('modalStudentError');
+
+            errEl.style.display = 'none';
+
+            if (!/^\d{8}$/.test(id))           { errEl.textContent = 'ID Number must be exactly 8 digits.'; errEl.style.display='block'; return; }
+            if (!fname)                         { errEl.textContent = 'First name is required.'; errEl.style.display='block'; return; }
+            if (!lname)                         { errEl.textContent = 'Last name is required.'; errEl.style.display='block'; return; }
+            if (!course)                        { errEl.textContent = 'Please select a course.'; errEl.style.display='block'; return; }
+            if (!year)                          { errEl.textContent = 'Please select a year level.'; errEl.style.display='block'; return; }
+            if (!email || !email.includes('@')) { errEl.textContent = 'Valid email is required.'; errEl.style.display='block'; return; }
+            if (password.length < 6)           { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display='block'; return; }
+
+            pendingAddStudent = { id, fname, lname, mname, course, year, email, address, password };
+            showModal('confirmAddStudentModal');
+        }
+
+        function submitAddStudentConfirmed() {
+            if (!pendingAddStudent) return;
+            const { id, fname, lname, mname, course, year, email, address, password } = pendingAddStudent;
+            pendingAddStudent = null;
+            closeModal('confirmAddStudentModal');
+            const errEl = document.getElementById('modalStudentError');
+            errEl.style.display = 'none';
+
+            const fd = new FormData();
+            fd.append('idNumber', id); fd.append('firstName', fname); fd.append('lastName', lname);
+            fd.append('middleName', mname); fd.append('course', course); fd.append('yearLevel', year);
+            fd.append('email', email); fd.append('address', address); fd.append('password', password);
+            fd.append('confirmPassword', password);
+
+            fetch('/admin/add-student', { method: 'POST', body: fd })
+            .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        ['as_id','as_firstname','as_lastname','as_middlename','as_email','as_address','as_password'].forEach(i => document.getElementById(i).value = '');
+                        document.getElementById('as_course').value = '';
+                        document.getElementById('as_year').value = '';
+                        closeModal('addStudentModal');
+                        showToast('✓ Student added successfully!', 'success');
+
+                        // Add new row directly to table
+                        const tbody = document.querySelector('#studentTable tbody');
+                        const placeholder = tbody.querySelector('td[colspan]');
+                        if (placeholder) placeholder.closest('tr').remove();
+
+                        const yearSuffix = {'1':'st','2':'nd','3':'rd','4':'th'};
+                        const remaining = data.sitin_count;
+                        const remainClass = remaining <= 5 ? 'remaining-low' : remaining <= 10 ? 'remaining-mid' : 'remaining-ok';
+                        const displayName = (data.lastName + ', ' + data.firstName + (data.middleName ? ' ' + data.middleName : '')).toUpperCase();
+
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${data.idNumber}</td>
+                            <td>${displayName}</td>
+                            <td>${data.yearLevel}${yearSuffix[data.yearLevel]||'th'}</td>
+                            <td>${data.course}</td>
+                            <td><span class="sitin-remaining ${remainClass}">${remaining}</span></td>
+                            <td>
+                                <button class="btn-action btn-edit" onclick="openEditModal(this.dataset)"
+                                    data-id="${data.idNumber}" data-firstname="${data.firstName}"
+                                    data-lastname="${data.lastName}" data-middlename="${data.middleName||''}"
+                                    data-email="${data.email}" data-course="${data.course}"
+                                    data-yearlevel="${data.yearLevel}" data-address="${data.address||''}"
+                                    data-sitin="${remaining}">Edit</button>
+                                <button class="btn-action btn-del" onclick="confirmDelete('${data.idNumber}')">Delete</button>
+                            </td>`;
+                        tbody.appendChild(tr);
+                        allStudentsRows.push(tr);
+                        studentsFiltered.push(tr);
+                        renderTable('students');
+                    } else {
+                        errEl.textContent = data.message || 'An error occurred.';
+                        errEl.style.display = 'block';
+                    }
+                })
+                .catch(() => { errEl.textContent = 'Connection error. Please try again.'; errEl.style.display='block'; });
+        }
+
+        function submitEditStudent() {
+            const form = document.getElementById('editStudentForm');
+            const fd = new FormData(form);
+            pendingEditStudent = fd;
+            showModal('confirmEditStudentModal');
+        }
+
+        function submitEditStudentConfirmed() {
+            if (!pendingEditStudent) return;
+            const fd = pendingEditStudent;
+            pendingEditStudent = null;
+            closeModal('confirmEditStudentModal');
+
+            fetch('/admin/edit-student', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    closeModal('editStudentModal');
+                    showToast('✓ Student updated!', 'success');
+
+                    // Update the row in the table
+                    // Update the row in the table
+            const oldId = document.getElementById('edit_id').value;
+            const rows = document.querySelectorAll('#studentTable tbody tr');
+            rows.forEach(row => {
+                if (row.querySelector('td')?.innerText.trim() === oldId) {
+                    const cells = row.querySelectorAll('td');
+                    const mn = data.middleName ? ' ' + data.middleName : '';
+                    cells[0].innerText = data.idNumber;
+                    cells[1].innerText = (data.lastName + ', ' + data.firstName + mn).toUpperCase();
+                    const suffix = {'1':'st','2':'nd','3':'rd','4':'th'};
+                    cells[2].innerText = data.yearLevel + (suffix[data.yearLevel]||'th');
+                    cells[3].innerText = data.course;
+                    const rc = data.sitin_count <= 5 ? 'remaining-low' : data.sitin_count <= 10 ? 'remaining-mid' : 'remaining-ok';
+                    cells[4].innerHTML = `<span class="sitin-remaining ${rc}">${data.sitin_count}</span>`;
+
+                    // Update the Edit button dataset too
+                    const editBtn = cells[5].querySelector('.btn-edit');
+                    if (editBtn) {
+                        editBtn.dataset.id        = data.idNumber;
+                        editBtn.dataset.firstname = data.firstName;
+                        editBtn.dataset.lastname  = data.lastName;
+                        editBtn.dataset.middlename= data.middleName || '';
+                        editBtn.dataset.course    = data.course;
+                        editBtn.dataset.yearlevel = data.yearLevel;
+                        editBtn.dataset.sitin     = data.sitin_count;
+                    }
+                    // Update Delete button too
+                    const delBtn = cells[5].querySelector('.btn-del');
+                    if (delBtn) {
+                        delBtn.setAttribute('onclick', `confirmDelete('${data.idNumber}')`);
+                    }
+                }
+            });
+                } else {
+                    showToast('✗ ' + (data.message || 'Error updating.'), 'error');
+                }
+            })
+            .catch(() => showToast('✗ Connection error.', 'error'));
+        }
+
+        function updateReservation(resId, status) {
+    const fd = new FormData();
+    fd.append('id', resId);
+    fd.append('status', status);
+    fetch('/admin/reservations/update', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const statusCell = document.getElementById('res-status-' + resId);
+            const row = document.getElementById('res-row-' + resId);
+            if (statusCell) {
+                const color = status === 'approved' ? 'status-active' : 'status-done';
+                statusCell.innerHTML = `<span class="status-badge ${color}">${status}</span>`;
+            }
+            // Remove action buttons
+            const actionCell = row.querySelector('td:last-child');
+            if (actionCell) actionCell.innerHTML = `<span style="color:#aaa;font-size:0.82rem;">${status}</span>`;
+            showToast(`✓ Reservation ${status}.`, 'success');
+        }
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
+}
+
+// ── Reservation Toggle ──
+(function loadResStatus() {
+    fetch('/admin/get-reserved-pcs?lab=524&date=2099-01-01') // dummy call just to warm up
+    .catch(() => {});
+    // Load current status via a small inline data trick
+    const enabled = {{ 1 if res_settings and res_settings.enabled else 0 }};
+    const msg     = {{ (res_settings.message or '') | tojson }};
+    updateResStatusUI(enabled, msg);
+})();
+
+function updateResStatusUI(enabled, msg) {
+    const lbl = document.getElementById('resStatusLabel');
+    if (lbl) {
+        lbl.innerHTML = enabled ? '🟢 Reservations are OPEN ' : '🔴 Reservations are CLOSED';
+        lbl.style.border = enabled ? '1.5px solid #27ae60' : '1.5px solid #c0392b';
+        lbl.style.color  = enabled ? '#1e7e34' : '#c0392b';
+        lbl.style.background = enabled ? '#eafaf1' : '#fdecea';
+    }
+    if (msg && document.getElementById('resDisableMsg')) {
+        document.getElementById('resDisableMsg').value = msg;
+    }
+}
+
+function setReservation(enabled) {
+    const msg = document.getElementById('resDisableMsg').value.trim();
+    const fd  = new FormData();
+    fd.append('enabled', enabled);
+    fd.append('message', msg);
+    fetch('/admin/reservation-settings', { method:'POST', body:fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            updateResStatusUI(enabled, msg);
+            showToast(enabled ? '✅ Reservations enabled.' : '🚫 Reservations disabled.', enabled ? 'success' : 'error');
+        }
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
+}
+
+// ══════════════════════════════════════
+// RESERVATION TABS
+// ══════════════════════════════════════
+function switchResTab(panelId, btn) {
+    document.querySelectorAll('.res-tab-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.res-tab-btn').forEach(b => b.classList.remove('res-tab-active'));
+    document.getElementById(panelId).style.display = 'block';
+    btn.classList.add('res-tab-active');
+    if (panelId === 'res-panel-requests') initReqPagination();
+    if (panelId === 'res-panel-log') initLogPagination();
+}
+
+// ══════════════════════════════════════
+// RESERVATION REQUEST MODAL
+// ══════════════════════════════════════
+let _currentReqId = null;
+
+function openReqModal(id, idNum, name, session, purpose, lab, pc, time, date, status) {
+    _currentReqId = id;
+    // Read live status from DOM instead of stale parameter
+    const liveStatusEl = document.getElementById('req-status-' + id);
+    if (liveStatusEl) {
+        status = liveStatusEl.querySelector('.status-badge')?.textContent.trim().toLowerCase() || status;
+        if (status === 'sitting in') status = 'sitting_in';
+    }
+    document.getElementById('rm_id').value      = idNum;
+    document.getElementById('rm_name').value    = name;
+    document.getElementById('rm_session').value = session;
+    document.getElementById('rm_purpose').value = purpose;
+    document.getElementById('rm_lab').value     = 'Lab ' + lab;
+    document.getElementById('rm_pc').value      = 'PC ' + pc;
+    document.getElementById('rm_time').value    = time;
+    document.getElementById('rm_date').value    = date;
+
+    // Status badge
+    const statusRow = document.getElementById('rmStatusRow');
+    const colors = { approved: '#eafaf1', rejected: '#fdecea', pending: '#fff3cd' };
+    const textColors = { approved: '#1e7e34', rejected: '#c0392b', pending: '#856404' };
+    statusRow.innerHTML = `<span style="background:${colors[status]};color:${textColors[status]};padding:0.3rem 1rem;border-radius:20px;font-weight:700;font-size:0.85rem;">${status.toUpperCase()}</span>`;
+
+    // Action buttons — only show if pending
+    const btns = document.getElementById('rmActionBtns');
+    if (status === 'pending') {
+        btns.innerHTML = `
+            <button onclick="showModal('confirmApproveReqModal')" style="background:#1e7e34;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">✅ Approve</button>
+            <button onclick="showModal('confirmRejectReqModal')" style="background:#c0392b;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">❌ Reject</button>
+            <button type="button" class="btn-modal-close" onclick="closeModal('reqModal')">Cancel</button>`;
+    } else {
+        btns.innerHTML = `<button type="button" class="btn-modal-close" onclick="closeModal('reqModal')">Close</button>`;
+    }
+
+    // Load PC grid
+    loadReqPCGrid(lab, date, pc);
+    showModal('reqModal');
+}
+
+function loadReqPCGrid(lab, date, requestedPc) {
+    const grid = document.getElementById('rm_pc_grid');
+    grid.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:0.82rem;padding:0.5rem;">Loading...</div>';
+    fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}`)
+    .then(r => r.json())
+    .then(data => {
+        const reserved = data.reserved || [];
+        grid.innerHTML = '';
+        for (let i = 1; i <= 50; i++) {
+            const isThis  = i === parseInt(requestedPc);
+            const isTaken = reserved.includes(i) && !isThis;
+            const btn = document.createElement('div');
+            btn.title = isThis ? `PC ${i} — This Request` : isTaken ? `PC ${i} — Taken` : `PC ${i} — Available`;
+            btn.style.cssText = `width:100%;padding-top:100%;position:relative;border-radius:5px;border:1.5px solid;cursor:default;`;
+            if (isThis)       { btn.style.background = '#0F3E7D'; btn.style.borderColor = '#0d3569'; }
+            else if (isTaken) { btn.style.background = '#f8d7da'; btn.style.borderColor = '#f5c6cb'; }
+            else              { btn.style.background = '#E6F1FB'; btn.style.borderColor = '#185FA5'; }
+            
+            const labelContainer = document.createElement('div');
+            labelContainer.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;`;
+            
+            const pcLabel = document.createElement('span');
+            pcLabel.textContent = '🖥️';
+            pcLabel.style.cssText = `font-size:0.7rem;font-weight:700;color:${isThis ? 'white' : isTaken ? '#c0392b' : '#185FA5'};line-height:1;`;
+
+            const numLabel = document.createElement('span');
+            numLabel.textContent = i;
+            numLabel.style.cssText = `font-size:0.57rem;font-weight:700;color:${isThis ? 'white' : isTaken ? '#c0392b' : '#185FA5'};line-height:1;`;
+            
+            labelContainer.appendChild(pcLabel);
+            labelContainer.appendChild(numLabel);
+            btn.appendChild(labelContainer);
+            grid.appendChild(btn);
+        }
+    })
+    .catch(() => { grid.innerHTML = '<div style="color:#c0392b;font-size:0.82rem;">Failed to load.</div>'; });
+}
+
+function reqModalAction(id, status, message = null) {
+    const fd = new FormData();
+    fd.append('id', id);
+    fd.append('status', status);
+    if (message) fd.append('message', message);
+    fetch('/admin/reservations/update', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('reqModal');
+            // Update both tables
+            updateReservationRowUI(id, status);
+            showToast(`✓ Reservation ${status}.`, 'success');
+            // Update pending badge
+            updatePendingBadge();
+        }
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
+}
+
+function confirmReqModalAction(status) {
+    const modalId = status === 'approved' ? 'confirmApproveReqModal' : 'confirmRejectReqModal';
+    closeModal(modalId);
+    if (!_currentReqId) {
+        showToast('✗ No reservation request selected.', 'error');
+        return;
+    }
+    const message = status === 'rejected'
+        ? (document.getElementById('rejectReasonInput')?.value.trim() || null)
+        : null;
+    reqModalAction(_currentReqId, status, message);
+}
+
+function updateReservationRowUI(id, status) {
+    const row1 = document.getElementById('req-row-' + id);
+    const statusCell = document.getElementById('req-status-' + id);
+
+    // If rejected/expired/done → remove from req table, reload log
+    if (['rejected', 'expired', 'done'].includes(status)) {
+        if (row1) {
+            allReqRows = allReqRows.filter(r => r !== row1);
+            reqFiltered = reqFiltered.filter(r => r !== row1);
+            row1.remove();
+            renderReqTable();
+        }
+        // Add to log table dynamically
+        const logBody = document.getElementById('logTableBody');
+        const emptyLog = logBody.querySelector('td[colspan]');
+        if (emptyLog) emptyLog.closest('tr').remove();
+        const cells = row1 ? row1.querySelectorAll('td') : [];
+        if (cells.length) {
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-date', cells[8]?.innerText || '');
+            const badgeColor = status === 'done' ? 'status-active' : status === 'rejected' ? 'status-done' : '';
+            const badgeStyle = status === 'expired' ? 'style="background:#fff3cd;color:#856404;"' : '';
+            tr.innerHTML = `<td>${cells[0]?.innerText}</td><td>${cells[1]?.innerText}</td><td>${cells[2]?.innerText}</td><td>${cells[4]?.innerText}</td><td>${cells[5]?.innerText}</td><td>${cells[6]?.innerText}</td><td>${cells[7]?.innerText}</td><td>${cells[8]?.innerText}</td><td><span class="status-badge ${badgeColor}" ${badgeStyle}>${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>`;
+            logBody.insertBefore(tr, logBody.firstChild);
+            allLogRows.unshift(tr);
+            logFiltered.unshift(tr);
+            renderLogTable();
+        }
+        updatePendingBadge();
+        return;
+    }
+
+    // Update status badge for pending/approved/sitting_in
+    if (statusCell) {
+        let html = '';
+        if (status === 'approved') html = `<span class="status-badge status-active">approved</span>`;
+        else if (status === 'sitting_in') html = `<span class="status-badge" style="background:#cce5ff;color:#004085;">Sitting In</span>`;
+        else html = `<span class="status-badge" style="background:#fff3cd;color:#856404;">pending</span>`;
+        statusCell.innerHTML = html;
+    }
+
+    // Sit-in button
+    const sitinBtn = document.getElementById('sitin-btn-' + id);
+    if (sitinBtn) {
+        if (status === 'approved') {
+            sitinBtn.removeAttribute('disabled');
+            sitinBtn.style.opacity = '1';
+            sitinBtn.style.cursor = 'pointer';
+            sitinBtn.style.background = '#0F3E7D';
+            sitinBtn.textContent = 'Sit-in';
+            sitinBtn.setAttribute('onclick', `openSitinFromReservation(this.dataset)`);
+        } else if (status === 'sitting_in') {
+            sitinBtn.removeAttribute('disabled');
+            sitinBtn.style.opacity = '1';
+            sitinBtn.style.cursor = 'pointer';
+            sitinBtn.style.background = '#e67e22';
+            sitinBtn.textContent = 'Logout';
+            sitinBtn.removeAttribute('onclick');
+        } else {
+            sitinBtn.setAttribute('disabled', true);
+            sitinBtn.style.opacity = '0.4';
+            sitinBtn.style.cursor = 'not-allowed';
+        }
+    }
+    updatePendingBadge();
+}
+
+function updatePendingBadge() {
+    const rows = document.querySelectorAll('#reqTableBody .req-row');
+    let count = 0;
+    rows.forEach(r => { if (r.getAttribute('data-status') === 'pending') count++; });
+    const badge = document.getElementById('pendingBadge');
+    if (badge) badge.textContent = count;
+}
+
+// ══════════════════════════════════════
+// SIT-IN FROM RESERVATION
+// ══════════════════════════════════════
+function openSitinFromReservation(dataset) {
+    document.getElementById('confirmSitinResName').textContent = dataset.name;
+    document.getElementById('confirmSitinResBtn').onclick = function() {
+        closeModal('confirmSitinFromResModal');
+        _openSitinFromReservation(dataset);
+    };
+    showModal('confirmSitinFromResModal');
+}
+
+function _openSitinFromReservation(dataset) {
+    document._currentSfrResId = dataset.resId;
+    document._currentSfrPc    = dataset.pc || '';
+    document.getElementById('sfr_id').value        = dataset.id;
+    document.getElementById('sfr_name').value      = dataset.name;
+    document.getElementById('sfr_purpose').value   = dataset.purpose;
+    document.getElementById('sfr_lab').value       = dataset.lab;
+    document.getElementById('sfr_remaining').value = dataset.remaining;
+    document.getElementById('sfrError').style.display = 'none';
+    submitSitinFromRes();
+}
+
+function submitSitinFromRes() {
+    const idNumber  = document.getElementById('sfr_id').value;
+    const name      = document.getElementById('sfr_name').value;
+    const purpose   = document.getElementById('sfr_purpose').value;
+    const lab       = document.getElementById('sfr_lab').value;
+    const remaining = document.getElementById('sfr_remaining').value;
+    const resId     = document._currentSfrResId;
+    const errEl     = document.getElementById('sfrError');
+    errEl.style.display = 'none';
+
+    const fd = new FormData();
+    fd.append('idNumber', idNumber);
+    fd.append('purpose', purpose);
+    fd.append('lab', lab);
+    fd.append('reservation_id', resId);
+    fd.append('pc_number', document._currentSfrPc || '');
+    fetch('/admin/sitin/add-ajax', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('sitinFromResModal');
+            showToast('✓ Sit-in successful.', 'success');
+            addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, document._currentSfrPc || data.pc_number || '—');
+
+            // Update req table row
+            const statusCell = document.getElementById('req-status-' + resId);
+            if (statusCell) {
+                statusCell.innerHTML = `<span class="status-badge" style="background:#cce5ff;color:#004085;">Sitting In</span>`;
+            }
+            const sitinBtn = document.getElementById('sitin-btn-' + resId);
+            if (sitinBtn) {
+                sitinBtn.textContent = 'Logout';
+                sitinBtn.style.background = '#e67e22';
+                sitinBtn.removeAttribute('disabled');
+                sitinBtn.style.opacity = '1';
+                sitinBtn.style.cursor = 'pointer';
+                sitinBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    confirmResLogout(data.sessionId, resId);
+                };
+            }
+        } else {
+            errEl.textContent = data.message || 'Something went wrong.';
+            errEl.style.display = 'block';
+        }
+    })
+    .catch(() => { errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; });
+}
+
+// ══════════════════════════════════════
+// REQ TABLE FILTER + PAGINATION
+// ══════════════════════════════════════
+let allReqRows = [], reqPage = 1, reqFiltered = [];
+
+function initReqPagination() {
+    allReqRows  = [...document.querySelectorAll('#reqTableBody .req-row')];
+    reqFiltered = [...allReqRows];
+    renderReqTable();
+}
+
+function filterReqTable() {
+    const q      = document.getElementById('reqSearch').value.toLowerCase().trim();
+    const status = document.getElementById('reqFilterStatus').value.trim();
+    const lab    = document.getElementById('reqFilterLab').value.trim();
+    const pc     = document.getElementById('reqFilterPC').value.trim();
+    reqFiltered = allReqRows.filter(row => {
+        if (q && !row.textContent.toLowerCase().includes(q)) return false;
+        if (status && row.getAttribute('data-status') !== status) return false;
+        const cells = row.querySelectorAll('td');
+        if (lab && cells[5]?.innerText.trim() !== lab) return false;
+        if (pc  && cells[6]?.innerText.trim() !== 'PC ' + pc) return false;
+        return true;
+    });
+    reqPage = 1;
+    renderReqTable();
+}
+
+function renderReqTable() {
+    const total = reqFiltered.length;
+    const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+    const start = (reqPage - 1) * PER_PAGE;
+    const end   = start + PER_PAGE;
+    allReqRows.forEach(r => r.style.display = 'none');
+    reqFiltered.forEach((r, i) => { r.style.display = (i >= start && i < end) ? '' : 'none'; });
+    const infoEl = document.getElementById('reqInfo');
+    if (infoEl) infoEl.textContent = total === 0 ? 'No results' : `Showing ${start+1}–${Math.min(end,total)} of ${total}`;
+    const pgEl = document.getElementById('reqPgBtns');
+    if (!pgEl) return;
+    pgEl.innerHTML = '';
+    function makeBtn(label, onClick, isActive, isDisabled) {
+        const b = document.createElement('button');
+        b.className = 'pg-btn' + (isActive ? ' active' : '');
+        b.innerHTML = label; b.disabled = isDisabled; b.onclick = onClick;
+        pgEl.appendChild(b);
+    }
+    makeBtn('&#8592;', () => { reqPage--; renderReqTable(); }, false, reqPage === 1);
+    for (let i = 1; i <= pages; i++) makeBtn(i, () => { reqPage = i; renderReqTable(); }, i === reqPage, false);
+    makeBtn('&#8594;', () => { reqPage++; renderReqTable(); }, false, reqPage === pages);
+}
+
+// ══════════════════════════════════════
+// LOG TABLE FILTER + PAGINATION
+// ══════════════════════════════════════
+let allLogRows = [], logPage = 1, logFiltered = [];
+
+function initLogPagination() {
+    allLogRows  = [...document.querySelectorAll('#logTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
+    logFiltered = [...allLogRows];
+    renderLogTable();
+}
+
+function filterLogTable() {
+    const q       = document.getElementById('logSearch').value.toLowerCase().trim();
+    const from    = document.getElementById('logDateFrom').value;
+    const to      = document.getElementById('logDateTo').value;
+    const lab     = document.getElementById('logFilterLab').value.trim();
+    const purpose = document.getElementById('logFilterPurpose').value.trim();
+    const status  = document.getElementById('logFilterStatus').value.trim();
+    logFiltered = allLogRows.filter(row => {
+        const cells = row.querySelectorAll('td');
+        const rowDate = row.getAttribute('data-date') || '';
+        if (q && !row.textContent.toLowerCase().includes(q)) return false;
+        if (from && rowDate < from) return false;
+        if (to   && rowDate > to)   return false;
+        if (lab  && cells[4]?.innerText.trim() !== lab) return false;
+        if (purpose && cells[3]?.innerText.trim() !== purpose) return false;
+        if (status  && cells[8]?.innerText.trim().toLowerCase() !== status) return false;
+        return true;
+    });
+    logPage = 1;
+    renderLogTable();
+}
+
+function renderLogTable() {
+    const total = logFiltered.length;
+    const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+    const start = (logPage - 1) * PER_PAGE;
+    const end   = start + PER_PAGE;
+    allLogRows.forEach(r => r.style.display = 'none');
+    logFiltered.forEach((r, i) => { r.style.display = (i >= start && i < end) ? '' : 'none'; });
+    const infoEl = document.getElementById('logInfo');
+    if (infoEl) infoEl.textContent = total === 0 ? 'No results' : `Showing ${start+1}–${Math.min(end,total)} of ${total}`;
+    const pgEl = document.getElementById('logPgBtns');
+    if (!pgEl) return;
+    pgEl.innerHTML = '';
+    function makeBtn(label, onClick, isActive, isDisabled) {
+        const b = document.createElement('button');
+        b.className = 'pg-btn' + (isActive ? ' active' : '');
+        b.innerHTML = label; b.disabled = isDisabled; b.onclick = onClick;
+        pgEl.appendChild(b);
+    }
+    makeBtn('&#8592;', () => { logPage--; renderLogTable(); }, false, logPage === 1);
+    for (let i = 1; i <= pages; i++) makeBtn(i, () => { logPage = i; renderLogTable(); }, i === logPage, false);
+    makeBtn('&#8594;', () => { logPage++; renderLogTable(); }, false, logPage === pages);
+}
+
+// ── Log Export Functions ──
+function exportLogCSV() {
+    const headers = ['#','ID Number','Name','Purpose','Lab','PC','Time','Date','Status'];
+    const rows = logFiltered.map(r => {
+        const c = r.querySelectorAll('td');
+        return [c[0]?.innerText,c[1]?.innerText,c[2]?.innerText,c[3]?.innerText,c[4]?.innerText,c[5]?.innerText,c[6]?.innerText,c[7]?.innerText,c[8]?.innerText];
+    });
+    let csv = headers.join(',') + '\n';
+    rows.forEach(r => { csv += r.map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',') + '\n'; });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+    a.download = 'Reservation_Log_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+}
+
+function exportLogExcel() {
+    const headers = ['#','ID Number','Name','Purpose','Lab','PC','Time','Date','Status'];
+    const rows = logFiltered.map(r => {
+        const c = r.querySelectorAll('td');
+        return [c[0]?.innerText,c[1]?.innerText,c[2]?.innerText,c[3]?.innerText,c[4]?.innerText,c[5]?.innerText,c[6]?.innerText,c[7]?.innerText,c[8]?.innerText];
+    });
+    let xml = `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Reservation Log"><Table>`;
+    xml += '<Row>' + headers.map(h => `<Cell><Data ss:Type="String">${h}</Data></Cell>`).join('') + '</Row>';
+    rows.forEach(r => { xml += '<Row>' + r.map(v => `<Cell><Data ss:Type="String">${v||''}</Data></Cell>`).join('') + '</Row>'; });
+    xml += '</Table></Worksheet></Workbook>';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([xml], {type:'application/vnd.ms-excel'}));
+    a.download = 'Reservation_Log_' + new Date().toISOString().slice(0,10) + '.xls';
+    a.click();
+}
+
+function exportLogPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    doc.setFillColor(15,62,125); doc.rect(0,0,297,22,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(14); doc.setFont('helvetica','bold');
+    doc.text('CCS Sit-in Monitoring System', 148.5, 9, {align:'center'});
+    doc.setFontSize(10); doc.setFont('helvetica','normal');
+    doc.text('Reservation Log  |  University of Cebu  |  Generated: ' + new Date().toLocaleString(), 148.5, 17, {align:'center'});
+    const rows = logFiltered.map(r => {
+        const c = r.querySelectorAll('td');
+        return [c[0]?.innerText,c[1]?.innerText,c[2]?.innerText,c[3]?.innerText,c[4]?.innerText,c[5]?.innerText,c[6]?.innerText,c[7]?.innerText,c[8]?.innerText];
+    });
+    doc.autoTable({
+        startY: 26,
+        head: [['#','ID Number','Name','Purpose','Lab','PC','Time','Date','Status']],
+        body: rows,
+        theme: 'grid',
+        styles: { fontSize:9, cellPadding:4, textColor:[33,33,33], lineColor:[220,220,220], lineWidth:0.2 },
+        headStyles: { fillColor:[15,62,125], textColor:[255,255,255], fontStyle:'bold' },
+        alternateRowStyles: { fillColor:[245,248,255] },
+        didDrawPage: () => {
+            doc.setFontSize(8); doc.setTextColor(170,170,170);
+            doc.text('College of Computer Studies  |  University of Cebu  © 2026', 148.5, 205, {align:'center'});
+        }
+    });
+    doc.save('Reservation_Log_' + new Date().toISOString().slice(0,10) + '.pdf');
+}
+
+function printLog() {
+    const rows = logFiltered.map(r => {
+        const c = r.querySelectorAll('td');
+        return `<tr><td>${c[0]?.innerText||''}</td><td>${c[1]?.innerText||''}</td><td>${c[2]?.innerText||''}</td><td>${c[3]?.innerText||''}</td><td>${c[4]?.innerText||''}</td><td>${c[5]?.innerText||''}</td><td>${c[6]?.innerText||''}</td><td>${c[7]?.innerText||''}</td><td>${c[8]?.innerText||''}</td></tr>`;
+    }).join('');
+    const win = window.open('','_blank');
+    win.document.write(`<html><head><title>Reservation Log</title><style>body{font-family:Arial,sans-serif;padding:20px;}h2{color:#0F3E7D;text-align:center;}table{width:100%;border-collapse:collapse;font-size:11px;}th{background:#0F3E7D;color:white;padding:7px;}td{padding:6px 8px;border-bottom:1px solid #eee;}tr:nth-child(even){background:#f5f8ff;}</style></head><body><h2>CCS Sit-in Monitoring System</h2><p style="text-align:center;color:#888;font-size:0.85rem;">Reservation Log | University of Cebu | Generated: ${new Date().toLocaleString()}</p><table><thead><tr><th>#</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Lab</th><th>PC</th><th>Time</th><th>Date</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
+    win.document.close();
+}
+
+function confirmResLogout(sessionId, resId) {
+    showModal('logoutModal');
+    document.getElementById('logoutForm').onsubmit = null;
+    document.getElementById('logoutForm').action = '';
+    document._pendingResLogout = { sessionId, resId };
+    document.querySelector('#logoutModal .btn-modal-close').setAttribute('onclick', "closeModal('logoutModal')");
+
+    // Override the Yes button
+    const yesBtn = document.querySelector('#logoutModal [onclick="submitLogout()"]');
+    if (yesBtn) {
+        yesBtn.setAttribute('onclick', 'submitResLogout()');
+    }
+}
+
+function submitResLogout() {
+    const { sessionId, resId } = document._pendingResLogout || {};
+    if (!sessionId || !resId) return;
+    closeModal('logoutModal');
+
+    // Restore logout button behavior for normal use
+    const yesBtn = document.querySelector('#logoutModal [onclick="submitResLogout()"]');
+    if (yesBtn) yesBtn.setAttribute('onclick', 'submitLogout()');
+
+    fetch('/admin/sitin/end-from-res/' + sessionId + '/' + resId, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+    showToast('✓ Session ended. PC is now vacant.', 'success');
+
+    // Remove from active sit-in table
+    document.querySelectorAll('#sitinTableBody tr').forEach(row => {
+        if (row.innerHTML.includes('data-id="' + sessionId + '"')) row.remove();
+    });
+    allSitinRows = allSitinRows.filter(r => !r.innerHTML.includes('data-id="' + sessionId + '"'));
+    sitinFiltered = [...allSitinRows];
+    renderTable('sitin');
+
+    // Remove row from req table and move to log
+    const reqRow = document.getElementById('req-row-' + resId);
+    if (reqRow) {
+        const cells = reqRow.querySelectorAll('td');
+        allReqRows = allReqRows.filter(r => r !== reqRow);
+        reqFiltered = reqFiltered.filter(r => r !== reqRow);
+        reqRow.remove();
+        renderReqTable();
+
+        // Add to log table
+        const logBody = document.getElementById('logTableBody');
+        const emptyLog = logBody.querySelector('td[colspan]');
+        if (emptyLog) emptyLog.closest('tr').remove();
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-date', cells[8]?.innerText || '');
+        tr.innerHTML = `
+            <td>${cells[0]?.innerText}</td>
+            <td>${cells[1]?.innerText}</td>
+            <td>${cells[2]?.innerText}</td>
+            <td>${cells[4]?.innerText}</td>
+            <td>${cells[5]?.innerText}</td>
+            <td>${cells[6]?.innerText}</td>
+            <td>${cells[7]?.innerText}</td>
+            <td>${cells[8]?.innerText}</td>
+            <td><span class="status-badge" style="background:#cce5ff;color:#004085;">Done</span></td>`;
+        logBody.insertBefore(tr, logBody.firstChild);
+        allLogRows.unshift(tr);
+        logFiltered.unshift(tr);
+        renderLogTable();
+    }
+    updatePendingBadge();
+
+} else {
+    showToast('✗ Failed to end session.', 'error');
+}
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
+}
+
+function confirmDeleteReservation() {
+    if (!_currentReqId) return;
+    showModal('confirmDeleteReservationModal');
+}
+
+function submitDeleteReservation() {
+    closeModal('confirmDeleteReservationModal');
+    const fd = new FormData();
+    fd.append('id', _currentReqId);
+    fetch('/admin/reservations/delete', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('reqModal');
+            const row = document.getElementById('req-row-' + _currentReqId);
+            if (row) {
+                allReqRows = allReqRows.filter(r => r !== row);
+                reqFiltered = reqFiltered.filter(r => r !== row);
+                row.remove();
+                renderReqTable();
+            }
+            updatePendingBadge();
+            showToast('✓ Reservation deleted.', 'success');
+        } else {
+            showToast('✗ ' + (data.message || 'Error deleting.'), 'error');
+        }
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
+}
+// ══════════════════════════════════════
+// PC AVAILABILITY MANAGEMENT
+// ══════════════════════════════════════
+let _mgmtLab = '524';
+let _blockedPCs = [];
+
+function switchMgmtLab(lab, btn) {
+    _mgmtLab = lab;
+    document.querySelectorAll('.lab-mgmt-btn').forEach(b => b.classList.remove('lab-mgmt-active'));
+    btn.classList.add('lab-mgmt-active');
+    loadMgmtGrid();
+}
+
+function loadMgmtGrid() {
+    const grid = document.getElementById('mgmt_pc_grid');
+    const msg  = document.getElementById('mgmt_status_msg');
+    if (grid.children.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:0.85rem;padding:0.5rem;">Loading...</div>';
+    }
+
+    fetch('/admin/get-blocked-pcs?lab=' + encodeURIComponent(_mgmtLab))
+    .then(r => r.json())
+    .then(data => {
+        _blockedPCs = data.blocked || [];
+        const occupiedPCs = data.occupied || [];
+        grid.innerHTML = '';
+        let blockedCount = _blockedPCs.length;
+
+        for (let i = 1; i <= 50; i++) {
+            const isBlocked  = _blockedPCs.includes(i);
+            const isOccupied = occupiedPCs.includes(i);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.style.cssText = `width:100%;height:60px;border-radius:8px;border:2px solid;font-size:0.65rem;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:Arial,sans-serif;transition:all 0.15s;`;
+            if (isOccupied) {
+                btn.style.background = '#f8d7da';
+                btn.style.borderColor = '#c0392b';
+                btn.style.color = '#c0392b';
+                btn.style.cursor = 'not-allowed';
+                btn.style.opacity = '0.85';
+                btn.title = `PC ${i} — In Use (student sitting in)`;
+                btn.disabled = true;
+            } else if (isBlocked) {
+                btn.style.background = '#f8d7da';
+                btn.style.borderColor = '#c0392b';
+                btn.style.color = '#c0392b';
+                btn.style.cursor = 'pointer';
+                btn.title = `PC ${i} — Blocked (click to unblock)`;
+                btn.onclick = () => togglePcBlock(i, btn);
+            } else {
+                btn.style.background = '#eafaf1';
+                btn.style.borderColor = '#27ae60';
+                btn.style.color = '#27ae60';
+                btn.style.cursor = 'pointer';
+                btn.title = `PC ${i} — Available (click to block)`;
+                btn.onclick = () => togglePcBlock(i, btn);
+            }
+            btn.innerHTML = `<span style="font-size:0.9rem;">${isOccupied ? '🔴' : '🖥️'}</span><span>${i}</span>`;
+            grid.appendChild(btn);
+        }
+        msg.textContent = `Lab ${_mgmtLab}: ${blockedCount} manually blocked, ${occupiedPCs.length} in use, ${50 - blockedCount - occupiedPCs.length} available.`;
+        msg.style.color = (blockedCount + occupiedPCs.length) > 0 ? '#c0392b' : '#27ae60';
+    })
+    .catch(() => {
+        grid.innerHTML = '<div style="color:#c0392b;font-size:0.85rem;">Failed to load.</div>';
+    });
+}
+
+function togglePcBlock(pcNumber, btn) {
+    const isCurrentlyBlocked = _blockedPCs.includes(pcNumber);
+    const newBlocked = !isCurrentlyBlocked;
+
+    const fd = new FormData();
+    fd.append('lab', _mgmtLab);
+    fd.append('pc_number', pcNumber);
+    fd.append('blocked', newBlocked ? '1' : '0');
+
+    fetch('/admin/toggle-pc-block', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            if (newBlocked) {
+                _blockedPCs.push(pcNumber);
+                btn.style.background = '#f8d7da';
+                btn.style.borderColor = '#c0392b';
+                btn.style.color = '#c0392b';
+                btn.title = `PC ${pcNumber} — Blocked (click to unblock)`;
+            } else {
+                _blockedPCs = _blockedPCs.filter(p => p !== pcNumber);
+                btn.style.background = '#eafaf1';
+                btn.style.borderColor = '#27ae60';
+                btn.style.color = '#27ae60';
+                btn.title = `PC ${pcNumber} — Available (click to block)`;
+            }
+            const msg = document.getElementById('mgmt_status_msg');
+            const blockedCount = _blockedPCs.length;
+            msg.textContent = `Lab ${_mgmtLab}: ${blockedCount} PC(s) blocked, ${50 - blockedCount} available.`;
+            msg.style.color = blockedCount > 0 ? '#c0392b' : '#27ae60';
+            showToast(newBlocked ? `🚫 PC ${pcNumber} blocked.` : `✅ PC ${pcNumber} unblocked.`, newBlocked ? 'error' : 'success');
+        }
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
+}
+
+// Load the grid when reservation section is opened
+document.addEventListener('DOMContentLoaded', function() {
+    // Load mgmt grid after short delay to ensure DOM is ready
+    setTimeout(() => loadMgmtGrid(), 500);
+    // Auto-refresh the PC grid every 10 seconds
+    setInterval(() => loadMgmtGrid(), 10000);
+});
+
+function loadAvailablePCs() {
+    const lab = document.getElementById('sfm_lab').value;
+    const pcRow = document.getElementById('sfm_pc_row');
+    const pcSelect = document.getElementById('sfm_pc');
+
+    if (!lab) {
+        pcRow.style.display = 'none';
+        pcSelect.innerHTML = '<option value="">-- Select PC --</option>';
+        return;
+    }
+
+    fetch('/admin/get-available-pcs?lab=' + encodeURIComponent(lab))
+    .then(r => r.json())
+    .then(data => {
+        pcSelect.innerHTML = '<option value="">-- Select PC --</option>';
+        (data.available || []).forEach(pc => {
+            const opt = document.createElement('option');
+            opt.value = pc;
+            opt.textContent = 'PC ' + pc;
+            pcSelect.appendChild(opt);
+        });
+        pcRow.style.display = '';
+    })
+    .catch(() => { pcRow.style.display = 'none'; });
+}
+
+let _editingPC = false;
+let _newSelectedPC = null;
+
+function enablePCEdit() {
+    _editingPC = true;
+    _newSelectedPC = null;
+    document.getElementById('rmSavePCRow').style.display = 'block';
+    document.getElementById('rmNewPCLabel').textContent = 'Click a PC to select';
+    document.getElementById('reqEditPCBtn').style.display = 'none';
+    // Reload grid in edit mode
+    const lab  = document.getElementById('rm_lab').value.replace('Lab ', '');
+    const date = document.getElementById('rm_date').value;
+    const currentPC = parseInt(document.getElementById('rm_pc').value.replace('PC ', ''));
+    loadReqPCGridEditable(lab, date, currentPC);
+}
+
+function cancelPCEdit() {
+    _editingPC = false;
+    _newSelectedPC = null;
+    document.getElementById('rmSavePCRow').style.display = 'none';
+    document.getElementById('reqEditPCBtn').style.display = '';
+    // Reload original grid
+    const lab  = document.getElementById('rm_lab').value.replace('Lab ', '');
+    const date = document.getElementById('rm_date').value;
+    const currentPC = parseInt(document.getElementById('rm_pc').value.replace('PC ', ''));
+    loadReqPCGrid(lab, date, currentPC);
+}
+
+function loadReqPCGridEditable(lab, date, currentPC) {
+    const grid = document.getElementById('rm_pc_grid');
+    grid.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:0.82rem;padding:0.5rem;">Loading...</div>';
+    fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}`)
+    .then(r => r.json())
+    .then(data => {
+        const reserved = data.reserved || [];
+        grid.innerHTML = '';
+        for (let i = 1; i <= 50; i++) {
+            const isThis   = i === currentPC;
+            const isTaken  = reserved.includes(i) && !isThis;
+            const btn      = document.createElement('div');
+            btn.style.cssText = `width:100%;padding-top:100%;position:relative;border-radius:5px;border:1.5px solid;`;
+
+            if (isTaken) {
+                btn.style.background   = '#f8d7da';
+                btn.style.borderColor  = '#f5c6cb';
+                btn.style.cursor       = 'not-allowed';
+                btn.title = `PC ${i} — Taken`;
+            } else if (isThis) {
+                btn.style.background  = '#0F3E7D';
+                btn.style.borderColor = '#0d3569';
+                btn.style.cursor      = 'default';
+                btn.title = `PC ${i} — Current`;
+            } else {
+                btn.style.background  = '#E6F1FB';
+                btn.style.borderColor = '#185FA5';
+                btn.style.cursor      = 'pointer';
+                btn.title = `PC ${i} — Click to select`;
+                btn.onclick = function() {
+                    // Deselect all
+                    grid.querySelectorAll('[data-selectable]').forEach(b => {
+                        b.style.background   = '#E6F1FB';
+                        b.style.borderColor  = '#185FA5';
+                        b.querySelector('span:last-child').style.color = '#185FA5';
+                        b.querySelector('span:first-child').style.color = '#185FA5';
+                    });
+                    // Select this
+                    btn.style.background  = '#1e7e34';
+                    btn.style.borderColor = '#1e7e34';
+                    btn.querySelector('span:last-child').style.color = 'white';
+                    btn.querySelector('span:first-child').style.color = 'white';
+                    _newSelectedPC = i;
+                    document.getElementById('rmNewPCLabel').textContent = `Selected: PC ${i}`;
+                };
+                btn.setAttribute('data-selectable', '1');
+            }
+
+            const labelContainer = document.createElement('div');
+            labelContainer.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;`;
+            const pcLabel = document.createElement('span');
+            pcLabel.textContent = '🖥️';
+            pcLabel.style.cssText = `font-size:0.7rem;font-weight:700;color:${isTaken ? '#c0392b' : isThis ? 'white' : '#185FA5'};line-height:1;`;
+            const numLabel = document.createElement('span');
+            numLabel.textContent = i;
+            numLabel.style.cssText = `font-size:0.57rem;font-weight:700;color:${isTaken ? '#c0392b' : isThis ? 'white' : '#185FA5'};line-height:1;`;
+            labelContainer.appendChild(pcLabel);
+            labelContainer.appendChild(numLabel);
+            btn.appendChild(labelContainer);
+            grid.appendChild(btn);
+        }
+    })
+    .catch(() => { grid.innerHTML = '<div style="color:#c0392b;font-size:0.82rem;">Failed to load.</div>'; });
+}
+
+function saveNewPC() {
+    if (!_newSelectedPC) {
+        showToast('✗ Please click an available PC first.', 'error');
+        return;
+    }
+    const fd = new FormData();
+    fd.append('id', _currentReqId);
+    fd.append('pc_number', _newSelectedPC);
+    fetch('/admin/reservations/update-pc', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Update the display
+            document.getElementById('rm_pc').value = 'PC ' + _newSelectedPC;
+            // Update the table row
+            const row = document.getElementById('req-row-' + _currentReqId);
+            if (row) {
+                const cells = row.querySelectorAll('td');
+                if (cells[6]) cells[6].textContent = 'PC ' + _newSelectedPC;
+                // Update sit-in button dataset
+                const sitinBtn = document.getElementById('sitin-btn-' + _currentReqId);
+                if (sitinBtn) sitinBtn.dataset.pc = _newSelectedPC;
+            }
+            const updatedPC = _newSelectedPC;
+            cancelPCEdit();
+            showToast('✓ PC updated to PC ' + updatedPC + '.', 'success');
+            loadMgmtGrid();
+            const lab  = document.getElementById('rm_lab').value.replace('Lab ', '');
+            const date = document.getElementById('rm_date').value;
+            loadReqPCGrid(lab, date, updatedPC);
+        } else {
+            showToast('✗ ' + (data.message || 'Failed to update PC.'), 'error');
+        }
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
+}
+
+function applyRejectReason(sel) {
+    if (sel.value) {
+        document.getElementById('rejectReasonInput').value = sel.value;
+        sel.value = '';
+    }
+}
+
+    </script>
+<div class="modal-overlay" id="deleteFeedbackModal" style="display:none;">
+    <div class="modal-box modal-sm">
+        <div class="modal-header" style="background:#c0392b;"><h3>Delete Feedback</h3><button class="modal-close" onclick="closeModal('deleteFeedbackModal')">&#10005;</button></div>
+        <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">🗑️</div>
+            <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Are you sure you want to delete this feedback?<br><span style="color:#999;font-size:0.85rem;">This cannot be undone.</span></p>
+            <div style="display:flex;gap:0.8rem;justify-content:center;">
+                <button type="button" class="btn-modal-close" onclick="closeModal('deleteFeedbackModal')">No, Cancel</button>
+                <button type="button" id="confirmDeleteFeedbackBtn" style="background:#c0392b;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="confirmEnableResModal" style="display:none; z-index:9999;">
+    <div class="modal-box modal-sm">
+        <div class="modal-header" style="background:#1e7e34;"><h3>Confirm Enable</h3><button class="modal-close" onclick="closeModal('confirmEnableResModal')">&#10005;</button></div>
+        <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">✅</div>
+            <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Are you sure you want to <strong style="color:#1e7e34;">enable</strong> reservations?</p>
+            <div style="display:flex;gap:0.8rem;justify-content:center;">
+                <button type="button" class="btn-modal-close" onclick="closeModal('confirmEnableResModal')">No, Cancel</button>
+                <button type="button" onclick="closeModal('confirmEnableResModal'); setReservation(1);" style="background:#1e7e34;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Enable</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="confirmDeleteReservationModal" style="display:none; z-index:9999;">
+    <div class="modal-box modal-sm">
+        <div class="modal-header" style="background:#c0392b;"><h3>Delete Reservation</h3><button class="modal-close" onclick="closeModal('confirmDeleteReservationModal')">&#10005;</button></div>
+        <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">🗑️</div>
+            <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Are you sure you want to delete this reservation?<br><span style="color:#999;font-size:0.85rem;">This cannot be undone.</span></p>
+            <div style="display:flex;gap:0.8rem;justify-content:center;">
+                <button type="button" class="btn-modal-close" onclick="closeModal('confirmDeleteReservationModal')">No, Cancel</button>
+                <button type="button" onclick="submitDeleteReservation()" style="background:#c0392b;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="confirmSitinFromResModal" style="display:none; z-index: 9999;">
+    <div class="modal-box modal-sm" style="max-width: 360px;">
+        <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Sit-in</h3><button class="modal-close" onclick="closeModal('confirmSitinFromResModal')">&#10005;</button></div>
+        <div class="modal-body" style="text-align:center;padding:1.5rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">🖥️</div>
+            <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Are you sure you want to sit in<br><strong id="confirmSitinResName" style="color:#0F3E7D;"></strong>?</p>
+            <div style="display:flex;gap:0.8rem;justify-content:center;">
+                <button type="button" class="btn-modal-close" onclick="closeModal('confirmSitinFromResModal')">No, Cancel</button>
+                <button type="button" id="confirmSitinResBtn" class="btn-modal-submit">Yes, Sit-in</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="confirmDisableResModal" style="display:none; z-index:9999;">
+    <div class="modal-box modal-sm">
+        <div class="modal-header" style="background:#c0392b;"><h3>Confirm Disable</h3><button class="modal-close" onclick="closeModal('confirmDisableResModal')">&#10005;</button></div>
+        <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">🚫</div>
+            <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Are you sure you want to <strong style="color:#c0392b;">disable</strong> reservations?</p>
+            <div style="display:flex;gap:0.8rem;justify-content:center;">
+                <button type="button" class="btn-modal-close" onclick="closeModal('confirmDisableResModal')">No, Cancel</button>
+                <button type="button" onclick="closeModal('confirmDisableResModal'); setReservation(0);" style="background:#c0392b;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Disable</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

@@ -9,6 +9,14 @@ from dbhelper import (
     edit_announcement, delete_announcement, toggle_pin_announcement,
     get_purpose_counts,
     save_feedback, get_all_feedback, has_feedback,
+    init_reservations_table, add_reservation,
+    get_student_reservations, get_all_reservations,
+    update_reservation_status,
+    get_reservation_settings, set_reservation_enabled,
+    init_reservation_settings, get_reserved_pcs,
+    get_reservation_log, get_blocked_pcs,
+    set_pc_blocked,
+    update_reservation_message, get_occupied_pcs,
 )
 
 import sqlite3 as _sqlite3
@@ -109,7 +117,57 @@ def login_page():
         return redirect('/admin/dashboard')
     return render_template('login.html')
 
+@app.route('/admin/feedback/delete', methods=['POST'])
+def admin_delete_feedback():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    feedback_id = request.form.get('id', '').strip()
+    conn = _sqlite3.connect('database.db')
+    conn.execute("DELETE FROM feedback WHERE id = ?", (feedback_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
 
+@app.route('/admin/add-student', methods=['POST'])
+def admin_add_student():
+    if not session.get('admin'):
+        return jsonify({'success': False, 'message': 'Not logged in.'}), 401
+
+    id_number   = request.form.get('idNumber', '').strip()
+    first_name  = request.form.get('firstName', '').strip().upper()
+    last_name   = request.form.get('lastName', '').strip().upper()
+    middle_name = request.form.get('middleName', '').strip().upper() or None
+    course      = request.form.get('course', '').strip()
+    year_level  = request.form.get('yearLevel', '').strip()
+    email       = request.form.get('email', '').strip()
+    address     = request.form.get('address', '').strip() or None
+    password    = request.form.get('password', '').strip()
+
+    if not id_number.isdigit() or len(id_number) != 8:
+        return jsonify({'success': False, 'message': 'ID Number must be exactly 8 digits.'})
+    if get_student_by_id(id_number):
+        return jsonify({'success': False, 'message': 'ID Number is already registered.'})
+    if len(password) < 6:
+        return jsonify({'success': False, 'message': 'Password must be at least 6 characters.'})
+    if '@' not in email:
+        return jsonify({'success': False, 'message': 'Invalid email format.'})
+
+    sitin_count = get_sitin_count(course)
+    register_student(id_number, first_name, last_name, middle_name,
+                     year_level, password, email, course, address, sitin_count)
+
+    return jsonify({
+        'success': True,
+        'idNumber': id_number,
+        'firstName': first_name.upper(),
+        'lastName': last_name.upper(),
+        'middleName': middle_name.upper() if middle_name else '',
+        'course': course.upper(),
+        'yearLevel': year_level,
+        'email': email,
+        'address': address or '',
+        'sitin_count': sitin_count
+    })
 # ══════════════════════════════════════════
 # ROUTE — REGISTER
 # ══════════════════════════════════════════
@@ -209,11 +267,15 @@ def dashboard():
         if has_feedback(s['id']):
             submitted_ids.add(s['id'])
 
+    reservations = get_student_reservations(session['student_id'])
+    res_settings = get_reservation_settings()
     return render_template('student_dashboard.html',
         student=student,
         sessions=sessions,
         announcements=announcements,
-        submitted_feedback_ids=submitted_ids
+        submitted_feedback_ids=submitted_ids,
+        reservations=reservations,
+        res_settings=res_settings
     )
 
 
@@ -249,16 +311,17 @@ def student_submit_feedback():
     conn = _sq.connect('database.db')
     conn.row_factory = _sq.Row
     row = conn.execute(
-        "SELECT lab FROM sitin_sessions WHERE id = ? AND idNumber = ?",
+        "SELECT lab, pc_number FROM sitin_sessions WHERE id = ? AND idNumber = ?",
         (session_id, id_number)
     ).fetchone()
-    conn.close()
-
     if not row:
+        conn.close()
         return jsonify({'success': False, 'message': 'Session not found.'})
 
     lab = row['lab']
-    save_feedback(id_number, int(session_id), lab, message, rating)
+    pc_number = row['pc_number'] if row['pc_number'] else None
+    conn.close()
+    save_feedback(id_number, int(session_id), lab, message, rating, pc_number)
 
     return jsonify({'success': True, 'message': 'Feedback submitted successfully!'})
 
@@ -413,12 +476,18 @@ def admin_dashboard():
     purpose_counts = get_purpose_counts()
     feedback_list  = get_all_feedback()
 
+    all_reservations = get_all_reservations()
+    res_settings = get_reservation_settings()
+    reservation_log = get_reservation_log()
     return render_template('admin_dashboard.html',
         students=students,
         sessions=sessions,
         announcements=announcements,
         purpose_counts=purpose_counts,
-        feedback_list=feedback_list
+        feedback_list=feedback_list,
+        all_reservations=all_reservations,
+        res_settings=res_settings,
+        reservation_log=reservation_log
     )
 
 
@@ -439,8 +508,13 @@ def admin_add_sitin_ajax():
         return jsonify({'success': False, 'message': f"Student ID '{id_number}' not found."})
     if student['sitin_count'] <= 0:
         return jsonify({'success': False, 'message': 'Student has no remaining sit-in sessions.'})
-    session_id = add_sitin(id_number, purpose, lab)
-    return jsonify({'success': True, 'message': 'Sit-in successful.', 'sessionId': session_id})
+    pc_number = request.form.get('pc_number', '').strip()
+    pc_number = int(pc_number) if pc_number.isdigit() else None
+    session_id = add_sitin(id_number, purpose, lab, pc_number)
+    reservation_id = request.form.get('reservation_id', '').strip()
+    if reservation_id:
+        update_reservation_status(int(reservation_id), 'sitting_in')
+    return jsonify({'success': True, 'message': 'Sit-in successful.', 'sessionId': session_id, 'pc_number': pc_number})
 
 
 # ══════════════════════════════════════════
@@ -451,6 +525,11 @@ def admin_end_sitin(session_id):
     if not session.get('admin'):
         return redirect('/login')
     end_sitin(session_id)
+    # Also expire any sitting_in reservation for this session
+    conn = _sqlite3.connect('database.db')
+    conn.execute("UPDATE reservations SET status='done' WHERE status='sitting_in' AND idNumber=(SELECT idNumber FROM sitin_sessions WHERE id=?)", (session_id,))
+    conn.commit()
+    conn.close()
     return redirect('/admin/dashboard')
 
 
@@ -510,7 +589,16 @@ def admin_delete_announcement():
     delete_announcement(int(ann_id))
     return jsonify({'success': True, 'id': int(ann_id)})
 
-
+# ══════════════════════════════════════════
+# ROUTE — SIT IN (AJAX)
+# ══════════════════════════════════════════
+@app.route('/admin/sitin/end-from-res/<int:session_id>/<int:res_id>', methods=['POST'])
+def admin_end_sitin_from_res(session_id, res_id):
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    end_sitin(session_id)
+    update_reservation_status(res_id, 'done')
+    return jsonify({'success': True})
 # ══════════════════════════════════════════
 # ROUTE — ADMIN TOGGLE PIN ANNOUNCEMENT (AJAX)
 # ══════════════════════════════════════════
@@ -558,32 +646,113 @@ def admin_search_student():
 @app.route('/admin/edit-student', methods=['POST'])
 def admin_edit_student():
     if not session.get('admin'):
-        return redirect('/login')
-    id_number    = request.form.get('idNumber', '').strip()
-    first_name   = request.form.get('firstName', '').strip()
-    last_name    = request.form.get('lastName', '').strip()
-    middle_name  = request.form.get('middleName', '').strip() or None
+        return jsonify({'success': False, 'message': 'Not logged in.'}), 401
+
+    id_number     = request.form.get('idNumber', '').strip()
+    new_id_number = request.form.get('newIdNumber', '').strip() or id_number
+    first_name   = request.form.get('firstName', '').strip().upper()
+    last_name    = request.form.get('lastName', '').strip().upper()
+    middle_name  = request.form.get('middleName', '').strip().upper() or None
     email        = request.form.get('email', '').strip()
     course       = request.form.get('course', '').strip()
     course_level = request.form.get('yearLevel', '').strip()
     address      = request.form.get('address', '').strip() or None
-    sitin_count  = request.form.get('sitin_count', '').strip()
-    sitin_count  = int(sitin_count) if sitin_count else get_sitin_count(course)
+    sitin_count_raw = request.form.get('sitin_count', '').strip()
+    sitin_count     = int(sitin_count_raw) if sitin_count_raw else get_sitin_count(course)
+
+    # Get old course to check if CCS status changed
+    old_student = get_student_by_id(id_number)
+    if old_student:
+        old_course  = old_student['course'] or ''
+        old_is_ccs  = old_course in CCS_COURSES
+        new_is_ccs  = course in CCS_COURSES
+        if old_is_ccs != new_is_ccs:
+            sitin_count = get_sitin_count(course)
 
     conn = _sqlite3.connect('database.db')
     conn.execute(
         '''UPDATE students
-           SET firstName=?, lastName=?, middleName=?,
-               email=?, course=?, yearLevel=?, address=?, sitin_count=?
-           WHERE idNumber=?''',
-        (first_name, last_name, middle_name, email,
-         course, course_level, address, sitin_count, id_number)
+        SET idNumber=?, firstName=?, lastName=?, middleName=?,
+            email=?, course=?, yearLevel=?, address=?, sitin_count=?
+        WHERE idNumber=?''',
+        (new_id_number, first_name, last_name, middle_name, email,
+        course, course_level, address, sitin_count, id_number)
     )
     conn.commit()
     conn.close()
-    return redirect('/admin/dashboard')
 
+    return jsonify({
+        'success': True,
+        'idNumber': new_id_number,
+        'firstName': first_name,
+        'lastName': last_name,
+        'middleName': middle_name or '',
+        'course': course,
+        'yearLevel': course_level,
+        'sitin_count': sitin_count
+    })
 
+# ══════════════════════════════════════════
+# RESERVATION AUTO-EXPIRE
+# ══════════════════════════════════════════
+@app.route('/admin/reservations/auto-expire', methods=['POST'])
+def admin_auto_expire():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    conn = _sqlite3.connect('database.db')
+    conn.execute("""
+    UPDATE reservations 
+    SET status='expired',
+        message='⏰ Your reservation has expired as your time slot has already passed. Please book a new reservation at a different time. We apologize for any inconvenience this may have caused.'
+    WHERE status='approved'
+    AND datetime(date || ' ' || time_in) < datetime('now', 'localtime', '-1 hour')
+""")
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+# ══════════════════════════════════════════
+# Get blocked PCs for a lab
+# ══════════════════════════════════════════
+@app.route('/admin/get-blocked-pcs', methods=['GET'])
+def admin_get_blocked_pcs():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    lab = request.args.get('lab', '').strip()
+    if not lab:
+        return jsonify({'blocked': [], 'occupied': []})
+    blocked  = get_blocked_pcs(lab)
+    occupied = get_occupied_pcs(lab)
+    return jsonify({'blocked': blocked, 'occupied': occupied})
+
+# ══════════════════════════════════════════
+#  Toggle a PC blocked/unblocked
+# ══════════════════════════════════════════
+@app.route('/admin/toggle-pc-block', methods=['POST'])
+def admin_toggle_pc_block():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    lab       = request.form.get('lab', '').strip()
+    pc_number = request.form.get('pc_number', '').strip()
+    blocked   = request.form.get('blocked', '0').strip()
+    if not lab or not pc_number:
+        return jsonify({'success': False, 'message': 'Missing fields.'})
+    set_pc_blocked(lab, int(pc_number), blocked == '1')
+    return jsonify({'success': True, 'blocked': blocked == '1'})
+
+# ══════════════════════════════════════════
+# RESERVATION DELETE
+# ══════════════════════════════════════════
+@app.route('/admin/reservations/delete', methods=['POST'])
+def admin_delete_reservation():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    res_id = request.form.get('id', '').strip()
+    conn = _sqlite3.connect('database.db')
+    conn.execute("DELETE FROM reservations WHERE id = ?", (res_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
 # ══════════════════════════════════════════
 # ROUTE — ADMIN DELETE STUDENT
 # ══════════════════════════════════════════
@@ -598,7 +767,98 @@ def admin_delete_student():
     conn.close()
     return redirect('/admin/dashboard')
 
+@app.route('/student/reserve', methods=['POST'])
+def student_reserve():
+    if not session.get('student_id'):
+        return jsonify({'success': False, 'message': 'Not logged in.'}), 401
 
+    settings = get_reservation_settings()
+    if settings and not settings['enabled']:
+        return jsonify({'success': False, 'message': settings['message']})
+
+    id_number = session['student_id']
+    purpose   = request.form.get('purpose', '').strip()
+    lab       = request.form.get('lab', '').strip()
+    pc_number = request.form.get('pc_number', '').strip()
+    time_in   = request.form.get('time_in', '').strip()
+    date      = request.form.get('date', '').strip()
+
+    if not purpose or not lab or not time_in or not date or not pc_number:
+        return jsonify({'success': False, 'message': 'All fields are required.'})
+
+    if time_in < '08:00' or time_in > '20:00':
+        return jsonify({'success': False, 'message': 'Reservation time must be between 8:00 AM and 8:00 PM only.'})
+
+    student = get_student_by_id(id_number)
+    if not student or student['sitin_count'] <= 0:
+        return jsonify({'success': False, 'message': 'No remaining sessions.'})
+
+    res_id, error = add_reservation(id_number, purpose, lab, int(pc_number), time_in, date)
+    if error:
+        return jsonify({'success': False, 'message': error})
+    return jsonify({'success': True, 'reservationId': res_id})
+
+# ══════════════════════════════════════════
+# ROUTE — STUDENT RESERVATION
+# ══════════════════════════════════════════
+@app.route('/admin/reservations/update', methods=['POST'])
+def admin_update_reservation():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    res_id  = request.form.get('id', '').strip()
+    status  = request.form.get('status', '').strip()
+    message = request.form.get('message', '').strip() or None
+    update_reservation_status(int(res_id), status)
+    if message:
+        update_reservation_message(int(res_id), message)
+    return jsonify({'success': True})
+
+@app.route('/admin/reservation-settings', methods=['POST'])
+def admin_reservation_settings():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    enabled = int(request.form.get('enabled', 1))
+    message = request.form.get('message', '').strip()
+    set_reservation_enabled(enabled, message if message else None)
+    return jsonify({'success': True, 'enabled': enabled})
+
+@app.route('/admin/get-reserved-pcs', methods=['GET'])
+def admin_get_reserved_pcs():
+    lab  = request.args.get('lab', '').strip()
+    date = request.args.get('date', '').strip()
+    if not lab or not date:
+        return jsonify({'reserved': []})
+    reserved = get_reserved_pcs(lab, date)
+    return jsonify({'reserved': reserved})
+
+@app.route('/admin/get-available-pcs', methods=['GET'])
+def admin_get_available_pcs():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    lab = request.args.get('lab', '').strip()
+    if not lab:
+        return jsonify({'available': []})
+    
+    total_pcs = 50
+    blocked = get_blocked_pcs(lab)
+    occupied = get_occupied_pcs(lab)
+    unavailable = set(blocked + occupied)
+    available = [i for i in range(1, total_pcs + 1) if i not in unavailable]
+    return jsonify({'available': available})
+
+@app.route('/admin/reservations/update-pc', methods=['POST'])
+def admin_update_reservation_pc():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    res_id    = request.form.get('id', '').strip()
+    pc_number = request.form.get('pc_number', '').strip()
+    if not res_id or not pc_number:
+        return jsonify({'success': False, 'message': 'Missing fields.'})
+    conn = _sqlite3.connect('database.db')
+    conn.execute("UPDATE reservations SET pc_number=? WHERE id=?", (int(pc_number), int(res_id)))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
 # ══════════════════════════════════════════
 # ROUTE — ADMIN LOGOUT
 # ══════════════════════════════════════════
@@ -613,8 +873,11 @@ def admin_logout():
 # ══════════════════════════════════════════
 if __name__ == '__main__':
     init_db()
+    init_reservations_table()
+    init_reservation_settings()
     print("=================================")
     print("CCS Sit-in System Server Running!")
     print("Open: http://localhost:5000")
     print("=================================")
     app.run(debug=True)
+

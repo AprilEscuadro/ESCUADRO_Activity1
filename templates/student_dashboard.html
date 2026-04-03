@@ -202,7 +202,55 @@
         @media (max-width: 1024px) { .student-panel-grid { grid-template-columns: 1fr 1fr; } .student-panel-grid .panel-card:last-child { grid-column: 1 / -1; } }
         @media (max-width: 700px)  { .student-panel-grid { grid-template-columns: 1fr; } .student-panel-grid .panel-card:last-child { grid-column: auto; } }
         @media (max-width: 600px)  { .student-name-label { display: none; } .profile-grid { grid-template-columns: 1fr; } .admin-main { padding: 1rem; } .profile-edit-card { padding: 1.5rem 1.25rem; } }
-    </style>
+    
+        .lab-btn {
+    padding: 0.45rem 1rem;
+    border: 2px solid #ddd;
+    border-radius: 7px;
+    background: white;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #333;
+    transition: all 0.18s;
+    font-family: Arial, sans-serif;
+}
+.lab-btn:hover { border-color: #0F3E7D; color: #0F3E7D; }
+.lab-btn.selected { background: #0F3E7D; color: white; border-color: #0F3E7D; }
+.lab-btn.full { background: #f8d7da; color: #c0392b; border-color: #f5c6cb; cursor: not-allowed; }
+.lab-btn.available { border-color: #27ae60; color: #27ae60; }
+
+.pc-btn {
+    width: 55px;
+    height: 55px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: #333;
+    transition: all 0.15s;
+    font-family: Arial, sans-serif;
+}
+.pc-btn:hover:not(.taken) { border-color: #0F3E7D; background: #6e9ee1; }
+.pc-btn.selected { background: #0F3E7D; color: white; border-color: #0F3E7D; }
+.pc-btn.taken { background: #f8d7da; border-color: #f5c6cb; color: #c0392b; cursor: not-allowed; opacity: 0.75; }
+
+.pagination-wrap { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.5rem; }
+.pagination-info { font-size: 0.8rem; color: #0F3E7D; font-weight: 600; background: #e8f0fb; padding: 4px 14px; border-radius: 20px; }
+.pagination-btns { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+.pg-btn { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #ddd; background: white; color: #555; font-size: 0.82rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s; font-family: Arial, sans-serif; }
+.pg-btn:hover:not(:disabled) { background: #e8f0fb; border-color: #0F3E7D; color: #0F3E7D; }
+.pg-btn.active { background: #0F3E7D; color: white; border-color: #0F3E7D; }
+.pg-btn:disabled { background: #f5f5f5; color: #ccc; border-color: #eee; cursor: not-allowed; }
+.pg-dots { color: #aaa; font-size: 0.82rem; padding: 0 2px; }
+</style>
 </head>
 <body>
 
@@ -544,16 +592,169 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="pagination-wrap" style="margin-top:1rem;">
+                        <div class="pagination-info" id="historyInfo"></div>
+                        <div class="pagination-btns" id="historyPgBtns"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- RESERVATION -->
-            <div id="section-reservation" class="page-section">
-                <h2 class="admin-section-title">Reservation</h2>
-                <div class="admin-card">
-                    <div class="res-empty">No reservations available at this time.</div>
+<div id="section-reservation" class="page-section">
+    <h2 class="admin-section-title">Reservation</h2>
+
+    {% if not res_settings or not res_settings.enabled %}
+    <!-- RESERVATIONS DISABLED BANNER -->
+    <div style="background:#fff3cd; border:2px solid #F4B942; border-radius:12px; padding:2rem 2rem; margin-bottom:1.5rem; text-align:center;">
+        <div style="font-size:2.5rem; margin-bottom:0.75rem;">🚫📋</div>
+        <h3 style="color:#856404; font-size:1.2rem; margin:0 0 0.5rem;">Reservations are Currently Closed</h3>
+        <p style="color:#856404; font-size:0.95rem; margin:0 0 1.25rem; line-height:1.6;">
+            {{ res_settings.message if res_settings else 'Reservations are currently disabled.' }}
+        </p>
+        <div style="display:inline-block; background:#f8d7da; border:1px solid #f5c6cb; border-radius:8px; padding:0.6rem 1.4rem;">
+            <span style="color:#c0392b; font-weight:700; font-size:0.9rem;">⚠️ Major Exams Week — Sit-ins are not allowed</span>
+        </div>
+    </div>
+    <div class="admin-card" style="margin-bottom:1.5rem; max-width:100%; opacity:0.4; pointer-events:none; filter:blur(2px);">
+    {% else %}
+    <div class="admin-card" style="margin-bottom:1.5rem; max-width:100%;">
+    {% endif %}
+    <h3 style="font-size:1rem; font-weight:700; color:#0F3E7D; margin-bottom:1.2rem; padding-bottom:0.5rem; border-bottom:2px solid #e8f0fb;">New Reservation</h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start;">
+
+        <!-- LEFT: Form Fields -->
+        <table class="sitin-form-table">
+            <tr><td class="sitin-form-label">ID Number</td><td><input type="text" id="res_id" class="field-input" readonly value="{{ student.idNumber }}" style="background:#f9f9f9;color:#777;cursor:not-allowed;"></td></tr>
+            <tr><td class="sitin-form-label">Student Name</td><td><input type="text" id="res_name" class="field-input" readonly value="{{ student.firstName }}{% if student.middleName %} {{ student.middleName }}{% endif %} {{ student.lastName }}" style="background:#f9f9f9;color:#777;cursor:not-allowed;"></td></tr>
+            <tr><td class="sitin-form-label">Purpose</td><td>
+                <select id="res_purpose" class="field-input field-select">
+                    <option value="">Select purpose</option>
+                    <option>C Programming</option><option>Java Programming</option>
+                    <option>C# Programming</option><option>PHP Programming</option>
+                    <option>ASP.Net Programming</option><option>Python Programming</option>
+                    <option>Web Development</option><option>Database</option>
+                    <option>Research</option><option>Other</option>
+                </select>
+            </td></tr>
+            <tr><td class="sitin-form-label">Date</td><td><input type="date" id="res_date" class="field-input" onchange="onDateOrLabChange()"></td></tr>
+            <tr><td class="sitin-form-label">Lab</td><td>
+                <div id="lab_options" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                    <button type="button" class="lab-btn" data-lab="524" onclick="selectLab('524')">🖥️ Lab 524</button>
+                    <button type="button" class="lab-btn" data-lab="526" onclick="selectLab('526')">🖥️ Lab 526</button>
+                    <button type="button" class="lab-btn" data-lab="530" onclick="selectLab('530')">🖥️ Lab 530</button>
+                    <button type="button" class="lab-btn" data-lab="544" onclick="selectLab('544')">🖥️ Lab 544</button>
+                </div>
+                <input type="hidden" id="res_lab">
+                <div id="lab_status_msg" style="font-size:0.8rem; margin-top:0.4rem; color:#888;"></div>
+            </td></tr>
+            <tr><td class="sitin-form-label">Time In</td>
+                <td><div style="display:flex; gap:0.5rem; align-items:center;">
+                    <select id="res_hour" class="field-input" style="width:80px;" onchange="updateAmPm()">
+                        <option value="">HH</option>
+                        <option value="08">8</option>
+                        <option value="09">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="01">1</option>
+                        <option value="02">2</option>
+                        <option value="03">3</option>
+                        <option value="04">4</option>
+                        <option value="05">5</option>
+                        <option value="06">6</option>
+                        <option value="07">7</option>
+                    </select>
+                    <select id="res_minute" class="field-input" style="width:80px;">
+                        <option value="">MM</option>
+                        <option value="00">00</option>
+                        <option value="15">15</option>
+                        <option value="30">30</option>
+                        <option value="45">45</option>
+                    </select>
+                    <select id="res_ampm" class="field-input" style="width:80px;">
+                        <option value="">AM/PM</option>
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                    </select>
+                </div>
+                <input type="hidden" id="res_time">
+                </td>
+            </tr>
+            <tr><td class="sitin-form-label">Remaining</td><td><input type="text" id="res_remaining" class="field-input" readonly value="{{ student.sitin_count }}" style="background:#f9f9f9;color:#777;cursor:not-allowed;"></td></tr>
+        </table>
+
+        <!-- RIGHT: PC Grid -->
+        <div>
+            <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+                <div style="font-size:0.85rem; font-weight:700; color:#0F3E7D;">Select PC</div>
+                <div style="display:flex; gap:0.6rem; align-items:center; background:#f5f5f5; border:1px solid #eee; border-radius:8px; padding:0.35rem 0.75rem;">
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:#888;"><span style="width:10px;height:10px;border-radius:2px;background:#ddd;display:inline-block;border:1px solid #ccc;"></span> Available</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:#888;"><span style="width:10px;height:10px;border-radius:2px;background:#0F3E7D;display:inline-block;"></span> Selected</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:#888;"><span style="width:10px;height:10px;border-radius:2px;background:#f8d7da;display:inline-block;border:1px solid #f5c6cb;"></span> Taken</span>
                 </div>
             </div>
+            <div id="pc_grid" style="display:grid; grid-template-columns:repeat(10,1fr); gap:6px;">
+                <!-- Default lifeless PC buttons rendered by JS -->
+            </div>
+            <input type="hidden" id="res_pc">
+        </div>
+    </div>
+
+    <div id="resError" style="display:none;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;margin-top:1rem;"></div>
+    <div style="margin-top:1.2rem; display:flex; justify-content:flex-end;">
+        <button onclick="confirmReservation()" {% if not res_settings or not res_settings.enabled %}disabled{% endif %}
+            style="background:#0F3E7D;color:white;border:none;padding:0.65rem 1.6rem;border-radius:7px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Reserve</button>
+    </div>
+</div>
+
+    <div class="admin-card">
+        <h3 style="font-size:1rem; font-weight:700; color:#0F3E7D; margin-bottom:1rem; padding-bottom:0.5rem; border-bottom:2px solid #e8f0fb;">My Reservations</h3>
+        <div class="table-scroll">
+            <table class="dashboard-table" id="reservationTable">
+                <thead><tr><th>#</th><th>Purpose</th><th>Lab</th><th>PC</th><th>Time</th><th>Date</th><th>Status</th><th>Message</th></tr></thead>
+                <tbody id="reservationTableBody">
+                    {% for r in reservations %}
+                        <tr>
+                            <td>{{ r.id }}</td>
+                            <td>{{ r.purpose }}</td>
+                            <td>{{ r.lab }}</td>
+                            <td>💻 PC {{ r.pc_number if r.pc_number else '—' }}</td>
+                            <td>{{ r.time_in }}</td>
+                            <td>{{ r.date }}</td>
+                            <td>
+                                <span class="status-badge"
+                                    style="{% if r.status == 'approved' %}background:#d4edda;color:#1e7e34;
+                                        {% elif r.status == 'rejected' %}background:#f8d7da;color:#c0392b;
+                                        {% elif r.status == 'pending' %}background:#fff3cd;color:#856404;
+                                        {% elif r.status == 'expired' %}background:#e2e3e5;color:#6c757d;
+                                        {% elif r.status == 'done' %}background:#cce5ff;color:#004085;
+                                        {% else %}background:#f0f0f0;color:#555;{% endif %}">
+                                    {{ r.status | capitalize }}
+                                </span>
+                            </td>
+                            <td style="max-width:220px;white-space:normal;word-break:break-word;font-size:0.82rem;">
+                                {% if r.message %}
+                                    <span style="color:{% if r.status == 'rejected' %}#c0392b{% elif r.status == 'expired' %}#856404{% else %}#555{% endif %};">
+                                        💬 {{ r.message }}
+                                    </span>
+                                {% else %}
+                                    <span style="color:#ccc;">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="no-data">No reservations yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="pagination-wrap" style="margin-top:1rem;">
+            <div class="pagination-info" id="resMyInfo"></div>
+            <div class="pagination-btns" id="resMyPgBtns"></div>
+        </div>
+    </div>
+</div>
 
         </main>
     </div>
@@ -575,6 +776,20 @@
             </div>
         </div>
     </div>
+
+    <div class="modal-overlay" id="confirmReservationModal" style="display:none; z-index:9999;">
+    <div class="modal-box" style="max-width:360px;">
+        <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Reservation</h3><button class="modal-close" onclick="closeModal('confirmReservationModal')">&#10005;</button></div>
+        <div class="modal-body" style="text-align:center;padding:1.5rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">📋</div>
+            <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Are you sure you want to submit this reservation?</p>
+            <div style="display:flex;gap:0.8rem;justify-content:center;">
+                <button type="button" class="btn-modal-close" onclick="closeModal('confirmReservationModal')">No, Cancel</button>
+                <button type="button" class="btn-modal-submit" onclick="closeModal('confirmReservationModal'); submitReservation();">Yes, Reserve</button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- FEEDBACK MODAL -->
     <div class="modal-overlay" id="feedbackModal" style="display:none;">
@@ -868,6 +1083,18 @@
             document.body.style.overflow = '';
         }
 
+            function normalizeLeet(text) {
+                const map = {'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s','!':'i'};
+                text = text.toLowerCase();
+                for (const [k, v] of Object.entries(map)) {
+                    text = text.split(k).join(v);
+                }
+                text = text.replace(/[\s\.\-\_\*]+/g, '');
+                // Collapse repeated letters: yawaaaaaa → yawa
+                text = text.replace(/(.)\1+/g, '$1');
+                return text;
+        }
+
         function submitFeedback() {
             const sessionId = document.getElementById('feedbackSessionId').value;
             const message   = document.getElementById('feedbackText').value.trim();
@@ -881,6 +1108,134 @@
             if (!message) {
                 msgEl.style.cssText = 'display:block; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; padding:0.6rem 1rem; border-radius:5px; font-size:0.85rem;';
                 msgEl.textContent = '⚠️ Please write your feedback before submitting.';
+                return;
+            }
+
+            const badWords = [
+                    'piste', 'pisti', 'yawa', 'yewe', 'inatay', 'atay', 'atayang', 'ataya',
+                    'animal', 'boang', 'buang', 'bogo', 'bogo', 'ogag', 'gunggong',
+                    'tonto', 'tungo', 'ngongo', 'ungo', 'mananap', 'bastos',
+                    'pakyas', 'paksha', 'bilat', 'bilata', 'boto', 'buyot',
+                    'luod', 'luoy', 'yawaa', 'yawang', 'dautan', 'dautang',
+                    'pastilan', 'pastil', 'susma', 'susmaryosep', 'susmariosep',
+                    'letse', 'leche', 'letcheng', 'lecheng',
+                    'bwisit', 'bwesit', 'busit', 'bsit', 'buwisit',
+                    'pakshet', 'pakshot', 'puta', 'pota', 'pote',
+                    'putang', 'putangina', 'putanginamo',
+                    'giatay', 'giatayan', 'giata',
+                    'hudas', 'ulol', 'ulong',
+                    'burikat', 'burikata',
+                    'animal', 'animala', 'animalia',
+                    'unggoy', 'unggoyan', 'unggoya',
+                    'baboy', 'baboya', 'baboyang',
+                    'aso', 'asong', 'asoa',
+                    'ihalas', 'ihalasin',
+                    'uwak', 'uwakan',
+                    'bubuyog', 'bubuyogan',
+                    'ahas', 'ahasan', 'ahasin',
+                    'butiki', 'butikia',
+                    'ipis', 'ipisang',
+                    'daga', 'dagaan', 'dagaang',
+                    'ambugas', 'ambugasan',
+                    'nawng', 'nawng aso', 'nawngaso',
+                    'nawng baboy', 'nawngbaboy',
+                    'nawng unggoy', 'nawngunggoy',
+                    'mukha', 'mukhaaso', 'mukha kang aso',
+                    'mukhang aso', 'mukhangaso',
+                    'mukhang baboy', 'mukhangbaboy',
+                    'mukhang unggoy', 'mukhangbaboy',
+                    'hitsura', 'hitsurang aso',
+                    'dagway', 'dagway aso', 'dagwayaso',
+                    'dagway baboy', 'dagwaybaboy',
+                    'dagway unggoy', 'dagwayunggoy',
+                    'panget', 'pangetang', 'pangit',
+                    'pangitang', 'napangit',
+                    'kagwang', 'uwak', 'langgam',
+                    'kulisap', 'uod', 'uodan',
+                    'bulate', 'bulaten', 'bulateng',
+                    'tanga', 'tangina', 'tanginamo', 'tanginamo',
+                    'gago', 'gaga', 'gagong', 'inutil', 'duwag',
+                    'pakyu', 'tarantado', 'tarantadong',
+                    'punyeta', 'punyemas', 'punyetang',
+                    'leche', 'letse', 'letcheng',
+                    'bwisit', 'buwisit', 'bwiset',
+                    'hayop', 'hayopang', 'hayupa',
+                    'bobo', 'bobong', 'b0b0', 'b080',
+                    'loko', 'lokong', 'siraulo', 'siraulong',
+                    'gunggong', 'gungong', 'gunggung',
+                    'salot', 'salota', 'salotang',
+                    'demonyo', 'demonyong', 'diyablo',
+                    'kupal', 'kupaling', 'kupala',
+                    'palpak', 'palpaking',
+                    'ampota', 'ampotek', 'ampoteng',
+                    'ulol', 'ulolang', 'uluul',
+                    'hinayupak', 'hinayupaking',
+                    'nakakainit', 'nakakainis',
+                    'walang kwenta', 'walangkwenta',
+                    'walang hiya', 'walaghiya', 'walanghiya',
+                    'putragis', 'putragys',
+                    'supot', 'supota',
+                    'lintik', 'lintikan', 'lintikang',
+                    'kingina', 'kinginamo', 'kingina',
+                    'buset', 'buseta', 'busetang',
+                    'peste', 'pesteng', 'pesting',
+                    'shunga', 'sungga', 'sunga',
+                    'taena', 'taenang', 'taena',
+                    'galitera', 'galitero',
+                    'fuck', 'fucker', 'fucking', 'fucked', 'fck', 'f0ck', 'fvck',
+                    'shit', 'shitty', 'shitter', 'bullshit', 'bullcrap',
+                    'ass', 'asshole', 'asses', 'jackass', 'smartass',
+                    'bitch', 'bitchy', 'bitching', 'bitches',
+                    'bastard', 'bastards', 'bastardly',
+                    'damn', 'damned', 'dammit', 'goddamn',
+                    'idiot', 'idiotic', 'idiots',
+                    'stupid', 'stupidity', 'stuped', 'stoopid', 'st4pid', 'stpid', 'styupid',
+                    'dumb', 'dumbass', 'dumbest',
+                    'moron', 'moronic', 'morons',
+                    'retard', 'retarded',
+                    'crap', 'crappy', 'craps',
+                    'hell', 'hells', 'hellish',
+                    'jerk', 'jerkoff', 'jerks',
+                    'loser', 'losers', 'l0ser',
+                    'trash', 'trashy',
+                    'ugly', 'uglyass',
+                    'fat', 'fatass', 'fatso',
+                    'pig', 'pighead',
+                    'freak', 'freaking', 'freaks',
+                    'suck', 'sucks', 'sucker', 'suckup',
+                    'pathetic', 'pathetico',
+                    'useless', 'uselessness',
+                    'worthless', 'worthlessness',
+                    'lazy', 'lazyass',
+                    'liar', 'liars',
+                    'cheater', 'cheaters',
+                    'scum', 'scumbag', 'scums',
+                    'slut', 'slutty', 'slob',
+                    'whore', 'whorish',
+                    'cunt', 'cunts',
+                    'dick', 'dicks', 'dickhead',
+                    'prick', 'pricks',
+                    'douchebag', 'douche',
+                    'numbskull', 'numskull',
+                    'imbecile', 'imbeciles',
+                    'nitwit', 'dimwit', 'halfwit',
+                    'bonehead', 'blockhead', 'knucklehead',
+                    'p0ta', 'p0t4', 'g4go', 'g@go',
+                    't4nga', 'tng4', 'b0b0', 'b080',
+                    'p1ste', 'y4wa', 'l3che',
+                    'f4ck', 'sh1t', 'b1tch', 'a55',
+                ];
+
+            const normalized  = normalizeLeet(message);
+            const noSpaces    = message.toLowerCase().replace(/\s+/g, '');
+            const found = badWords.find(w => 
+                normalized.includes(w) || 
+                message.toLowerCase().includes(w) ||
+                noSpaces.includes(w)
+            );
+            if (found) {
+                msgEl.style.cssText = 'display:block; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; padding:0.6rem 1rem; border-radius:5px; font-size:0.85rem;';
+                msgEl.textContent = '⚠️ Please keep your feedback respectful and free of inappropriate language.';
                 return;
             }
 
@@ -921,6 +1276,296 @@
         }
 
         document.getElementById('feedbackModal').addEventListener('click', function(e) { if (e.target === this) closeFeedbackModal(); });
+    
+const LAB_TOTAL_PCS = { '524': 50, '526': 50, '530': 50, '544': 50 };
+let _selectedLab = '';
+document.addEventListener('DOMContentLoaded', () => loadPCGrid());
+setInterval(() => { if (_selectedLab) loadPCGrid(); }, 10000);
+let _reservedPCs = [];
+
+function selectLab(lab) {
+    _selectedLab = lab;
+    document.getElementById('res_lab').value = lab;
+    document.getElementById('res_pc').value = '';
+    document.querySelectorAll('.lab-btn').forEach(b => {
+        b.classList.remove('selected');
+        if (b.dataset.lab === lab) b.classList.add('selected');
+    });
+    loadPCGrid();
+}
+
+function onDateOrLabChange() {
+    if (_selectedLab) loadPCGrid();
+}
+
+function loadPCGrid() {
+    const date = document.getElementById('res_date').value;
+    const lab  = _selectedLab;
+    const grid = document.getElementById('pc_grid');
+    const total = LAB_TOTAL_PCS[lab] || 50;
+
+    // If no lab/date yet — render lifeless gray grid
+    if (!lab || !date) {
+        grid.innerHTML = '';
+        const defaultTotal = 50;
+        for (let i = 1; i <= defaultTotal; i++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.style.cssText = 'width:100%;height:55px;border:1px solid #ddd;border-radius:6px;background:#f5f5f5;color:#ccc;font-size:0.6rem;font-weight:700;cursor:not-allowed;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;font-family:Arial,sans-serif;';            btn.innerHTML = `<span style="font-size:0.6rem;">🖥️</span><span>${i}</span>`;
+            btn.disabled = true;
+            grid.appendChild(btn);
+        }
+        return;
+    }
+
+    if (grid.children.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:0.85rem;padding:0.5rem;">Loading...</div>';
+}
+    fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}`)
+    .then(r => r.json())
+    .then(data => {
+        _reservedPCs = data.reserved || [];
+        grid.innerHTML = '';
+
+        const full = _reservedPCs.length >= total;
+        document.querySelectorAll('.lab-btn').forEach(b => b.classList.remove('full','available'));
+        const labBtn = document.querySelector(`.lab-btn[data-lab="${lab}"]`);
+        if (labBtn) labBtn.classList.add(full ? 'full' : 'available');
+        document.getElementById('lab_status_msg').innerHTML = full
+            ? `<span style="color:#c0392b;font-weight:700;">🔴 Lab ${lab} is FULL on this date</span>`
+            : `<span style="color:#27ae60;font-weight:700;">🟢 ${total - _reservedPCs.length} of ${total} PCs available</span>`;
+
+        for (let i = 1; i <= total; i++) {
+            const taken = _reservedPCs.includes(i);
+            const btn   = document.createElement('button');
+            btn.type    = 'button';
+            btn.className = 'pc-btn' + (taken ? ' taken' : '');
+            btn.style.cssText = 'width:100%;height:55px;';
+            btn.innerHTML = `<span style="font-size:0.85rem;">🖥️</span><span>${i}</span>`;
+            btn.title = taken ? `PC ${i} — Reserved` : `PC ${i} — Available`;
+            if (!taken) {
+                btn.onclick = function() {
+                    document.querySelectorAll('.pc-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    document.getElementById('res_pc').value = i;
+                };
+            }
+            grid.appendChild(btn);
+        }
+    })
+    .catch(() => {
+        grid.innerHTML = '<div style="grid-column:1/-1;color:#c0392b;font-size:0.85rem;">Failed to load PC availability.</div>';
+    });
+}
+
+function submitReservation() {
+    const errEl = document.getElementById('resError');
+    errEl.style.display = 'none';
+
+    const purpose = document.getElementById('res_purpose').value;
+    const lab     = document.getElementById('res_lab').value;
+    const pc      = document.getElementById('res_pc').value;
+    const date    = document.getElementById('res_date').value;
+    const hour    = document.getElementById('res_hour').value;
+    const minute  = document.getElementById('res_minute').value;
+    const ampm    = document.getElementById('res_ampm').value;
+
+    if (!purpose) { errEl.textContent = 'Please select a purpose.'; errEl.style.display='block'; return; }
+    if (!date)    { errEl.textContent = 'Please select a date.'; errEl.style.display='block'; return; }
+    if (!lab)     { errEl.textContent = 'Please select a lab.'; errEl.style.display='block'; return; }
+    if (!pc)      { errEl.textContent = 'Please select a PC number.'; errEl.style.display='block'; return; }
+    if (!hour || !minute || !ampm) { errEl.textContent = 'Please select a complete time.'; errEl.style.display='block'; return; }
+
+    let h = parseInt(hour);
+    if (ampm === 'PM' && h !== 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    const time_in = String(h).padStart(2,'0') + ':' + minute;
+    document.getElementById('res_time').value = time_in;
+
+    const fd = new FormData();
+    fd.append('purpose', purpose);
+    fd.append('lab', lab);
+    fd.append('pc_number', pc);
+    fd.append('time_in', time_in);
+    fd.append('date', date);
+    fetch('/student/reserve', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const tbody = document.getElementById('reservationTableBody');
+            const placeholder = tbody.querySelector('td[colspan]');
+            if (placeholder) placeholder.closest('tr').remove();
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${data.reservationId}</td><td>${purpose}</td><td>${lab}</td><td>💻 PC ${pc}</td><td>${hour}:${minute} ${ampm}</td><td>${date}</td><td><span class="status-badge" style="background:#fff3cd;color:#856404;">pending</span></td>`;
+            tbody.insertBefore(tr, tbody.firstChild);
+            document.getElementById('res_purpose').value = '';
+            document.getElementById('res_lab').value = '';
+            document.getElementById('res_pc').value = '';
+            document.getElementById('res_hour').value = '';
+            document.getElementById('res_minute').value = '';
+            document.getElementById('res_ampm').value = '';
+            document.getElementById('res_date').value = '';
+            document.querySelectorAll('.lab-btn').forEach(b => b.classList.remove('selected','available','full'));
+            document.getElementById('lab_status_msg').textContent = '';
+            _selectedLab = '';
+            loadPCGrid();
+            showToast('success');
+        } else {
+            errEl.textContent = data.message || 'Something went wrong.';
+            errEl.style.display = 'block';
+        }
+    })
+    .catch(() => { errEl.textContent = 'Connection error.'; errEl.style.display='block'; });
+}
+
+// ── My Reservations Pagination ──
+const RES_PER_PAGE = 10;
+let allResRows = [], resMyPage = 1, resMyFiltered = [];
+
+function initResPagination() {
+    allResRows = [...document.querySelectorAll('#reservationTableBody tr')]
+                 .filter(r => !r.querySelector('td[colspan]'));
+    resMyFiltered = [...allResRows];
+    renderResTable();
+}
+
+function renderResTable() {
+    const total = resMyFiltered.length;
+    const pages = Math.max(1, Math.ceil(total / RES_PER_PAGE));
+    const start = (resMyPage - 1) * RES_PER_PAGE;
+    const end   = start + RES_PER_PAGE;
+
+    allResRows.forEach(r => r.style.display = 'none');
+    resMyFiltered.forEach((r, i) => { r.style.display = (i >= start && i < end) ? '' : 'none'; });
+
+    const infoEl = document.getElementById('resMyInfo');
+    if (infoEl) infoEl.textContent = total === 0 ? 'No reservations' : `Showing ${start+1}–${Math.min(end,total)} of ${total} entries`;
+
+    const pgEl = document.getElementById('resMyPgBtns');
+    if (!pgEl) return;
+    pgEl.innerHTML = '';
+
+    function makeBtn(label, onClick, isActive, isDisabled, isDots) {
+        if (isDots) {
+            const s = document.createElement('span');
+            s.className = 'pg-dots'; s.textContent = '···';
+            pgEl.appendChild(s); return;
+        }
+        const b = document.createElement('button');
+        b.className = 'pg-btn' + (isActive ? ' active' : '');
+        b.innerHTML = label; b.disabled = isDisabled; b.onclick = onClick;
+        pgEl.appendChild(b);
+    }
+
+    makeBtn('&#8592;', () => { resMyPage--; renderResTable(); }, false, resMyPage === 1);
+    const delta = 2, range = [];
+    for (let i = Math.max(1, resMyPage - delta); i <= Math.min(pages, resMyPage + delta); i++) range.push(i);
+    if (range[0] > 1) { makeBtn('1', () => { resMyPage=1; renderResTable(); }, false, false); if (range[0] > 2) makeBtn('', null, false, false, true); }
+    range.forEach(i => makeBtn(i, () => { resMyPage=i; renderResTable(); }, i === resMyPage, false));
+    if (range[range.length-1] < pages) { if (range[range.length-1] < pages-1) makeBtn('', null, false, false, true); makeBtn(pages, () => { resMyPage=pages; renderResTable(); }, false, false); }
+    makeBtn('&#8594;', () => { resMyPage++; renderResTable(); }, false, resMyPage === pages);
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+    initResPagination();
+    initHistoryPagination();
+});
+
+// ── My Sit-in History Pagination ──
+let allHistoryRows = [], historyPage = 1, historyFiltered = [];
+
+function initHistoryPagination() {
+    allHistoryRows = [...document.querySelectorAll('#section-history .dashboard-table tbody tr')]
+                    .filter(r => !r.querySelector('td[colspan]'));
+    historyFiltered = [...allHistoryRows];
+    renderHistoryTable();
+}
+
+function renderHistoryTable() {
+    const total = historyFiltered.length;
+    const pages = Math.max(1, Math.ceil(total / 10));
+    const start = (historyPage - 1) * 10;
+    const end   = start + 10;
+
+    allHistoryRows.forEach(r => r.style.display = 'none');
+    historyFiltered.forEach((r, i) => { r.style.display = (i >= start && i < end) ? '' : 'none'; });
+
+    const infoEl = document.getElementById('historyInfo');
+    if (infoEl) infoEl.textContent = total === 0 ? 'No records' : `Showing ${start+1}–${Math.min(end,total)} of ${total} entries`;
+
+    const pgEl = document.getElementById('historyPgBtns');
+    if (!pgEl) return;
+    pgEl.innerHTML = '';
+
+    function makeBtn(label, onClick, isActive, isDisabled, isDots) {
+        if (isDots) { const s = document.createElement('span'); s.className = 'pg-dots'; s.textContent = '···'; pgEl.appendChild(s); return; }
+        const b = document.createElement('button');
+        b.className = 'pg-btn' + (isActive ? ' active' : '');
+        b.innerHTML = label; b.disabled = isDisabled; b.onclick = onClick;
+        pgEl.appendChild(b);
+    }
+
+    makeBtn('&#8592;', () => { historyPage--; renderHistoryTable(); }, false, historyPage === 1);
+    const delta = 2, range = [];
+    for (let i = Math.max(1, historyPage - delta); i <= Math.min(pages, historyPage + delta); i++) range.push(i);
+    if (range[0] > 1) { makeBtn('1', () => { historyPage=1; renderHistoryTable(); }, false, false); if (range[0] > 2) makeBtn('', null, false, false, true); }
+    range.forEach(i => makeBtn(i, () => { historyPage=i; renderHistoryTable(); }, i === historyPage, false));
+    if (range[range.length-1] < pages) { if (range[range.length-1] < pages-1) makeBtn('', null, false, false, true); makeBtn(pages, () => { historyPage=pages; renderHistoryTable(); }, false, false); }
+    makeBtn('&#8594;', () => { historyPage++; renderHistoryTable(); }, false, historyPage === pages);
+}
+
+function updateAmPm() {
+    const hour = document.getElementById('res_hour').value;
+    const ampm = document.getElementById('res_ampm');
+    const amOption = ampm.querySelector('option[value="AM"]');
+    const pmOption = ampm.querySelector('option[value="PM"]');
+
+    if (hour === '09' || hour === '10' || hour === '11') {
+        // AM only
+        amOption.disabled = false;
+        pmOption.disabled = true;
+        ampm.value = 'AM';
+    } else if (['12','01','02','03','04','05','06','07'].includes(hour)) {
+        // PM only
+        amOption.disabled = true;
+        pmOption.disabled = false;
+        ampm.value = 'PM';
+    } else if (hour === '08') {
+        // Both AM and PM allowed
+        amOption.disabled = false;
+        pmOption.disabled = false;
+        ampm.value = '';
+    } else {
+        amOption.disabled = false;
+        pmOption.disabled = false;
+    }
+}
+
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; document.body.style.overflow = ''; }
+}
+
+function confirmReservation() {
+    const purpose = document.getElementById('res_purpose').value;
+    const date    = document.getElementById('res_date').value;
+    const lab     = document.getElementById('res_lab').value;
+    const pc      = document.getElementById('res_pc').value;
+    const hour    = document.getElementById('res_hour').value;
+    const minute  = document.getElementById('res_minute').value;
+    const ampm    = document.getElementById('res_ampm').value;
+    const errEl   = document.getElementById('resError');
+
+    errEl.style.display = 'none';
+    if (!purpose) { errEl.textContent = 'Please select a purpose.'; errEl.style.display='block'; return; }
+    if (!date)    { errEl.textContent = 'Please select a date.'; errEl.style.display='block'; return; }
+    if (!lab)     { errEl.textContent = 'Please select a lab.'; errEl.style.display='block'; return; }
+    if (!pc)      { errEl.textContent = 'Please select a PC number.'; errEl.style.display='block'; return; }
+    if (!hour || !minute || !ampm) { errEl.textContent = 'Please select a complete time.'; errEl.style.display='block'; return; }
+
+    document.getElementById('confirmReservationModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
     </script>
 
 </body>

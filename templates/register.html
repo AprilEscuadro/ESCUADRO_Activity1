@@ -41,11 +41,11 @@
                 <h1>Create Account</h1>
                 <p class="form-subtitle">Register to access the sit-in monitoring system</p>
 
-                {% if error %}
-                <div class="error-message">
-                    ⚠️ {{ error }}
-                </div>
-                {% endif %}
+                    {% if error %}
+                        <div class="error-message">
+                            ⚠️ {{ error }}
+                        </div>
+                    {% endif %}
 
                 <form id="registerForm" action="/register" method="post">
 
@@ -53,7 +53,6 @@
                         <label for="idNumber">ID Number</label>
                         <input type="text" id="idNumber" name="idNumber"
                             required placeholder="e.g. 23456789"
-                            pattern="\d{8}"
                             maxlength="8"
                             inputmode="numeric"
                             oninput="this.value=this.value.replace(/[^0-9]/g,'')">
@@ -184,6 +183,46 @@
     <footer>
         <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
     </footer>
+
+<script>
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const id       = document.getElementById('idNumber').value.trim();
+        const password = document.getElementById('password').value;
+        const confirm  = document.getElementById('confirmPassword').value;
+
+        if (!/^\d{8}$/.test(id)) {
+            e.preventDefault();
+            document.getElementById('idNumber').setCustomValidity('ID Number must be exactly 8 digits.');
+            document.getElementById('idNumber').reportValidity();
+            return;
+        } else {
+            document.getElementById('idNumber').setCustomValidity('');
+        }
+
+        if (password.length < 6) {
+            e.preventDefault();
+            document.getElementById('password').setCustomValidity('Password must be at least 6 characters.');
+            document.getElementById('password').reportValidity();
+            return;
+        } else {
+            document.getElementById('password').setCustomValidity('');
+        }
+
+        if (password !== confirm) {
+            e.preventDefault();
+            document.getElementById('confirmPassword').setCustomValidity('Passwords do not match.');
+            document.getElementById('confirmPassword').reportValidity();
+            return;
+        } else {
+            document.getElementById('confirmPassword').setCustomValidity('');
+        }
+    });
+
+    // Clear custom validity on input
+    document.getElementById('idNumber').addEventListener('input', function() { this.setCustomValidity(''); });
+    document.getElementById('password').addEventListener('input', function() { this.setCustomValidity(''); });
+    document.getElementById('confirmPassword').addEventListener('input', function() { this.setCustomValidity(''); });
+</script>
 
 </body>
 </html>
