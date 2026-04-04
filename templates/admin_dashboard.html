@@ -27,17 +27,7 @@
             color: white;
             font-size: 0.85rem;
         }
-        .page-breadcrumb {
-            font-size: 0.8rem;
-            color: #888;
-            margin-bottom: 1.4rem;
-            padding-bottom: 0.6rem;
-            border-bottom: 1px solid #e5e5e5;
-        }
-        .page-breadcrumb span {
-            color: #0F3E7D;
-            font-weight: 600;
-        }
+
         .page-section        { display: none; }
         .page-section.active { display: block; }
 
@@ -123,9 +113,9 @@
 
         .admin-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); padding: 1.5rem; overflow: hidden; }
         .table-scroll { overflow-x: auto; }
-        .dashboard-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; white-space: nowrap; }
-        .dashboard-table thead th { background: #0F3E7D; color: white; padding: 0.75rem 1rem; text-align: left; font-weight: 700; white-space: nowrap; }
-        .dashboard-table tbody td { padding: 0.7rem 1rem; border-bottom: 1px solid #f0f0f0; color: #333; }
+        .dashboard-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        .dashboard-table thead th { background: #0F3E7D; color: white; padding: 0.75rem 0.6rem; text-align: left; font-weight: 700; }
+        .dashboard-table tbody td { padding: 0.7rem 0.6rem; border-bottom: 1px solid #f0f0f0; color: #333; word-break: break-word; }
         .dashboard-table tbody tr:last-child td { border-bottom: none; }
         .dashboard-table tbody tr:hover { background: #f8faff; }
         .no-data { text-align: center; color: #aaa; font-size: 0.88rem; padding: 1.5rem 0; }
@@ -247,10 +237,10 @@
 
     <nav class="navbar">
         <div class="nav-content">
-            <div class="logo-section">
+            <a href="/admin/dashboard" class="logo-section" style="text-decoration:none;">
                 <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="CCS Logo" class="navbar-logo">
                 <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
-            </div>
+            </a>
             <div class="admin-nav-right">
                 <span class="admin-name-display">{{ session['admin_name'] }}</span>
                 <button class="hamburger-btn" id="adminHamBtn" onclick="toggleAdminHam()" aria-label="Menu">
@@ -261,7 +251,7 @@
                     <a onclick="openSearchModal(); closeAdminHam();">SEARCH</a>
                     <a onclick="showSection('section-students', this)">STUDENTS</a>
                     <a onclick="showSection('section-sitin', this)">SIT-IN</a>
-                    <a onclick="showSection('section-records', this)">VIEW SIT-IN RECORDS</a>
+                    <a onclick="showSection('section-records', this)">SIT-IN RECORDS</a>
                     <a onclick="showSection('section-reports', this)">SIT-IN REPORTS</a>
                     <a onclick="showSection('section-feedback', this)">FEEDBACK REPORTS</a>
                     <a onclick="showSection('section-reservation', this)">RESERVATION</a>
@@ -274,7 +264,6 @@
     <div class="admin-wrapper">
         <aside class="admin-sidebar" aria-hidden="true"></aside>
         <main class="admin-main">
-        <p class="page-breadcrumb">Dashboard &rsaquo; <span id="adminActiveLabel">Home</span></p>
             {% if request.args.get('loggedin') %}
             <div id="loginSuccessToast" style="position:fixed; bottom:2rem; left:50%; transform:translateX(-50%); background:#1e7e34; color:white; padding:0.85rem 1.8rem; border-radius:8px; font-size:0.92rem; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,0.2); z-index:9999; white-space:nowrap;">
                 ✓ Logged in successfully!
@@ -331,7 +320,7 @@
                                                 <span class="ann-item-title" id="ann-title-{{ a.id }}">{{ a.title }}</span>
                                                 {% if a.is_pinned %}<span class="ann-pin-badge" id="ann-pin-badge-{{ a.id }}">📌 Pinned</span>{% else %}<span class="ann-pin-badge" id="ann-pin-badge-{{ a.id }}" style="display:none;">📌 Pinned</span>{% endif %}
                                             </div>
-                                            <div class="posted-ann-meta">{{ a.posted_by }} | {{ a.created_at }}</div>
+                                            <div class="posted-ann-meta">{{ a.posted_by }} | {{ a.created_at.split(' ')[0] }} {{ a.created_at.split(' ')[1] | timeformat if a.created_at and ' ' in a.created_at else '' }}</div>
                                         </div>
                                         <div class="ann-menu-wrap" data-ann-id="{{ a.id }}">
                                             <button class="ann-menu-btn" data-ann-id="{{ a.id }}" title="Options">⋯</button>
@@ -471,7 +460,7 @@
 
             <!-- VIEW SIT-IN RECORDS -->
             <div id="section-records" class="page-section">
-                <h2 class="admin-section-title">Current Sit-in Records</h2>
+                <h2 class="admin-section-title">Sit-in Records</h2>
                 <div class="records-charts-row">
                     <div class="records-chart-box">
                         <div class="records-chart-header">Usage by Purpose</div>
@@ -510,8 +499,8 @@
                                     <td>{{ s.firstName }} {{ s.lastName }}</td>
                                     <td>{{ s.purpose }}</td><td>{{ s.lab }}</td>
                                     <td>{{ s.pc_number if s.pc_number else '—' }}</td>
-                                    <td>{{ s.time_in }}</td>
-                                    <td>{{ s.time_out if s.time_out else '—' }}</td>
+                                    <td>{{ s.time_in | timeformat }}</td>
+                                    <td>{{ s.time_out | timeformat if s.time_out else '—' }}</td>
                                     <td>{{ s.date if s.date is defined else s.time_in }}</td>
                                 </tr>
                                 {% else %}
@@ -590,8 +579,8 @@
                                         <td>{{ s.purpose }}</td>
                                         <td>{{ s.lab }}</td>
                                         <td>{{ s.pc_number if s.pc_number else '—' }}</td>
-                                        <td>{{ s.time_in.split(' ')[1] if s.time_in and ' ' in s.time_in else s.time_in }}</td>
-                                        <td>{{ s.time_out.split(' ')[1] if s.time_out and ' ' in s.time_out else '—' }}</td>
+                                        <td>{{ s.time_in.split(' ')[1] | timeformat if s.time_in and ' ' in s.time_in else '—' }}</td>
+                                        <td>{{ s.time_out.split(' ')[1] | timeformat if s.time_out and ' ' in s.time_out else '—' }}</td>
                                         <td>{{ s.time_in.split(' ')[0] if s.time_in and ' ' in s.time_in else '—' }}</td>
                                     </tr>
                                     {% else %}
@@ -757,6 +746,7 @@
                 <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#eafaf1;border:1.5px solid #27ae60;display:inline-block;"></span>Available</span>
                 <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#f8d7da;border:1.5px solid #c0392b;display:inline-block;"></span>Unavailable</span>
                 <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:50%;background:#c0392b;display:inline-block;"></span>Occupied</span>
+                <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#fff3cd;border:1.5px solid #F4B942;display:inline-block;"></span>Reserved</span>
             </div>
             <div id="mgmt_pc_grid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:8px;"></div>
             <div id="mgmt_status_msg" style="margin-top:0.75rem;font-size:0.82rem;color:#888;"></div>
@@ -790,7 +780,7 @@
             <option value="">All Status</option>
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
+            <option value="sitting_in">Sitting In</option>
         </select>
     </div>
 </div>
@@ -830,7 +820,7 @@
                             <td>{{ r.purpose }}</td>
                             <td>{{ r.lab }}</td>
                             <td>PC {{ r.pc_number if r.pc_number else '—' }}</td>
-                            <td>{{ r.time_in }}</td>
+                            <td>{{ r.time_in | timeformat }}</td>
                             <td>{{ r.date }}</td>
                             <td id="req-status-{{ r.id }}">
                                 <span class="status-badge 
@@ -854,7 +844,10 @@
                                     data-remaining="{{ student_session.count }}"
                                     data-res-id="{{ r.id }}"
                                     data-pc="{{ r.pc_number if r.pc_number else '' }}"
-                                    {% if r.status == 'approved' %}onclick="openSitinFromReservation(this.dataset)"{% else %}disabled style="opacity:0.4;cursor:not-allowed;"{% endif %}>
+                                    data-date="{{ r.date }}"
+                                    data-status="{{ r.status }}"
+                                    onclick="sitinBtnRouter(this)"
+                                    {% if r.status not in ['approved', 'sitting_in'] %}disabled style="opacity:0.4;cursor:not-allowed;"{% endif %}>
                                     {% if r.status == 'sitting_in' %}Logout
                                     {% elif r.status == 'expired' %}Done
                                     {% else %}Sit-in{% endif %}
@@ -867,7 +860,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="pagination-wrap">
+            <div class="pagination-wrap" id="reqPaginationWrap">
                 <div class="pagination-info" id="reqInfo"></div>
                 <div class="pagination-btns" id="reqPgBtns"></div>
             </div>
@@ -913,8 +906,6 @@
                     </select>
                     <select id="logFilterStatus" class="filter-select" onchange="filterLogTable()">
                         <option value="">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
                         <option value="rejected">Rejected</option>
                         <option value="expired">Expired</option>
                         <option value="done">Done</option>
@@ -945,7 +936,7 @@
                             <td>{{ r.purpose }}</td>
                             <td>{{ r.lab }}</td>
                             <td>PC {{ r.pc_number if r.pc_number else '—' }}</td>
-                            <td>{{ r.time_in }}</td>
+                            <td>{{ r.time_in | timeformat }}</td>
                             <td>{{ r.date }}</td>
                             <td>
                                 <span class="status-badge"
@@ -981,7 +972,13 @@
                     <tr><td class="sitin-form-label">ID Number</td><td><input type="text" id="sitinIdInput" required placeholder="e.g. 2024-00001" class="sitin-form-input"></td></tr>
                     <tr><td class="sitin-form-label">Student Name</td><td><input type="text" id="sitinNameDisplay" readonly class="sitin-form-input sitin-readonly" placeholder="Auto-filled"></td></tr>
                     <tr><td class="sitin-form-label">Purpose</td><td><select id="sitinPurpose" class="sitin-form-input"><option value="">Select purpose</option><option>C Programming</option><option>Java Programming</option><option>C# Programming</option><option>PHP Programming</option><option>ASP.Net Programming</option><option>Python Programming</option><option>Web Development</option><option>Database</option><option>Research</option><option>Other</option></select></td></tr>
-                    <tr><td class="sitin-form-label">Lab</td><td><select id="sitinLab" class="sitin-form-input"><option value="">Select lab</option><option>524</option><option>526</option><option>530</option><option>544</option></select></td></tr>
+                    <tr><td class="sitin-form-label">Lab</td><td><select id="sitinLab" class="sitin-form-input" onchange="loadSitinPCs()">
+                    <tr id="sitinPcRow" style="display:none;">
+                        <td class="sitin-form-label">PC Number</td>
+                        <td><select id="sitinPcSelect" class="sitin-form-input">
+                            <option value="">-- Select PC --</option>
+                        </select></td>
+                        </tr>
                     <tr><td class="sitin-form-label">Remaining Session</td><td><input type="text" id="sitinRemaining" readonly class="sitin-form-input sitin-readonly" placeholder="—"></td></tr>
                 </table>
                 <div id="sitinModalError" style="display:none;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;margin-top:0.8rem;"></div>
@@ -1170,7 +1167,7 @@
         <div class="modal-overlay" id="addStudentModal" style="display:none;">
             <div class="modal-box" style="max-width:520px;">
                 <div class="modal-header"><h3>Add Student</h3><button class="modal-close" onclick="closeModal('addStudentModal')">&#10005;</button></div>
-                <form class="modal-body" padding:1.25rem;" onsubmit="event.preventDefault(); submitAddStudent();">
+                <form class="modal-body" style="padding:1.25rem;" onsubmit="event.preventDefault(); submitAddStudent();">
                     <div id="modalStudentError" style="display:none;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.7rem 1rem;border-radius:5px;font-size:0.88rem;margin-bottom:1rem;"></div>
                     <table class="sitin-form-table">
                         <tr><td class="sitin-form-label">ID Number <span style="color:red">*</span></td><td><input type="text" id="as_id" required class="sitin-form-input" placeholder="e.g. 23456789" maxlength="8" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></td></tr>
@@ -1521,7 +1518,7 @@
     'section-home':       'Home',
     'section-students':   'Students',
     'section-sitin':      'Sit-in',
-    'section-records':    'View Sit-in Records',
+    'section-records':    'Sit-in Records',
     'section-reports':    'Sit-in Reports',
     'section-feedback':   'Feedback Reports',
     'section-reservation':'Reservation'
@@ -1663,13 +1660,31 @@ function showSection(sectionId, clickedLink) {
             document.getElementById('annForm').submit();
         }
 
-        function openSitinFormForStudent(id, name, remaining) { document.getElementById('sitinIdInput').value = id; document.getElementById('sitinNameDisplay').value = name; document.getElementById('sitinRemaining').value = remaining; document.getElementById('sitinPurpose').value = ''; document.getElementById('sitinLab').value = ''; document.getElementById('sitinModalError').style.display = 'none'; showModal('sitinModal'); }
         function submitSitinQuick() {
-            const idNumber = document.getElementById('sitinIdInput').value.trim(); const name = document.getElementById('sitinNameDisplay').value; const purpose = document.getElementById('sitinPurpose').value; const lab = document.getElementById('sitinLab').value; const remaining = document.getElementById('sitinRemaining').value; const errEl = document.getElementById('sitinModalError');
-            if (!purpose || !lab) { errEl.textContent = 'Please select both Purpose and Lab.'; errEl.style.display = 'block'; return; }
-            errEl.style.display = 'none'; const fd = new FormData(); fd.append('idNumber', idNumber); fd.append('purpose', purpose); fd.append('lab', lab);
-            fetch('/admin/sitin/add-ajax', { method: 'POST', body: fd }).then(r => r.json()).then(data => { if (data.success) { closeModal('sitinModal'); showToast('✓ Sit-in successful.', 'success'); addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, data.pc_number || '—'); } else { errEl.textContent = data.message || 'Something went wrong.'; errEl.style.display = 'block'; } })
-        }
+    const idNumber = document.getElementById('sitinIdInput').value.trim();
+    const name = document.getElementById('sitinNameDisplay').value;
+    const purpose = document.getElementById('sitinPurpose').value;
+    const lab = document.getElementById('sitinLab').value;
+    const remaining = document.getElementById('sitinRemaining').value;
+    const pc = document.getElementById('sitinPcSelect').value;
+    const errEl = document.getElementById('sitinModalError');
+
+    if (!purpose || !lab) { errEl.textContent = 'Please select both Purpose and Lab.'; errEl.style.display = 'block'; return; }
+    if (!pc) { errEl.textContent = 'Please select a PC number.'; errEl.style.display = 'block'; return; }
+    
+    errEl.style.display = 'none';
+    const fd = new FormData();
+    fd.append('idNumber', idNumber);
+    fd.append('purpose', purpose);
+    fd.append('lab', lab);
+    fd.append('pc_number', pc);
+    fetch('/admin/sitin/add-ajax', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) { closeModal('sitinModal'); showToast('✓ Sit-in successful.', 'success'); addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, pc); }
+        else { errEl.textContent = data.message || 'Something went wrong.'; errEl.style.display = 'block'; }
+    })
+}
 
         function openEditModal(data) { document.getElementById('edit_id').value = data.id; document.getElementById('edit_id_display').value = data.id; document.getElementById('edit_firstname').value = data.firstname; document.getElementById('edit_lastname').value = data.lastname; document.getElementById('edit_middlename').value = data.middlename; document.getElementById('edit_email').value = data.email; document.getElementById('edit_course').value = data.course; document.getElementById('edit_yearlevel').value = data.yearlevel; document.getElementById('edit_address').value = data.address; document.getElementById('edit_sitin').value = data.sitin; showModal('editStudentModal'); }
         function confirmDelete(idNumber) { document.getElementById('deleteStudentId').textContent = idNumber; document.getElementById('deleteIdInput').value = idNumber; showModal('deleteModal'); }
@@ -1845,7 +1860,7 @@ function exportFeedbackCSVConfirmed() {
         const c = r.querySelectorAll('td');
         let ratingVal = 0;
         c[3]?.querySelectorAll('span').forEach(s => { if (s.style.color === 'rgb(244, 185, 66)') ratingVal++; });
-        return [c[0]?.innerText, c[1]?.innerText, c[2]?.innerText, ratingVal+'/5', c[4]?.innerText, c[5]?.innerText];
+        return [c[0]?.innerText, c[1]?.innerText, c[2]?.innerText, 'PC ' + (c[3]?.innerText || '—'), ratingVal+'/5', c[4]?.innerText, c[5]?.innerText];
     });
     let csv = headers.join(',') + '\n';
     rows.forEach(r => { csv += r.map(v => `"${(v||'').replace(/"/g,'""')}"`).join(',') + '\n'; });
@@ -1861,7 +1876,7 @@ function exportFeedbackExcelConfirmed() {
         const c = r.querySelectorAll('td');
         let ratingVal = 0;
         c[3]?.querySelectorAll('span').forEach(s => { if (s.style.color === 'rgb(244, 185, 66)') ratingVal++; });
-        return [c[0]?.innerText, c[1]?.innerText, c[2]?.innerText, ratingVal+'/5', c[4]?.innerText, c[5]?.innerText];
+        return [c[0]?.innerText, c[1]?.innerText, c[2]?.innerText, 'PC ' + (c[3]?.innerText || '—'), ratingVal+'/5', c[4]?.innerText, c[5]?.innerText];
     });
     let xml = `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Feedback"><Table>`;
     xml += '<Row>' + headers.map(h => `<Cell><Data ss:Type="String">${h}</Data></Cell>`).join('') + '</Row>';
@@ -1885,35 +1900,35 @@ function exportFeedbackPDFConfirmed() {
     doc.text('Feedback Reports  |  University of Cebu  |  Generated: ' + new Date().toLocaleString(), 148.5, 17, { align:'center' });
     const rows = getVisibleFeedbackRows().map(r => {
         const c = r.querySelectorAll('td');
-        const starSpan = c[4]?.querySelector('.star-display');
-        const ratingVal = starSpan ? (starSpan.getAttribute('title') || '').replace(' out of 5','').trim() : '0';
+        let ratingVal = 0;
+        c[4]?.querySelectorAll('span').forEach(s => { if (s.style.color === 'rgb(244, 185, 66)') ratingVal++; });
         return [
-            c[0]?.innerText?.trim() || '—',
-            c[1]?.innerText?.trim() || '—',
-            c[2]?.innerText?.trim() || '—',
-            c[3]?.innerText?.trim() || '—',
+            c[0]?.innerText,
+            c[1]?.innerText,
+            c[2]?.innerText,
+            c[3]?.innerText ? 'PC ' + c[3]?.innerText : '—',
             ratingVal + ' / 5',
-            c[5]?.innerText?.trim() || '—',
-            c[6]?.innerText?.trim() || '—',
+            c[5]?.innerText,
+            c[6]?.innerText
         ];
     });
     doc.autoTable({
     startY: 26,
-    margin: { left: 20, right: 20 },
+    margin: { left: 14, right: 14 },
     head: [['Student ID','Name','Laboratory','PC','Rating','Message','Date']],
     body: rows,
     theme: 'grid',
-    styles: { fontSize:8, cellPadding:4, textColor:[33,33,33], lineColor:[220,220,220], lineWidth:0.2, overflow:'linebreak' },
+    styles: { fontSize:9, cellPadding:4, textColor:[33,33,33], lineColor:[220,220,220], lineWidth:0.2 },
     headStyles: { fillColor:[15,62,125], textColor:[255,255,255], fontStyle:'bold' },
     alternateRowStyles: { fillColor:[245,248,255] },
     columnStyles: {
-        0: { cellWidth: 30 },
-        1: { cellWidth: 40 },
-        2: { cellWidth: 22 },
-        3: { cellWidth: 15 },
+        0: { cellWidth: 28 },
+        1: { cellWidth: 42 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 18 },
         4: { cellWidth: 18 },
-        5: { cellWidth: 97 },
-        6: { cellWidth: 35 },
+        5: { cellWidth: 107 },
+        6: { cellWidth: 31 },
     },
     didDrawPage: () => { doc.setFontSize(8); doc.setTextColor(170,170,170); doc.text('College of Computer Studies  |  University of Cebu  © 2026', 148.5, 205, { align:'center' }); }
 });
@@ -1969,7 +1984,7 @@ function exportFeedbackPDFConfirmed() {
 
         function confirmAdminLogout() { closeAdminHam(); showModal('adminLogoutModal'); }
 
-        ['searchModal','sitinFormModal','sitinModal','editStudentModal','deleteModal','logoutModal','adminLogoutModal','editAnnModal','deleteAnnModal','reqModal','sitinFromResModal','confirmApproveReqModal','confirmRejectReqModal','confirmExportReportsCSVModal','confirmExportReportsExcelModal','confirmExportReportsPDFModal','confirmPrintReportsModal','confirmExportFeedbackCSVModal','confirmExportFeedbackExcelModal','confirmExportFeedbackPDFModal','confirmPrintFeedbackReportModal','confirmExportLogCSVModal','confirmExportLogExcelModal','confirmExportLogPDFModal','confirmPrintLogModal','deleteFeedbackModal','confirmDeleteReservationModal'].forEach(id => {            const el = document.getElementById(id);
+        ['searchModal','sitinFormModal','sitinModal','editStudentModal','deleteModal','logoutModal','adminLogoutModal','editAnnModal','deleteAnnModal','reqModal','sitinFromResModal','confirmApproveReqModal','confirmRejectReqModal','confirmExportReportsCSVModal','confirmExportReportsExcelModal','confirmExportReportsPDFModal','confirmPrintReportsModal','confirmExportFeedbackCSVModal','confirmExportFeedbackExcelModal','confirmExportFeedbackPDFModal','confirmPrintFeedbackReportModal','confirmExportLogCSVModal','confirmExportLogExcelModal','confirmExportLogPDFModal','confirmPrintLogModal','deleteFeedbackModal','confirmDeleteReservationModal','wrongDateModal','editResDateModal'].forEach(id => {            const el = document.getElementById(id);
             if (el) el.addEventListener('click', function(e) { if (e.target === this) closeModal(id); });
         });
 
@@ -2021,51 +2036,56 @@ function exportFeedbackPDFConfirmed() {
         }
 
         function printFeedbackReportConfirmed() {
-            closeModal('confirmPrintFeedbackReportModal');
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-            doc.setFillColor(15, 62, 125);
-            doc.rect(0, 0, 297, 22, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(14); doc.setFont('helvetica', 'bold');
-            doc.text('CCS Sit-in Monitoring System', 148.5, 9, { align: 'center' });
-            doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-            doc.text('Feedback Reports  |  University of Cebu  |  Generated: ' + new Date().toLocaleString(), 148.5, 17, { align: 'center' });
-            const rows = [];
-            document.querySelectorAll('#feedbackTableBody tr').forEach(row => {
-                const cells = row.querySelectorAll('td');
-                if (!cells.length || cells[0].getAttribute('colspan')) return;
-                const idNum = cells[0]?.innerText.trim() || '—';
-                const name  = cells[1]?.innerText.trim() || '—';
-                const lab   = cells[2]?.innerText.trim() || '—';
-                let ratingVal = 0;
-                cells[3]?.querySelectorAll('span').forEach(s => { if (s.style.color === 'rgb(244, 185, 66)') ratingVal++; });
-                const stars = ratingVal + ' / 5';
-                const msg   = cells[4]?.innerText.trim() || '—';
-                const date  = cells[5]?.innerText.trim() || '—';
-                rows.push([idNum, name, lab, stars, msg, date]);
-            });
-            doc.autoTable({
-                startY: 26,
-                head: [['Student ID', 'Name', 'Laboratory', 'Rating', 'Message', 'Date']],
-                body: rows,
-                theme: 'grid',
-                styles: { fontSize: 9, cellPadding: 4, valign: 'middle', textColor: [33,33,33], lineColor: [220,220,220], lineWidth: 0.2 },
-                headStyles: { fillColor: [15,62,125], textColor: [255,255,255], fontStyle: 'bold', fontSize: 9, halign: 'left' },
-                alternateRowStyles: { fillColor: [245,248,255] },
-                bodyStyles: { fillColor: [255,255,255] },
-                columnStyles: {
-                    0: { cellWidth: 30, halign: 'center' },
-                    1: { cellWidth: 45 },
-                    2: { cellWidth: 25, halign: 'center' },
-                    3: { cellWidth: 20, halign: 'center' },
-                    4: { cellWidth: 120 },
-                    5: { cellWidth: 30, halign: 'center' },
-                },
-                didDrawPage: function() { doc.setFontSize(8); doc.setTextColor(170,170,170); doc.text('College of Computer Studies  |  University of Cebu  © 2026', 148.5, 205, { align: 'center' }); }
-            });
-            doc.save('Feedback_Reports_' + new Date().toISOString().slice(0,10) + '.pdf');
-        }
+        closeModal('confirmPrintFeedbackReportModal');
+        const rows = [];
+        document.querySelectorAll('#feedbackTableBody tr').forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (!cells.length || cells[0].getAttribute('colspan')) return;
+            const pc = cells[3]?.innerText.trim() ? 'PC ' + cells[3]?.innerText.trim() : '—';
+            let ratingVal = 0;
+            cells[4]?.querySelectorAll('span').forEach(s => { if (s.style.color === 'rgb(244, 185, 66)') ratingVal++; });
+            rows.push(`<tr>
+                <td>${cells[0]?.innerText||''}</td>
+                <td>${cells[1]?.innerText||''}</td>
+                <td>${cells[2]?.innerText||''}</td>
+                <td>${pc}</td>
+                <td>${ratingVal} / 5</td>
+                <td>${cells[5]?.innerText||''}</td>
+                <td>${cells[6]?.innerText||''}</td>
+            </tr>`);
+        });
+        const win = window.open('', '_blank');
+        win.document.write(`
+            <html><head><title>Feedback Reports</title>
+            <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                h2 { color: #0F3E7D; text-align:center; }
+                p  { text-align:center; color:#888; font-size:0.85rem; }
+                table { width:100%; border-collapse:collapse; font-size:12px; margin-top:1rem; }
+                th { background:#0F3E7D; color:white; padding:8px; text-align:left; }
+                td { padding:7px 8px; border-bottom:1px solid #eee; }
+                tr:nth-child(even) { background:#f5f8ff; }
+            </style></head>
+            <body>
+                <h2>CCS Sit-in Monitoring System</h2>
+                <p>Feedback Reports &nbsp;|&nbsp; University of Cebu &nbsp;|&nbsp; Generated: ${new Date().toLocaleString()}</p>
+                <table>
+                    <thead><tr>
+                        <th>Student ID Number</th>
+                        <th>Name</th>
+                        <th>Laboratory</th>
+                        <th>PC</th>
+                        <th>Rating</th>
+                        <th>Message</th>
+                        <th>Date</th>
+                    </tr></thead>
+                    <tbody>${rows.join('')}</tbody>
+                </table>
+                <script>window.onload = () => { window.print(); window.close(); }<\/script>
+            </body></html>
+        `);
+        win.document.close();
+    }
 
         // Log History Export Confirmed Functions
         function exportLogCSVConfirmed() {
@@ -2464,6 +2484,10 @@ function openReqModal(id, idNum, name, session, purpose, lab, pc, time, date, st
         status = liveStatusEl.querySelector('.status-badge')?.textContent.trim().toLowerCase() || status;
         if (status === 'sitting in') status = 'sitting_in';
     }
+
+    
+
+    // ── NORMAL FLOW ──
     document.getElementById('rm_id').value      = idNum;
     document.getElementById('rm_name').value    = name;
     document.getElementById('rm_session').value = session;
@@ -2498,14 +2522,22 @@ function openReqModal(id, idNum, name, session, purpose, lab, pc, time, date, st
 function loadReqPCGrid(lab, date, requestedPc) {
     const grid = document.getElementById('rm_pc_grid');
     grid.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:0.82rem;padding:0.5rem;">Loading...</div>';
-    fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}`)
-    .then(r => r.json())
-    .then(data => {
-        const reserved = data.reserved || [];
+    
+    // Fetch BOTH reserved PCs and occupied PCs
+    Promise.all([
+        fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}`).then(r => r.json()),
+        fetch(`/admin/get-blocked-pcs?lab=${encodeURIComponent(lab)}`).then(r => r.json())
+    ])
+    .then(([resData, blockData]) => {
+        const reserved = resData.reserved || [];
+        const occupied = blockData.occupied || [];
+        const blocked  = blockData.blocked  || [];
+        const allTaken = [...new Set([...reserved, ...occupied, ...blocked])];
+
         grid.innerHTML = '';
         for (let i = 1; i <= 50; i++) {
             const isThis  = i === parseInt(requestedPc);
-            const isTaken = reserved.includes(i) && !isThis;
+            const isTaken = allTaken.includes(i) && !isThis;
             const btn = document.createElement('div');
             btn.title = isThis ? `PC ${i} — This Request` : isTaken ? `PC ${i} — Taken` : `PC ${i} — Available`;
             btn.style.cssText = `width:100%;padding-top:100%;position:relative;border-radius:5px;border:1.5px solid;cursor:default;`;
@@ -2616,15 +2648,26 @@ function updateReservationRowUI(id, status) {
             sitinBtn.style.cursor = 'pointer';
             sitinBtn.style.background = '#0F3E7D';
             sitinBtn.textContent = 'Sit-in';
-            sitinBtn.setAttribute('onclick', `openSitinFromReservation(this.dataset)`);
+            sitinBtn.dataset.status = 'approved';
+            sitinBtn.setAttribute('onclick', `sitinBtnRouter(this)`);
         } else if (status === 'sitting_in') {
-            sitinBtn.removeAttribute('disabled');
-            sitinBtn.style.opacity = '1';
-            sitinBtn.style.cursor = 'pointer';
-            sitinBtn.style.background = '#e67e22';
-            sitinBtn.textContent = 'Logout';
-            sitinBtn.removeAttribute('onclick');
-        } else {
+    sitinBtn.removeAttribute('disabled');
+    sitinBtn.style.opacity = '1';
+    sitinBtn.style.cursor = 'pointer';
+    sitinBtn.style.background = '#e67e22';
+    sitinBtn.textContent = 'Logout';
+    // Fetch the session ID for this student then wire up logout
+    fetch('/admin/get-active-session?idNumber=' + sitinBtn.dataset.id)
+    .then(r => r.json())
+    .then(data => {
+        if (data.sessionId) {
+            sitinBtn.onclick = function(e) {
+                e.stopPropagation();
+                confirmResLogout(data.sessionId, sitinBtn.dataset.resId);
+            };
+        }
+    });
+} else {
             sitinBtn.setAttribute('disabled', true);
             sitinBtn.style.opacity = '0.4';
             sitinBtn.style.cursor = 'not-allowed';
@@ -2644,7 +2687,95 @@ function updatePendingBadge() {
 // ══════════════════════════════════════
 // SIT-IN FROM RESERVATION
 // ══════════════════════════════════════
+function handleSitinBtnClick(dataset) {
+    // Store dataset immediately
+    document._pendingWrongDateDataset = dataset;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const resDate = dataset.date || '';
+
+    if (resDate && resDate !== today) {
+        document.getElementById('wrongDateInfo').textContent =
+            `This reservation is for ${resDate}, but today is ${today}.`;
+        showModal('wrongDateModal');
+        return;
+    }
+
+    document.getElementById('confirmSitinResName').textContent = dataset.name;
+    document.getElementById('confirmSitinResBtn').onclick = function() {
+        closeModal('confirmSitinFromResModal');
+        _openSitinFromReservation(dataset);
+    };
+    showModal('confirmSitinFromResModal');
+}
+
+function openEditResDateModal() {
+    const dataset = document._pendingWrongDateDataset;
+    if (!dataset) return;
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('editResDate_input').value = today;
+    document.getElementById('editResLab_input').value = dataset.lab;
+    document.getElementById('editResPC_input').value = 'PC ' + (dataset.pc || '—');
+    document.getElementById('editResDateError').style.display = 'none';
+    showModal('editResDateModal');
+}
+
+function saveEditedResDate() {
+    const dataset = document._pendingWrongDateDataset;
+    const newDate = document.getElementById('editResDate_input').value;
+    const errEl   = document.getElementById('editResDateError');
+    const today   = new Date().toISOString().slice(0, 10);
+    errEl.style.display = 'none';
+
+    if (!newDate) { errEl.textContent = 'Please select a date.'; errEl.style.display = 'block'; return; }
+    if (newDate !== today) { errEl.textContent = 'Date must be today to proceed with sit-in.'; errEl.style.display = 'block'; return; }
+
+    // Update DB then proceed
+    const fd = new FormData();
+    fd.append('id', dataset.resId);
+    fd.append('date', newDate);
+    fd.append('lab', dataset.lab);
+    fd.append('pc_number', dataset.pc || '');
+    fetch('/admin/reservations/edit-details', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('editResDateModal');
+            dataset.date = newDate;
+            document.getElementById('confirmSitinResName').textContent = dataset.name;
+            document.getElementById('confirmSitinResBtn').onclick = function() {
+                closeModal('confirmSitinFromResModal');
+                _openSitinFromReservation(dataset);
+            };
+            showModal('confirmSitinFromResModal');
+        } else {
+            errEl.textContent = data.message || 'Failed to update.';
+            errEl.style.display = 'block';
+        }
+    })
+    .catch(() => { errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; });
+}
+
+function forceSitinAnyway() {
+    const dataset = document._pendingWrongDateDataset;
+    if (!dataset) return;
+    document.getElementById('confirmSitinResName').textContent = dataset.name;
+    document.getElementById('confirmSitinResBtn').onclick = function() {
+        closeModal('confirmSitinFromResModal');
+        _openSitinFromReservation(dataset);
+    };
+    showModal('confirmSitinFromResModal');
+}
+
 function openSitinFromReservation(dataset) {
+    const today = new Date().toISOString().slice(0, 10);
+    const resDate = dataset.date || '';
+
+    if (resDate && resDate !== today) {
+        showWrongDateModal(dataset, resDate, today);
+        return;
+    }
+
     document.getElementById('confirmSitinResName').textContent = dataset.name;
     document.getElementById('confirmSitinResBtn').onclick = function() {
         closeModal('confirmSitinFromResModal');
@@ -2749,11 +2880,24 @@ function renderReqTable() {
     const end   = start + PER_PAGE;
     allReqRows.forEach(r => r.style.display = 'none');
     reqFiltered.forEach((r, i) => { r.style.display = (i >= start && i < end) ? '' : 'none'; });
+
     const infoEl = document.getElementById('reqInfo');
-    if (infoEl) infoEl.textContent = total === 0 ? 'No results' : `Showing ${start+1}–${Math.min(end,total)} of ${total}`;
-    const pgEl = document.getElementById('reqPgBtns');
+    const pgEl   = document.getElementById('reqPgBtns');
+
+if (total === 0) {
+    if (infoEl) infoEl.textContent = '';
+    if (pgEl)   pgEl.innerHTML = '';
+    const wrap = document.getElementById('reqPaginationWrap');
+    if (wrap) wrap.style.display = 'none';
+    return;
+}
+const wrap = document.getElementById('reqPaginationWrap');
+if (wrap) wrap.style.display = '';
+
+    if (infoEl) infoEl.textContent = `Showing ${start+1}–${Math.min(end,total)} of ${total}`;
     if (!pgEl) return;
     pgEl.innerHTML = '';
+
     function makeBtn(label, onClick, isActive, isDisabled) {
         const b = document.createElement('button');
         b.className = 'pg-btn' + (isActive ? ' active' : '');
@@ -2861,9 +3005,20 @@ function exportLogPDF() {
     doc.setFontSize(10); doc.setFont('helvetica','normal');
     doc.text('Reservation Log  |  University of Cebu  |  Generated: ' + new Date().toLocaleString(), 148.5, 17, {align:'center'});
     const rows = logFiltered.map(r => {
-        const c = r.querySelectorAll('td');
-        return [c[0]?.innerText,c[1]?.innerText,c[2]?.innerText,c[3]?.innerText,c[4]?.innerText,c[5]?.innerText,c[6]?.innerText,c[7]?.innerText,c[8]?.innerText];
-    });
+    const c = r.querySelectorAll('td');
+    const statusText = c[8]?.querySelector('.status-badge')?.innerText.trim() || c[8]?.innerText.trim() || '—';
+    return [
+        c[0]?.innerText.trim() || '—',
+        c[1]?.innerText.trim() || '—',
+        c[2]?.innerText.trim() || '—',
+        c[3]?.innerText.trim() || '—',
+        c[4]?.innerText.trim() || '—',
+        c[5]?.innerText.trim() || '—',
+        c[6]?.innerText.trim() || '—',
+        c[7]?.innerText.trim() || '—',
+        statusText
+    ];
+});
     doc.autoTable({
         startY: 26,
         head: [['#','ID Number','Name','Purpose','Lab','PC','Time','Date','Status']],
@@ -2890,18 +3045,22 @@ function printLog() {
     win.document.close();
 }
 
-function confirmResLogout(sessionId, resId) {
-    showModal('logoutModal');
-    document.getElementById('logoutForm').onsubmit = null;
-    document.getElementById('logoutForm').action = '';
-    document._pendingResLogout = { sessionId, resId };
-    document.querySelector('#logoutModal .btn-modal-close').setAttribute('onclick', "closeModal('logoutModal')");
-
-    // Override the Yes button
-    const yesBtn = document.querySelector('#logoutModal [onclick="submitLogout()"]');
-    if (yesBtn) {
-        yesBtn.setAttribute('onclick', 'submitResLogout()');
-    }
+function confirmResLogout(sessionIdOrResId, resId) {
+    // If sessionId is not a real session, fetch it first
+    fetch('/admin/get-active-session?idNumber=' + 
+        document.querySelector(`#sitin-btn-${resId}`)?.dataset.id)
+    .then(r => r.json())
+    .then(data => {
+        if (data.sessionId) {
+            document._pendingResLogout = { sessionId: data.sessionId, resId: resId };
+            const yesBtn = document.querySelector('#logoutModal [onclick="submitLogout()"]');
+            if (yesBtn) yesBtn.setAttribute('onclick', 'submitResLogout()');
+            showModal('logoutModal');
+        } else {
+            showToast('✗ No active session found.', 'error');
+        }
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
 }
 
 function submitResLogout() {
@@ -3020,12 +3179,14 @@ function loadMgmtGrid() {
     .then(data => {
         _blockedPCs = data.blocked || [];
         const occupiedPCs = data.occupied || [];
+        const reservedPCs = data.reserved || [];
         grid.innerHTML = '';
         let blockedCount = _blockedPCs.length;
 
         for (let i = 1; i <= 50; i++) {
             const isBlocked  = _blockedPCs.includes(i);
             const isOccupied = occupiedPCs.includes(i);
+            const isReserved = reservedPCs.includes(i) && !isOccupied && !isBlocked;
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.style.cssText = `width:100%;height:60px;border-radius:8px;border:2px solid;font-size:0.65rem;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:Arial,sans-serif;transition:all 0.15s;`;
@@ -3044,6 +3205,14 @@ function loadMgmtGrid() {
                 btn.style.cursor = 'pointer';
                 btn.title = `PC ${i} — Blocked (click to unblock)`;
                 btn.onclick = () => togglePcBlock(i, btn);
+            } else if (isReserved) {
+                btn.style.background = '#fff3cd';
+                btn.style.borderColor = '#F4B942';
+                btn.style.color = '#856404';
+                btn.style.cursor = 'not-allowed';
+                btn.title = `PC ${i} — Reserved by a student`;
+                btn.disabled = true;
+                btn.innerHTML = `<span style="font-size:0.9rem;">📋</span><span>${i}</span>`;
             } else {
                 btn.style.background = '#eafaf1';
                 btn.style.borderColor = '#27ae60';
@@ -3105,6 +3274,25 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => loadMgmtGrid(), 500);
     // Auto-refresh the PC grid every 10 seconds
     setInterval(() => loadMgmtGrid(), 10000);
+    // Auto-expire reservations every 60 seconds
+    setInterval(() => {
+        fetch('/admin/reservations/auto-expire', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.expired_ids && data.expired_ids.length > 0) {
+                data.expired_ids.forEach(id => {
+                    const row = document.getElementById('req-row-' + id);
+                    if (row) {
+                        allReqRows = allReqRows.filter(r => r !== row);
+                        reqFiltered = reqFiltered.filter(r => r !== row);
+                        row.remove();
+                        renderReqTable();
+                    }
+                });
+                updatePendingBadge();
+            }
+        });
+    }, 60000);
 });
 
 function loadAvailablePCs() {
@@ -3183,8 +3371,23 @@ function loadReqPCGridEditable(lab, date, currentPC) {
             } else if (isThis) {
                 btn.style.background  = '#0F3E7D';
                 btn.style.borderColor = '#0d3569';
-                btn.style.cursor      = 'default';
-                btn.title = `PC ${i} — Current`;
+                btn.style.cursor      = 'pointer';
+                btn.title = `PC ${i} — Current (click to reselect)`;
+                btn.setAttribute('data-selectable', '1');
+                btn.onclick = function() {
+                    grid.querySelectorAll('[data-selectable]').forEach(b => {
+                        b.style.background   = '#E6F1FB';
+                        b.style.borderColor  = '#185FA5';
+                        b.querySelector('span:last-child').style.color = '#185FA5';
+                        b.querySelector('span:first-child').style.color = '#185FA5';
+                    });
+                    btn.style.background  = '#1e7e34';
+                    btn.style.borderColor = '#1e7e34';
+                    btn.querySelector('span:last-child').style.color = 'white';
+                    btn.querySelector('span:first-child').style.color = 'white';
+                    _newSelectedPC = i;
+                    document.getElementById('rmNewPCLabel').textContent = `Selected: PC ${i}`;
+                };
             } else {
                 btn.style.background  = '#E6F1FB';
                 btn.style.borderColor = '#185FA5';
@@ -3241,14 +3444,29 @@ function saveNewPC() {
             // Update the display
             document.getElementById('rm_pc').value = 'PC ' + _newSelectedPC;
             // Update the table row
+            // Update reservation request table row
             const row = document.getElementById('req-row-' + _currentReqId);
             if (row) {
                 const cells = row.querySelectorAll('td');
                 if (cells[6]) cells[6].textContent = 'PC ' + _newSelectedPC;
-                // Update sit-in button dataset
                 const sitinBtn = document.getElementById('sitin-btn-' + _currentReqId);
                 if (sitinBtn) sitinBtn.dataset.pc = _newSelectedPC;
             }
+
+            // Update Current Sit-in table live
+            const sitinRows = document.querySelectorAll('#sitinTableBody tr');
+            sitinRows.forEach(tr => {
+                const idCell = tr.querySelectorAll('td')[1];
+                const labCell = tr.querySelectorAll('td')[4];
+                const pcCell = tr.querySelectorAll('td')[5];
+                const reservationIdNumber = document.getElementById('rm_id').value;
+                const reservationLab = document.getElementById('rm_lab').value.replace('Lab ', '');
+                if (idCell && labCell && pcCell &&
+                    idCell.textContent.trim() === reservationIdNumber &&
+                    labCell.textContent.trim() === reservationLab) {
+                    pcCell.textContent = _newSelectedPC;
+                }
+            });
             const updatedPC = _newSelectedPC;
             cancelPCEdit();
             showToast('✓ PC updated to PC ' + updatedPC + '.', 'success');
@@ -3269,7 +3487,72 @@ function applyRejectReason(sel) {
         sel.value = '';
     }
 }
+function loadSitinPCs() {
+    const lab = document.getElementById('sitinLab').value;
+    const pcRow = document.getElementById('sitinPcRow');
+    const pcSelect = document.getElementById('sitinPcSelect');
+    if (!lab) { pcRow.style.display = 'none'; return; }
+    fetch('/admin/get-available-pcs?lab=' + encodeURIComponent(lab))
+    .then(r => r.json())
+    .then(data => {
+        pcSelect.innerHTML = '<option value="">-- Select PC --</option>';
+        (data.available || []).forEach(pc => {
+            const opt = document.createElement('option');
+            opt.value = pc; opt.textContent = 'PC ' + pc;
+            pcSelect.appendChild(opt);
+        });
+        pcRow.style.display = '';
+    });
+}
 
+function submitEditReservation() {
+    const date = document.getElementById('editRes_date').value;
+    const lab  = document.getElementById('editRes_lab').value;
+    const pc   = document.getElementById('editRes_pc').value;
+    const errEl = document.getElementById('editResError');
+    errEl.style.display = 'none';
+
+    if (!date) { errEl.textContent = 'Please select a date.'; errEl.style.display = 'block'; return; }
+    if (!pc)   { errEl.textContent = 'Please select an available PC.'; errEl.style.display = 'block'; return; }
+
+    const fd = new FormData();
+    fd.append('id', _currentReqId);
+    fd.append('date', date);
+    fd.append('lab', lab);
+    fd.append('pc_number', pc);
+
+    fetch('/admin/reservations/edit-details', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('editReservationModal');
+            showToast('✓ Reservation updated. You can now proceed with sit-in.', 'success');
+            // Update the row in the table
+            const row = document.getElementById('req-row-' + _currentReqId);
+            if (row) {
+                const cells = row.querySelectorAll('td');
+                if (cells[5]) cells[5].textContent = lab;
+                if (cells[6]) cells[6].textContent = 'PC ' + pc;
+                if (cells[8]) cells[8].textContent = date;
+                // Update sit-in button dataset
+                const btn = document.getElementById('sitin-btn-' + _currentReqId);
+                if (btn) { btn.dataset.lab = lab; btn.dataset.pc = pc; }
+            }
+        } else {
+            errEl.textContent = data.message || 'Something went wrong.';
+            errEl.style.display = 'block';
+        }
+    })
+    .catch(() => { errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; });
+}
+function sitinBtnRouter(btn) {
+    const status = btn.dataset.status;
+    if (status === 'sitting_in') {
+        confirmResLogout(btn.dataset.id, btn.dataset.resId);
+    } else if (status === 'approved') {
+        handleSitinBtnClick(btn.dataset);
+    }
+}
     </script>
 <div class="modal-overlay" id="deleteFeedbackModal" style="display:none;">
     <div class="modal-box modal-sm">
@@ -3334,6 +3617,62 @@ function applyRejectReason(sel) {
             <div style="display:flex;gap:0.8rem;justify-content:center;">
                 <button type="button" class="btn-modal-close" onclick="closeModal('confirmDisableResModal')">No, Cancel</button>
                 <button type="button" onclick="closeModal('confirmDisableResModal'); setReservation(0);" style="background:#c0392b;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">Yes, Disable</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="wrongDateModal" style="display:none; z-index:9999;">
+    <div class="modal-box" style="max-width:420px;">
+        <div class="modal-header" style="background:#e67e22;">
+            <h3>⚠️ Date Mismatch</h3>
+            <button class="modal-close" onclick="closeModal('wrongDateModal')">&#10005;</button>
+        </div>
+        <div class="modal-body" style="text-align:center; padding:1.5rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">📅</div>
+            <p style="color:#333;font-size:0.95rem;margin-bottom:0.5rem;" id="wrongDateInfo"></p>
+            <p style="color:#888;font-size:0.85rem;margin-bottom:1.5rem;">
+                You can edit the reservation date/lab/PC, or force sit-in anyway.
+            </p>
+            <input type="hidden" id="wrongDateResId">
+            <div style="display:flex;gap:0.6rem;justify-content:center;">
+                <button type="button" class="btn-modal-close" onclick="closeModal('wrongDateModal')">
+                    Cancel
+                </button>
+                <button type="button"
+                    style="background:#e67e22;color:white;border:none;padding:0.55rem 1.1rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;"
+                    onclick="closeModal('wrongDateModal'); openEditResDateModal();">
+                    Edit Date
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="editResDateModal" style="display:none; z-index:9999;">
+    <div class="modal-box" style="max-width:400px;">
+        <div class="modal-header" style="background:#0F3E7D;">
+            <h3>Edit Reservation Date / PC</h3>
+            <button class="modal-close" onclick="closeModal('editResDateModal')">&#10005;</button>
+        </div>
+        <div class="modal-body">
+            <table class="sitin-form-table">
+                <tr>
+                    <td class="sitin-form-label">New Date</td>
+                    <td><input type="date" id="editResDate_input" class="sitin-form-input"></td>
+                </tr>
+                <tr>
+                    <td class="sitin-form-label">Lab</td>
+                    <td><input type="text" id="editResLab_input" class="sitin-form-input sitin-readonly" readonly></td>
+                </tr>
+                <tr>
+                    <td class="sitin-form-label">PC Number</td>
+                    <td><input type="text" id="editResPC_input" class="sitin-form-input sitin-readonly" readonly></td>
+                </tr>
+            </table>
+            <div id="editResDateError" style="display:none;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;margin-top:0.8rem;"></div>
+            <div class="sitin-form-btns">
+                <button type="button" class="btn-modal-close" onclick="closeModal('editResDateModal')">Cancel</button>
+                <button type="button" class="btn-modal-submit" onclick="saveEditedResDate()">Save &amp; Sit-in</button>
             </div>
         </div>
     </div>

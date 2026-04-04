@@ -6,12 +6,122 @@
     <title>CCS Sit-in Monitoring System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
+        /* Make all sections blend with the grid background */
+#announcements,
+#rules,
+#faqs,
+#leaderboard,
+#contact {
+    background: transparent !important;
+}
+
+body {
+    background-color: #f5f7fb;
+    background-image:
+        linear-gradient(rgba(15,62,125,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15,62,125,0.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-attachment: fixed;
+}
+
+.navbar {
+    background: rgba(15, 62, 125, 0.92) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.18) !important;
+    box-shadow: 0 2px 24px rgba(10, 30, 80, 0.25) !important;
+}
+
+footer {
+    background: rgba(10, 30, 80, 0.88) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid rgba(255,255,255,0.15) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 -2px 24px rgba(10, 30, 80, 0.2) !important;
+}
+
+.about-section {
+    background: linear-gradient(135deg, #0a1e50, #1a6fbc);
+    border-radius: 30px;
+    margin: 2rem;
+    box-shadow: 6px 6px 0px rgba(74, 144, 217, 0.4);
+}
+
+.ann-card {
+    background: linear-gradient(135deg, #fdf4ff, #eff6ff) !important;
+    border-radius: 20px !important;
+    border: 2px solid rgba(255,255,255,0.9) !important;
+    box-shadow: 
+        5px 5px 0px rgba(192, 132, 252, 0.3),
+        0 8px 24px rgba(150, 120, 220, 0.1) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.ann-card:hover {
+    transform: translateY(-4px) translateX(-2px) !important;
+    box-shadow: 
+        8px 8px 0px rgba(192, 132, 252, 0.35),
+        0 12px 28px rgba(150, 120, 220, 0.15) !important;
+}
+
+.rules-wrap {
+    background: linear-gradient(135deg, #fdf4ff, #eff6ff) !important;
+    border-radius: 24px !important;
+    border: 2px solid rgba(255,255,255,0.9) !important;
+    box-shadow: 
+        6px 6px 0px rgba(192, 132, 252, 0.3),
+        0 8px 24px rgba(150, 120, 220, 0.1) !important;
+}
+
+.rules-list li {
+    background: linear-gradient(135deg, #fef9ff, #f0f4ff) !important;
+    border-radius: 14px !important;
+    border: 1.5px solid rgba(192, 132, 252, 0.2) !important;
+    box-shadow: 3px 3px 0px rgba(192, 132, 252, 0.2) !important;
+}
+
+.faq-item {
+    background: linear-gradient(135deg, #fdf4ff, #eff6ff) !important;
+    border-radius: 20px !important;
+    border: 2px solid rgba(255,255,255,0.9) !important;
+    box-shadow: 
+        5px 5px 0px rgba(192, 132, 252, 0.25),
+        0 6px 20px rgba(150, 120, 220, 0.1) !important;
+}
+
+.under-construction-wrap {
+    background: linear-gradient(135deg, #fdf4ff, #eff6ff) !important;
+    border-radius: 24px !important;
+    border: 2px solid rgba(255,255,255,0.9) !important;
+    box-shadow: 
+        6px 6px 0px rgba(192, 132, 252, 0.3),
+        0 8px 24px rgba(150, 120, 220, 0.1) !important;
+}
+
+.contact-card {
+    background: linear-gradient(135deg, #fdf4ff, #eff6ff) !important;
+    border-radius: 20px !important;
+    border: 2px solid rgba(255,255,255,0.9) !important;
+    box-shadow: 
+        5px 5px 0px rgba(192, 132, 252, 0.25),
+        0 6px 20px rgba(150, 120, 220, 0.1) !important;
+    transition: transform 0.2s ease !important;
+}
+
+.contact-card:hover {
+    transform: translateY(-4px) translateX(-2px) !important;
+    box-shadow: 
+        8px 8px 0px rgba(115, 6, 223, 0.35) !important;
+}
+
         /* ── Section shared styles ── */
         .community-section {
-            padding: 4rem 2rem;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
+    padding: 4rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    background: transparent;
+}
         .section-heading {
             font-size: 1.6rem;
             font-weight: 800;
@@ -36,13 +146,18 @@
             gap: 1.25rem;
         }
         .ann-card {
-            background: white;
-            border-radius: 10px;
-            padding: 1.25rem 1.4rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-            border-left: 4px solid #0F3E7D;
-            transition: transform 0.18s, box-shadow 0.18s;
-        }
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 1.25rem 1.4rem;
+    box-shadow: 0 8px 24px rgba(15, 62, 125, 0.10);
+    border-left: 4px solid #0F3E7D;
+    border-top: 1px solid rgba(255,255,255,0.7);
+    border-right: 1px solid rgba(255,255,255,0.4);
+    border-bottom: 1px solid rgba(255,255,255,0.4);
+    transition: transform 0.18s, box-shadow 0.18s;
+}
         .ann-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.11); }
         .ann-card.urgent { border-left-color: #e74c3c; }
         .ann-card.info   { border-left-color: #27ae60; }
@@ -66,11 +181,14 @@
         /* ── Rules ── */
         #rules { background: white; }
         .rules-wrap {
-            background: #f9fbff;
-            border-radius: 12px;
-            padding: 2rem 2.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-        }
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    box-shadow: 0 8px 24px rgba(15, 62, 125, 0.10);
+    border: 1px solid rgba(255,255,255,0.6);
+}
         .rules-intro-text {
             font-size: 0.95rem;
             color: #444;
@@ -116,11 +234,14 @@
         #faqs { background: #f9fbff; }
         .faq-list { display: flex; flex-direction: column; gap: 0.75rem; }
         .faq-item {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-            overflow: hidden;
-        }
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(15, 62, 125, 0.08);
+    border: 1px solid rgba(255,255,255,0.6);
+    overflow: hidden;
+}
         .faq-question {
             width: 100%;
             background: none;
@@ -153,13 +274,15 @@
         /* ── Leaderboard Under Construction ── */
         #leaderboard { background: white; }
         .under-construction-wrap {
-            background: #f9fbff;
-            border-radius: 12px;
-            padding: 3.5rem 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-            text-align: center;
-            border: 2px dashed #c5d5ee;
-        }
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 3.5rem 2rem;
+    box-shadow: 0 8px 24px rgba(15, 62, 125, 0.08);
+    text-align: center;
+    border: 2px dashed rgba(197, 213, 238, 0.8);
+}
         .uc-icon {
             font-size: 4rem;
             display: block;
@@ -234,13 +357,16 @@
             gap: 1.25rem;
         }
         .contact-card {
-            background: white;
-            border-radius: 10px;
-            padding: 1.5rem 1.4rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-            text-align: center;
-            transition: transform 0.18s;
-        }
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 1.5rem 1.4rem;
+    box-shadow: 0 8px 24px rgba(15, 62, 125, 0.08);
+    border: 1px solid rgba(255,255,255,0.6);
+    text-align: center;
+    transition: transform 0.18s;
+}
         .contact-card:hover { transform: translateY(-3px); }
         .contact-icon {
             font-size: 2rem;
@@ -276,16 +402,32 @@
             .rules-wrap { padding: 1.25rem; }
             .under-construction-wrap { padding: 2.5rem 1.2rem; }
         }
+
+.notice-box {
+    background: linear-gradient(135deg, rgba(255,255,255,0.45), rgba(200,220,255,0.25));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-left: 4px solid #0F3E7D;
+    border-top: 1px solid rgba(255, 255, 255, 0.8);
+    border-right: 1px solid rgba(15, 62, 125, 0.2);
+    border-bottom: 1px solid rgba(15, 62, 125, 0.2);
+    padding: 1rem 1.5rem;
+    margin-top: 2rem;
+    border-radius: 10px;
+    box-shadow: 
+        0 4px 20px rgba(15, 62, 125, 0.15),
+        0 1px 0 rgba(255,255,255,0.9) inset;
+}
     </style>
 </head>
 <body>
 
     <nav class="navbar">
         <div class="nav-content">
-            <div class="logo-section">
+            <a href="#" onclick="window.scrollTo({top:0, behavior:'smooth'}); return false;" class="logo-section" style="text-decoration:none;">
                 <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="CCS Logo" class="navbar-logo">
                 <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
-            </div>
+            </a>
             <div class="nav-links">
                 <a href="/">Home</a>
                 <div class="dropdown">

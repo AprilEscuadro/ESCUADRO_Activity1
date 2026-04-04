@@ -368,6 +368,15 @@ def get_student_sessions(id_number):
 
 def add_sitin(id_number, purpose, lab, pc_number=None):
     conn = get_db()
+    # Check if PC is already occupied
+    if pc_number:
+        existing = conn.execute("""
+            SELECT id FROM sitin_sessions
+            WHERE lab=? AND pc_number=? AND status='active'
+        """, (lab, pc_number)).fetchone()
+        if existing:
+            conn.close()
+            return None, 'PC is already occupied by another student.'
     cursor = conn.execute("""
         INSERT INTO sitin_sessions (idNumber, purpose, lab, pc_number)
         VALUES (?, ?, ?, ?)
@@ -375,7 +384,7 @@ def add_sitin(id_number, purpose, lab, pc_number=None):
     session_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    return session_id
+    return session_id, None
 
 def end_sitin(session_id):
     conn = get_db()
@@ -646,16 +655,6 @@ def set_reservation_enabled(enabled: int, message: str = None):
     conn.commit()
     conn.close()
 
-def get_reserved_pcs(lab, date):
-    """Return list of reserved PC numbers for a lab on a given date."""
-    conn = get_db()
-    rows = conn.execute("""
-        SELECT pc_number FROM reservations
-        WHERE lab=? AND date=? AND status NOT IN ('rejected', 'expired', 'done')
-    """, (lab, date)).fetchall()
-    conn.close()
-    return [r['pc_number'] for r in rows if r['pc_number']]
-
 def get_reservation_log():
     conn = get_db()
     rows = conn.execute("""
@@ -730,3 +729,14 @@ def get_occupied_pcs(lab):
     """, (lab,)).fetchall()
     conn.close()
     return [r['pc_number'] for r in rows]
+
+def get_reserved_pcs_today(lab):
+    from datetime import date
+    today = date.today().isoformat()
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT pc_number FROM reservations
+        WHERE lab=? AND date=? AND status IN ('pending', 'approved')
+    """, (lab, today)).fetchall()
+    conn.close()
+    return [r['pc_number'] for r in rows if r['pc_number']]

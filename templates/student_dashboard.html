@@ -11,7 +11,6 @@
         .admin-sidebar { display: none !important; }
         .admin-wrapper { display: block; }
         .admin-main { padding: 2rem; background: #f5f5f5; min-height: calc(100vh - 70px); }
-
         .header-actions { display: flex; align-items: center; gap: 10px; position: relative; }
         .student-name-label { color: white; font-size: 0.9rem; }
 
@@ -58,13 +57,44 @@
         .ham-dropdown a.ham-logout { color: #c0392b; border-top: 1px solid #f0f0f0; }
         .ham-dropdown a.ham-logout:hover { background: #fdecea; color: #a93226; }
 
-        .page-breadcrumb { font-size: 0.8rem; color: #888; margin-bottom: 1.4rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
-        .page-breadcrumb span { color: #0F3E7D; font-weight: 600; }
-
-        .student-panel-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; align-items: stretch; }
-        .student-info-panel, .panel-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; display: flex; flex-direction: column; }
-        .panel-tab-header, .panel-card-header { background: #0F3E7D; color: white; padding: 0.75rem 1.1rem; font-size: 0.92rem; font-weight: 700; letter-spacing: 0.01em; flex-shrink: 0; text-align: center; }
-        .panel-body, .panel-card-body { padding: 1.1rem 1.25rem; flex: 1; overflow-y: auto; max-height: 480px; }
+        .student-panel-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 1.5rem;
+        align-items: stretch;
+    }
+        .student-info-panel, .panel-card {
+        background: rgba(255, 255, 255, 0.55);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(255, 255, 255, 0.65);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(15, 62, 125, 0.10), 0 1.5px 6px rgba(255,255,255,0.18) inset;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 520px;
+    }
+        .panel-tab-header, .panel-card-header {
+        background: linear-gradient(135deg, rgba(15, 62, 125, 0.88), rgba(26, 111, 188, 0.82));
+        backdrop-filter: blur(8px);
+        color: white;
+        padding: 0.85rem 1.1rem;
+        font-size: 0.92rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        flex-shrink: 0;
+        text-align: center;
+        border-bottom: 1px solid rgba(255,255,255,0.15);
+        text-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    }
+        .panel-body, .panel-card-body {
+        padding: 1.1rem 1.25rem;
+        flex: 1;
+        overflow-y: auto;
+        max-height: none;
+        min-height: 440px;
+    }
 
         .announcement-card { border-bottom: 1px solid #f0f0f0; padding-bottom: 0.85rem; margin-bottom: 0.85rem; border-radius: 6px; }
         .announcement-card:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
@@ -256,10 +286,10 @@
 
     <nav class="navbar">
         <div class="nav-content">
-            <div class="logo-section">
+            <a href="/dashboard" class="logo-section" style="text-decoration:none;">
                 <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="CCS Logo" class="navbar-logo">
                 <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
-            </div>
+            </a>
             <div class="header-actions">
                 <span class="student-name-label">
                     {{ student.firstName }}{% if student.middleName %} {{ student.middleName }}{% endif %} {{ student.lastName }}
@@ -324,11 +354,10 @@
             </script>
             {% endif %}
 
-            <p class="page-breadcrumb">Dashboard &rsaquo; <span id="activeLabel">Home</span></p>
-
             <!-- HOME -->
             <div id="section-home" class="page-section active">
-                <div class="student-panel-grid">
+            <h2 class="admin-section-title">Home</h2>
+            <div class="student-panel-grid">
                     <div class="student-info-panel">
                         <div class="panel-tab-header">Student Information</div>
                         <div class="panel-body">
@@ -369,7 +398,7 @@
                                     <span class="ann-title-text">{{ a.title if a.title else '' }}</span>
                                     {% if a.is_pinned %}<span class="ann-pin-label">📌 Pinned</span>{% endif %}
                                 </div>
-                                <div class="ann-meta"><span class="ann-author">{{ a.posted_by }}</span><span class="ann-date">| {{ a.created_at }}</span></div>
+                                <div class="ann-meta"><span class="ann-author">{{ a.posted_by }}</span><span class="ann-date">| {{ a.created_at.split(' ')[0] }} {{ a.created_at.split(' ')[1] | timeformat if a.created_at and ' ' in a.created_at else '' }}</span></div>
                                 <p class="ann-body">{{ a.content }}</p>
                             </div>
                             {% else %}
@@ -566,8 +595,8 @@
                                     <td>{{ student.firstName }}{% if student.middleName %} {{ student.middleName }}{% endif %} {{ student.lastName }}</td>
                                     <td>{{ s.purpose }}</td>
                                     <td>{{ s.lab }}</td>
-                                    <td>{{ s.time_in.split(' ')[1] if s.time_in and ' ' in s.time_in else s.time_in }}</td>
-                                    <td>{{ s.time_out.split(' ')[1] if s.time_out and ' ' in s.time_out else '—' }}</td>
+                                    <td>{{ s.time_in.split(' ')[1] | timeformat if s.time_in and ' ' in s.time_in else '—' }}</td>
+                                    <td>{{ s.time_out.split(' ')[1] | timeformat if s.time_out and ' ' in s.time_out else '—' }}</td>
                                     <td>{{ s.time_in.split(' ')[0] if s.time_in and ' ' in s.time_in else '—' }}</td>
                                     <td>
                                         {% if s.status == 'done' %}
@@ -719,7 +748,7 @@
                             <td>{{ r.purpose }}</td>
                             <td>{{ r.lab }}</td>
                             <td>💻 PC {{ r.pc_number if r.pc_number else '—' }}</td>
-                            <td>{{ r.time_in }}</td>
+                            <td>{{ r.time_in | timeformat }}</td>
                             <td>{{ r.date }}</td>
                             <td>
                                 <span class="status-badge"
@@ -1280,7 +1309,7 @@
 const LAB_TOTAL_PCS = { '524': 50, '526': 50, '530': 50, '544': 50 };
 let _selectedLab = '';
 document.addEventListener('DOMContentLoaded', () => loadPCGrid());
-setInterval(() => { if (_selectedLab) loadPCGrid(); }, 10000);
+setInterval(() => { if (_selectedLab) refreshPCGrid(); }, 10000);
 let _reservedPCs = [];
 
 function selectLab(lab) {
@@ -1326,8 +1355,11 @@ function loadPCGrid() {
     .then(data => {
         _reservedPCs = data.reserved || [];
         grid.innerHTML = '';
+        const blocked  = data.blocked  || [];
+        const occupied = data.occupied || [];
+        const allTaken = [...new Set([..._reservedPCs, ...blocked, ...occupied])];
 
-        const full = _reservedPCs.length >= total;
+        const full = allTaken.length >= total;
         document.querySelectorAll('.lab-btn').forEach(b => b.classList.remove('full','available'));
         const labBtn = document.querySelector(`.lab-btn[data-lab="${lab}"]`);
         if (labBtn) labBtn.classList.add(full ? 'full' : 'available');
@@ -1336,7 +1368,7 @@ function loadPCGrid() {
             : `<span style="color:#27ae60;font-weight:700;">🟢 ${total - _reservedPCs.length} of ${total} PCs available</span>`;
 
         for (let i = 1; i <= total; i++) {
-            const taken = _reservedPCs.includes(i);
+            const taken = allTaken.includes(i);
             const btn   = document.createElement('button');
             btn.type    = 'button';
             btn.className = 'pc-btn' + (taken ? ' taken' : '');
@@ -1409,7 +1441,7 @@ function submitReservation() {
             document.getElementById('lab_status_msg').textContent = '';
             _selectedLab = '';
             loadPCGrid();
-            showToast('success');
+            showResToast('✓ Reservation submitted! Please wait for admin approval.', 'success');
         } else {
             errEl.textContent = data.message || 'Something went wrong.';
             errEl.style.display = 'block';
@@ -1469,6 +1501,7 @@ function renderResTable() {
 window.addEventListener('DOMContentLoaded', function() {
     initResPagination();
     initHistoryPagination();
+    fetch('/admin/reservations/auto-expire', { method: 'POST' });
 });
 
 // ── My Sit-in History Pagination ──
@@ -1565,6 +1598,49 @@ function confirmReservation() {
 
     document.getElementById('confirmReservationModal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
+}
+function showResToast(message, type) {
+    const existing = document.getElementById('resToast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'resToast';
+    toast.textContent = message;
+    toast.style.cssText = `position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
+        background:${type === 'success' ? '#1e7e34' : '#c0392b'};color:white;
+        padding:0.85rem 1.8rem;border-radius:8px;font-size:0.92rem;font-weight:600;
+        box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:9999;white-space:nowrap;`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+}
+function refreshPCGrid() {
+    const currentPC = document.getElementById('res_pc').value;
+    const date = document.getElementById('res_date').value;
+    if (!_selectedLab || !date) return;
+
+    fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(_selectedLab)}&date=${encodeURIComponent(date)}`)
+    .then(r => r.json())
+    .then(data => {
+        const reserved = data.reserved || [];
+        const blocked  = data.blocked  || [];
+        const occupied = data.occupied || [];
+        const allTaken = [...new Set([...reserved, ...blocked, ...occupied])];
+
+        // Just update colors, don't rebuild
+        const buttons = document.querySelectorAll('.pc-btn');
+        buttons.forEach(btn => {
+            const num = parseInt(btn.querySelectorAll('span')[1]?.textContent.trim());
+            if (!num) return;
+            if (num === parseInt(currentPC)) return; // don't touch selected
+            if (allTaken.includes(num)) {
+                btn.classList.add('taken');
+                btn.classList.remove('selected');
+                btn.disabled = true;
+            } else {
+                btn.classList.remove('taken');
+                btn.disabled = false;
+            }
+        });
+    });
 }
     </script>
 

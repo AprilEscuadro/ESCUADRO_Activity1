@@ -17,6 +17,7 @@ from dbhelper import (
     get_reservation_log, get_blocked_pcs,
     set_pc_blocked,
     update_reservation_message, get_occupied_pcs,
+    get_reserved_pcs_today,
 )
 
 import sqlite3 as _sqlite3
@@ -510,13 +511,28 @@ def admin_add_sitin_ajax():
         return jsonify({'success': False, 'message': 'Student has no remaining sit-in sessions.'})
     pc_number = request.form.get('pc_number', '').strip()
     pc_number = int(pc_number) if pc_number.isdigit() else None
-    session_id = add_sitin(id_number, purpose, lab, pc_number)
+    session_id, error = add_sitin(id_number, purpose, lab, pc_number)
+    if error:
+        return jsonify({'success': False, 'message': error})
     reservation_id = request.form.get('reservation_id', '').strip()
     if reservation_id:
         update_reservation_status(int(reservation_id), 'sitting_in')
     return jsonify({'success': True, 'message': 'Sit-in successful.', 'sessionId': session_id, 'pc_number': pc_number})
 
-
+@app.route('/admin/get-active-session', methods=['GET'])
+def admin_get_active_session():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    id_number = request.args.get('idNumber', '').strip()
+    conn = _sqlite3.connect('database.db')
+    row = conn.execute(
+        "SELECT id FROM sitin_sessions WHERE idNumber=? AND status='active' ORDER BY id DESC LIMIT 1",
+        (id_number,)
+    ).fetchone()
+    conn.close()
+    if row:
+        return jsonify({'sessionId': row[0]})
+    return jsonify({'sessionId': None})
 # ══════════════════════════════════════════
 # ROUTE — ADMIN END SIT-IN
 # ══════════════════════════════════════════
@@ -697,19 +713,23 @@ def admin_edit_student():
 # ══════════════════════════════════════════
 @app.route('/admin/reservations/auto-expire', methods=['POST'])
 def admin_auto_expire():
-    if not session.get('admin'):
-        return jsonify({'success': False}), 401
     conn = _sqlite3.connect('database.db')
+    rows = conn.execute("""
+        SELECT id FROM reservations
+        WHERE status IN ('pending', 'approved')
+        AND datetime(date || ' ' || time_in) < datetime('now', 'localtime', '-30 minutes')
+    """).fetchall()
+    expired_ids = [r[0] for r in rows]
     conn.execute("""
-    UPDATE reservations 
-    SET status='expired',
-        message='⏰ Your reservation has expired as your time slot has already passed. Please book a new reservation at a different time. We apologize for any inconvenience this may have caused.'
-    WHERE status='approved'
-    AND datetime(date || ' ' || time_in) < datetime('now', 'localtime', '-1 hour')
-""")
+        UPDATE reservations 
+        SET status='expired',
+            message='⏰ Your reservation has expired as your time slot has already passed. Please book a new reservation at a different time. We apologize for any inconvenience this may have caused.'
+        WHERE status IN ('pending', 'approved')
+        AND datetime(date || ' ' || time_in) < datetime('now', 'localtime', '-30 minutes')
+    """)
     conn.commit()
     conn.close()
-    return jsonify({'success': True})
+    return jsonify({'success': True, 'expired_ids': expired_ids})
 
 # ══════════════════════════════════════════
 # Get blocked PCs for a lab
@@ -723,7 +743,8 @@ def admin_get_blocked_pcs():
         return jsonify({'blocked': [], 'occupied': []})
     blocked  = get_blocked_pcs(lab)
     occupied = get_occupied_pcs(lab)
-    return jsonify({'blocked': blocked, 'occupied': occupied})
+    reserved = get_reserved_pcs_today(lab)
+    return jsonify({'blocked': blocked, 'occupied': occupied, 'reserved': reserved})
 
 # ══════════════════════════════════════════
 #  Toggle a PC blocked/unblocked
@@ -786,6 +807,25 @@ def student_reserve():
     if not purpose or not lab or not time_in or not date or not pc_number:
         return jsonify({'success': False, 'message': 'All fields are required.'})
 
+    from datetime import datetime as _dt2
+    now = _dt2.now()
+    today_str = now.date().isoformat()
+
+    # Block past dates
+    if date < today_str:
+        return jsonify({'success': False, 'message': 'You cannot book a reservation in the past.'})
+
+    # Block Sundays (weekday 6 = Sunday)
+    from datetime import date as _d
+    booking_date = _d.fromisoformat(date)
+    if booking_date.weekday() == 6:
+        return jsonify({'success': False, 'message': 'Reservations are not allowed on Sundays.'})
+
+    # Block past time if booking for today
+    if date == today_str:
+        if time_in <= now.strftime('%H:%M'):
+            return jsonify({'success': False, 'message': 'That time has already passed. Please choose a future time.'})
+
     if time_in < '08:00' or time_in > '20:00':
         return jsonify({'success': False, 'message': 'Reservation time must be between 8:00 AM and 8:00 PM only.'})
 
@@ -828,21 +868,68 @@ def admin_get_reserved_pcs():
     date = request.args.get('date', '').strip()
     if not lab or not date:
         return jsonify({'reserved': []})
-    reserved = get_reserved_pcs(lab, date)
-    return jsonify({'reserved': reserved})
+    
+    import sqlite3 as _sq
+    conn = _sq.connect('database.db')
+    
+    # Only actual reservations for that date
+    rows = conn.execute("""
+        SELECT pc_number FROM reservations
+        WHERE lab=? AND date=? AND status NOT IN ('rejected', 'expired', 'done')
+    """, (lab, date)).fetchall()
+    
+    # Blocked PCs
+    blocked = conn.execute(
+        "SELECT pc_number FROM blocked_pcs WHERE lab=?", (lab,)
+    ).fetchall()
+    
+    # Currently occupied (active sit-in)
+    occupied = conn.execute("""
+        SELECT pc_number FROM sitin_sessions
+        WHERE lab=? AND status='active' AND pc_number IS NOT NULL
+    """, (lab,)).fetchall()
+    
+    conn.close()
+    
+    reserved_list = [r[0] for r in rows if r[0]]
+    blocked_list  = [r[0] for r in blocked]
+    occupied_list = [r[0] for r in occupied]
+    
+    return jsonify({
+        'reserved': reserved_list,
+        'blocked':  blocked_list,
+        'occupied': occupied_list
+    })
 
 @app.route('/admin/get-available-pcs', methods=['GET'])
 def admin_get_available_pcs():
     if not session.get('admin'):
         return jsonify({'success': False}), 401
     lab = request.args.get('lab', '').strip()
+    date = request.args.get('date', '').strip()
+    if not date:
+        from datetime import date as _date
+        date = _date.today().isoformat()
     if not lab:
         return jsonify({'available': []})
     
+    from datetime import date as _dt
+    today = _dt.today().isoformat()
+    
     total_pcs = 50
-    blocked = get_blocked_pcs(lab)
+    blocked  = get_blocked_pcs(lab)
     occupied = get_occupied_pcs(lab)
-    unavailable = set(blocked + occupied)
+    
+    # Also exclude PCs reserved for today
+    conn = _sqlite3.connect('database.db')
+    reserved_today = conn.execute("""
+        SELECT pc_number FROM reservations
+        WHERE lab=? AND date=? AND status IN ('pending', 'approved', 'sitting_in')
+    """, (lab, today)).fetchall()
+    conn.close()
+    reserved_today = [r[0] for r in reserved_today]
+    
+    unavailable = set(blocked + occupied + reserved_today)
     available = [i for i in range(1, total_pcs + 1) if i not in unavailable]
     return jsonify({'available': available})
 
@@ -855,10 +942,56 @@ def admin_update_reservation_pc():
     if not res_id or not pc_number:
         return jsonify({'success': False, 'message': 'Missing fields.'})
     conn = _sqlite3.connect('database.db')
+
+    # Update reservations table
     conn.execute("UPDATE reservations SET pc_number=? WHERE id=?", (int(pc_number), int(res_id)))
+
+    # Also update sitin_sessions if this reservation has an active sit-in
+    res = conn.execute("SELECT idNumber FROM reservations WHERE id=?", (int(res_id),)).fetchone()
+    if res:
+        conn.execute("""
+            UPDATE sitin_sessions SET pc_number=?
+            WHERE idNumber=? AND status='active'
+        """, (int(pc_number), res[0]))
+
     conn.commit()
     conn.close()
     return jsonify({'success': True})
+
+@app.route('/admin/reservations/edit-details', methods=['POST'])
+def admin_edit_reservation_details():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    res_id = request.form.get('id', '').strip()
+    date   = request.form.get('date', '').strip()
+    lab    = request.form.get('lab', '').strip()
+    pc     = request.form.get('pc_number', '').strip()
+    if not res_id or not date or not lab or not pc:
+        return jsonify({'success': False, 'message': 'All fields are required.'})
+    conn = _sqlite3.connect('database.db')
+    conn.execute("""
+        UPDATE reservations SET date=?, lab=?, pc_number=? WHERE id=?
+    """, (date, lab, int(pc), int(res_id)))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+def format_time(time_str):
+    if not time_str:
+        return '—'
+    try:
+        from datetime import datetime
+        t = datetime.strptime(time_str.strip(), '%H:%M:%S')
+        return t.strftime('%I:%M %p')
+    except:
+        try:
+            from datetime import datetime
+            t = datetime.strptime(time_str.strip(), '%H:%M')
+            return t.strftime('%I:%M %p')
+        except:
+            return time_str
+
+app.jinja_env.filters['timeformat'] = format_time
 # ══════════════════════════════════════════
 # ROUTE — ADMIN LOGOUT
 # ══════════════════════════════════════════
@@ -867,7 +1000,12 @@ def admin_logout():
     session.clear()
     return redirect('/')
 
-
+# ══════════════════════════════════════════
+# ROUTE —  FORGOT PSSWORD
+# ══════════════════════════════════════════
+@app.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    return jsonify({'success': True, 'message': '✓ If your ID and email match, a reset link has been sent.'})
 # ══════════════════════════════════════════
 # RUN
 # ══════════════════════════════════════════
@@ -880,4 +1018,3 @@ if __name__ == '__main__':
     print("Open: http://localhost:5000")
     print("=================================")
     app.run(debug=True)
-
