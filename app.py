@@ -1,13 +1,14 @@
 import os
 from flask import Flask, request, redirect, render_template, render_template_string, session, jsonify
 from dbhelper import (
+    contains_bad_words,
     init_db,
     get_student_by_id, register_student, login_student,
     login_admin, get_all_students,
     get_all_sessions, get_student_sessions, add_sitin, end_sitin,
     get_all_announcements, add_announcement,
     edit_announcement, delete_announcement, toggle_pin_announcement,
-    get_purpose_counts,
+    get_purpose_counts, get_lab_counts,
     save_feedback, get_all_feedback, has_feedback,
     init_reservations_table, add_reservation,
     get_student_reservations, get_all_reservations,
@@ -303,6 +304,10 @@ def student_submit_feedback():
     if not session_id or not message:
         return jsonify({'success': False, 'message': 'Feedback message is required.'})
 
+    flagged, word = contains_bad_words(message)
+    if flagged:
+        return jsonify({'success': False, 'message': 'Please keep feedback respectful.'})
+
     # Prevent duplicate feedback
     if has_feedback(int(session_id)):
         return jsonify({'success': False, 'message': 'You already submitted feedback for this session.'})
@@ -475,6 +480,7 @@ def admin_dashboard():
     sessions       = get_all_sessions()
     announcements  = get_all_announcements()
     purpose_counts = get_purpose_counts()
+    lab_counts = get_lab_counts()
     feedback_list  = get_all_feedback()
 
     all_reservations = get_all_reservations()
@@ -485,6 +491,7 @@ def admin_dashboard():
         sessions=sessions,
         announcements=announcements,
         purpose_counts=purpose_counts,
+        lab_counts=lab_counts,
         feedback_list=feedback_list,
         all_reservations=all_reservations,
         res_settings=res_settings,
@@ -509,6 +516,37 @@ def admin_add_sitin_ajax():
         return jsonify({'success': False, 'message': f"Student ID '{id_number}' not found."})
     if student['sitin_count'] <= 0:
         return jsonify({'success': False, 'message': 'Student has no remaining sit-in sessions.'})
+
+    from datetime import date as _date
+    today = _date.today().isoformat()
+    conn_check = _sqlite3.connect('database.db')
+
+    # Check pending reservation
+    existing_res = conn_check.execute("""
+        SELECT id, lab, pc_number, time_in, status FROM reservations
+        WHERE idNumber = ? AND date = ? AND status = 'pending'
+    """, (id_number, today)).fetchone()
+
+    # Check active sit-in session
+    active_session = conn_check.execute("""
+        SELECT id FROM sitin_sessions
+        WHERE idNumber = ? AND status = 'active'
+    """, (id_number,)).fetchone()
+
+    conn_check.close()
+
+    if existing_res:
+        return jsonify({
+            'success': False,
+            'message': f"⚠️ This student has a PENDING reservation today for Lab {existing_res[1]}, PC {existing_res[2]} at {existing_res[3]}. Please go to the Reservation tab to process it, or reject it first before doing a walk-in."
+        })
+
+    if active_session:
+        return jsonify({
+            'success': False,
+            'message': f"⚠️ This student already has an ACTIVE sit-in session! Please logout their current session first before starting a new one."
+        })
+
     pc_number = request.form.get('pc_number', '').strip()
     pc_number = int(pc_number) if pc_number.isdigit() else None
     session_id, error = add_sitin(id_number, purpose, lab, pc_number)
@@ -517,6 +555,11 @@ def admin_add_sitin_ajax():
     reservation_id = request.form.get('reservation_id', '').strip()
     if reservation_id:
         update_reservation_status(int(reservation_id), 'sitting_in')
+        # Link the session to the reservation
+        conn2 = _sqlite3.connect('database.db')
+        conn2.execute("UPDATE reservations SET session_id=? WHERE id=?", (session_id, int(reservation_id)))
+        conn2.commit()
+        conn2.close()
     return jsonify({'success': True, 'message': 'Sit-in successful.', 'sessionId': session_id, 'pc_number': pc_number})
 
 @app.route('/admin/get-active-session', methods=['GET'])
@@ -541,11 +584,14 @@ def admin_end_sitin(session_id):
     if not session.get('admin'):
         return redirect('/login')
     end_sitin(session_id)
-    # Also expire any sitting_in reservation for this session
     conn = _sqlite3.connect('database.db')
-    conn.execute("UPDATE reservations SET status='done' WHERE status='sitting_in' AND idNumber=(SELECT idNumber FROM sitin_sessions WHERE id=?)", (session_id,))
-    conn.commit()
+    res = conn.execute(
+        "SELECT id FROM reservations WHERE session_id=? AND status='sitting_in'",
+        (session_id,)
+    ).fetchone()
     conn.close()
+    if res:
+        update_reservation_status(res[0], 'done')
     return redirect('/admin/dashboard')
 
 
@@ -946,13 +992,14 @@ def admin_update_reservation_pc():
     # Update reservations table
     conn.execute("UPDATE reservations SET pc_number=? WHERE id=?", (int(pc_number), int(res_id)))
 
-    # Also update sitin_sessions if this reservation has an active sit-in
-    res = conn.execute("SELECT idNumber FROM reservations WHERE id=?", (int(res_id),)).fetchone()
-    if res:
+    # Only update sitin_sessions if it was created FROM this reservation
+    # Update sitin_sessions linked to this reservation
+    res = conn.execute("SELECT idNumber, session_id FROM reservations WHERE id=?", (int(res_id),)).fetchone()
+    if res and res[1]:
         conn.execute("""
             UPDATE sitin_sessions SET pc_number=?
-            WHERE idNumber=? AND status='active'
-        """, (int(pc_number), res[0]))
+            WHERE id=? AND status='active'
+        """, (int(pc_number), res[1]))
 
     conn.commit()
     conn.close()

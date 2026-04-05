@@ -466,7 +466,25 @@ def get_purpose_counts():
     conn.close()
     return {row['purpose']: row['cnt'] for row in rows}
 
-
+def get_lab_counts():
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT 
+            CASE 
+                WHEN lab LIKE '%524%' THEN '524'
+                WHEN lab LIKE '%526%' THEN '526'
+                WHEN lab LIKE '%528%' THEN '528'
+                WHEN lab LIKE '%530%' THEN '530'
+                WHEN lab LIKE '%542%' THEN '542'
+                WHEN lab LIKE '%544%' THEN '544'
+                ELSE lab
+            END as lab_normalized,
+            COUNT(*) as cnt
+        FROM sitin_sessions
+        GROUP BY lab_normalized
+    """).fetchall()
+    conn.close()
+    return {row['lab_normalized']: row['cnt'] for row in rows}
 # ══════════════════════════════════════════
 # FEEDBACK QUERIES
 # ══════════════════════════════════════════
@@ -538,6 +556,10 @@ def init_reservations_table():
         pass
     try:
         conn.execute("ALTER TABLE reservations ADD COLUMN message TEXT DEFAULT NULL")
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE reservations ADD COLUMN session_id INTEGER DEFAULT NULL")
     except Exception:
         pass
 

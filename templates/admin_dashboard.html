@@ -10,13 +10,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
         body {
-            margin: 0;
-            padding-top: 70px;
-            font-family: Arial, sans-serif;
-            background: #f5f7fa;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            background-color: #f5f7fb !important;
+            background-image:
+                linear-gradient(rgba(15,62,125,0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(15,62,125,0.08) 1px, transparent 1px) !important;
+            background-size: 20px 20px !important;
+            background-attachment: fixed !important;
         }
         footer {
             margin-top: auto;
@@ -53,13 +52,31 @@
 
         .admin-wrapper { display: block; flex: 1; }
         .admin-sidebar { display: none !important; }
-        .admin-main { padding: 2rem 2.5rem; background: #f5f7fa; min-height: 100%; }
-        .admin-section-title { font-size: 1.2rem; font-weight: 800; color: #0F3E7D; margin: 0 0 1.4rem; padding-bottom: 0.6rem; border-bottom: 2px solid #e4ecf8; }
+        .admin-main { padding: 2rem 2.5rem; background: transparent; min-height: 100%; }
+        .admin-section-title { font-size: 1.2rem; font-weight: 800; color: #0F3E7D; margin: 0 0 1.4rem; padding-bottom: 0.6rem; border-bottom: 3px solid #F4B942; display: inline-block; }
         .admin-dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: stretch; }
-        .admin-stat-panel, .admin-ann-panel { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); overflow: hidden; height: 100%; }
+        .admin-stat-panel, .admin-ann-panel {
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 2px solid rgba(255,255,255,0.9);
+    border-radius: 20px;
+    box-shadow:
+        6px 6px 0px rgba(192,132,252,0.25),
+        0 8px 24px rgba(150,120,220,0.10);
+    overflow: hidden;
+    height: 100%;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.admin-stat-panel:hover, .admin-ann-panel:hover {
+    transform: translateY(-4px) translateX(-2px);
+    box-shadow:
+        8px 8px 0px rgba(192,132,252,0.32),
+        0 12px 28px rgba(150,120,220,0.15);
+}
         .admin-panel-header { padding: 0.85rem 1.25rem; font-size: 0.95rem; font-weight: 700; letter-spacing: 0.02em; }
-        .stat-header { background: linear-gradient(135deg, #0F3E7D, #1a6fbc); color: white; }
-        .ann-header  { background: linear-gradient(135deg, #0F3E7D, #1a6fbc); color: white; }
+        .stat-header { background: linear-gradient(135deg, #0a1e50, #0F3E7D); color: white; }
+        .ann-header  { background: linear-gradient(135deg, #0a1e50, #0F3E7D); color: white; }
         .admin-panel-body { padding: 1.25rem; }
         #addStudentModal .modal-box {
             overflow: visible;
@@ -74,8 +91,9 @@
         .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
         .donut-center-val { font-size: 26px; font-weight: 700; color: #0F3E7D; transition: color 0.2s; line-height: 1; }
         .donut-center-lbl { font-size: 10px; color: #999; text-align: center; margin-top: 2px; }
-        .donut-legend { display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto; padding: 0 0.1rem; }
-        .donut-legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+        .donut-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; padding: 0; overflow: visible; max-height: none; }
+        .donut-legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.9); border-radius: 10px; padding: 6px 10px; box-shadow: 3px 3px 0px rgba(192,132,252,0.18), 0 2px 8px rgba(150,120,220,0.08); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .donut-legend-item:hover { transform: translateY(-2px) translateX(-1px); box-shadow: 5px 5px 0px rgba(192,132,252,0.25), 0 4px 12px rgba(150,120,220,0.12); }
         .donut-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
         .donut-legend-label { flex: 1; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .donut-legend-count { font-weight: 700; color: #0F3E7D; min-width: 20px; text-align: right; }
@@ -111,7 +129,18 @@
         .ann-menu-item.delete { color: #c0392b; }
         .ann-menu-item.delete:hover { background: #fdecea; color: #c0392b; }
 
-        .admin-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); padding: 1.5rem; overflow: hidden; }
+        .admin-card {
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 2px solid rgba(255,255,255,0.9);
+            border-radius: 20px;
+            box-shadow:
+                5px 5px 0px rgba(192,132,252,0.22),
+                0 8px 24px rgba(150,120,220,0.10);
+            padding: 1.5rem;
+            overflow: hidden;
+        }
         .table-scroll { overflow-x: auto; }
         .dashboard-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
         .dashboard-table thead th { background: #0F3E7D; color: white; padding: 0.75rem 0.6rem; text-align: left; font-weight: 700; }
@@ -153,12 +182,36 @@
         .sitin-readonly { background: #f9f9f9; color: #777; cursor: not-allowed; }
 
         .records-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
-        .records-chart-box { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; }
-        .records-chart-header { background: linear-gradient(135deg, #0F3E7D, #1a6fbc); color: white; padding: 0.7rem 1.2rem; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.02em; }
+        .records-chart-box {
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 2px solid rgba(255,255,255,0.9);
+    border-radius: 20px;
+    box-shadow:
+        5px 5px 0px rgba(192,132,252,0.22),
+        0 8px 24px rgba(150,120,220,0.10);
+    overflow: hidden;
+}
+        .records-chart-header { background: linear-gradient(135deg, #0a1e50, #0F3E7D); color: white; padding: 0.7rem 1.2rem; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.02em; }
         .records-chart-body { padding: 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
 
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 5000; display: flex; align-items: center; justify-content: center; }
-        .modal-box { background: white; border-radius: 12px; width: 90%; max-width: 480px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; }
+        .modal-box {
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 2px solid rgba(255,255,255,0.95);
+    border-radius: 28px;
+    width: 90%;
+    max-width: 480px;
+    box-shadow:
+        0 30px 60px rgba(15,62,125,0.18),
+        0 8px 20px rgba(15,62,125,0.10),
+        0 2px 0 rgba(255,255,255,1) inset,
+        6px 6px 0px rgba(192,132,252,0.15);
+    overflow: hidden;
+}
         .modal-sm { max-width: 420px; }
         .modal-header { background: #0F3E7D; color: white; padding: 0.9rem 1.25rem; display: flex; align-items: center; justify-content: space-between; }
         .modal-header h3 { margin: 0; font-size: 1rem; }
@@ -201,21 +254,69 @@
         @media (max-width: 700px) { .table-top-bar { flex-direction: column; align-items: flex-start; } .table-top-right { flex-wrap: wrap; } }
         @media (max-width: 600px) { .admin-name-display { display: none; } }
     
-    .res-tab-btn {
-    padding: 0.65rem 1.25rem;
-    background: none;
+.res-tab-btn {
+    padding: 0.65rem 1rem;
+    background: transparent;
     border: none;
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    color: #555;
+    color: #888;
     cursor: pointer;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
+    border-radius: 14px;
     font-family: Arial, sans-serif;
-    transition: color 0.2s, border-color 0.2s;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
 }
-.res-tab-btn:hover { color: #0F3E7D; }
-.res-tab-btn.res-tab-active { color: #0F3E7D; border-bottom-color: #0F3E7D; }
+
+.res-tab-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.15);
+    border-radius: 14px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.res-tab-btn:active::after {
+    opacity: 1;
+}
+.res-tab-btn:hover {
+    color: #0F3E7D;
+    background: rgba(15,62,125,0.06);
+    border-radius: 20px !important;
+}
+.res-tab-btn.res-tab-active {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D);
+    color: white !important;
+    border-bottom-color: transparent;
+    border-radius: 14px !important;
+    box-shadow:
+        0 4px 14px rgba(15,62,125,0.35),
+        0 1px 0 rgba(255,255,255,0.2) inset;
+    transform: translateY(0);
+}
+.res-tab-btn:active {
+    transform: scale(0.97);
+}
+
+.res-tab-panel {
+    animation: tabFadeIn 0.3s ease forwards;
+}
+
+@keyframes tabFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
     
 .lab-mgmt-btn {
     padding: 0.45rem 1rem;
@@ -231,6 +332,411 @@
 }
 .lab-mgmt-btn:hover { border-color: #0F3E7D; color: #0F3E7D; }
 .lab-mgmt-btn.lab-mgmt-active { background: #0F3E7D; color: white; border-color: #0F3E7D; }
+/* ── iOS-feel Navbar ── */
+.navbar {
+    background: linear-gradient(135deg, #0a1e50, #0F3E7D) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.18) !important;
+    box-shadow: 0 2px 24px rgba(10,30,80,0.25) !important;
+}
+
+footer {
+    background: linear-gradient(135deg, #0a1e50, #0F3E7D) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid rgba(255,255,255,0.15) !important;
+}
+
+/* ── iOS-feel Buttons ── */
+.btn-primary {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    border-radius: 14px !important;
+    box-shadow:
+        0 4px 15px rgba(15,62,125,0.35),
+        0 1px 0 rgba(255,255,255,0.2) inset !important;
+    transition: all 0.2s ease !important;
+}
+.btn-primary:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(15,62,125,0.45) !important;
+}
+.btn-primary:active { transform: scale(0.97) !important; }
+
+.btn-modal-submit {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px rgba(15,62,125,0.35),
+                0 1px 0 rgba(255,255,255,0.15) inset !important;
+    transition: all 0.18s ease !important;
+}
+.btn-modal-submit:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(15,62,125,0.4) !important;
+}
+.btn-modal-submit:active { transform: scale(0.97) !important; }
+
+.btn-modal-close {
+    background: linear-gradient(145deg, #f2f2f7, #e5e5ea) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08),
+                0 1px 0 rgba(255,255,255,0.95) inset !important;
+    transition: all 0.18s ease !important;
+}
+.btn-modal-close:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12) !important;
+}
+.btn-modal-close:active { transform: scale(0.97) !important; }
+
+.btn-submit-ann {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px rgba(15,62,125,0.3),
+                0 1px 0 rgba(255,255,255,0.2) inset !important;
+    transition: all 0.18s ease !important;
+}
+.btn-submit-ann:hover {
+    transform: translateY(-1px) !important;
+    opacity: 1 !important;
+    box-shadow: 0 6px 20px rgba(15,62,125,0.4) !important;
+}
+
+.btn-action {
+    border-radius: 10px !important;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.12),
+                0 1px 0 rgba(255,255,255,0.2) inset !important;
+    transition: all 0.18s ease !important;
+}
+.btn-action:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 5px 14px rgba(0,0,0,0.18) !important;
+}
+.btn-action:active { transform: scale(0.96) !important; }
+
+/* ── iOS-feel Ham Dropdown ── */
+.ham-dropdown {
+    background: white !important;
+    backdrop-filter: none !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 8px 32px rgba(15,62,125,0.18) !important;
+}
+
+/* ── iOS-feel Pagination ── */
+.pg-btn {
+    border-radius: 50% !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+    transition: all 0.18s ease !important;
+}
+.pg-btn:hover:not(:disabled) {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(15,62,125,0.2) !important;
+}
+.pg-btn.active {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    box-shadow: 0 4px 12px rgba(15,62,125,0.35) !important;
+}
+.pg-btn:active { transform: scale(0.92) !important; }
+
+/* ── iOS status badges ── */
+.status-badge {
+    border-radius: 20px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+    font-weight: 700 !important;
+}
+
+/* ── iOS inputs ── */
+.sitin-form-input, .table-search-input, .filter-select {
+    border-radius: 12px !important;
+    background: rgba(255,255,255,0.8) !important;
+    backdrop-filter: blur(8px) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+    transition: all 0.2s ease !important;
+}
+.sitin-form-input:focus, .table-search-input:focus, .filter-select:focus {
+    border-color: #0F3E7D !important;
+    box-shadow: 0 0 0 4px rgba(15,62,125,0.12),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+    background: rgba(255,255,255,0.95) !important;
+}
+
+/* ── Lab mgmt buttons ── */
+.lab-mgmt-btn {
+    border-radius: 12px !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+    transition: all 0.18s ease !important;
+    backdrop-filter: blur(8px) !important;
+}
+.lab-mgmt-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 18px rgba(15,62,125,0.18) !important;
+}
+.lab-mgmt-btn.lab-mgmt-active {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    box-shadow: 0 4px 14px rgba(15,62,125,0.35),
+                0 1px 0 rgba(255,255,255,0.2) inset !important;
+    transform: translateY(-1px) !important;
+}
+.lab-mgmt-btn:active { transform: scale(0.96) !important; }
+
+/* ── Res tab buttons ── */
+.res-tab-btn {
+    border-radius: 12px 12px 0 0 !important;
+    transition: all 0.18s ease !important;
+}
+.res-tab-btn.res-tab-active {
+    box-shadow: 0 -4px 12px rgba(15,62,125,0.12) !important;
+}
+
+/* ── Hamburger button ── */
+.hamburger-btn {
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15),
+                0 1px 0 rgba(255,255,255,0.15) inset !important;
+    transition: all 0.18s ease !important;
+}
+.hamburger-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2) !important;
+}
+.hamburger-btn:active { transform: scale(0.95) !important; }
+
+/* ── Toast ── */
+.admin-toast {
+    border-radius: 20px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+    backdrop-filter: blur(12px) !important;
+}
+
+/* ── Clay wobble for modals ── */
+@keyframes clayWobble {
+    0%, 100% { transform: rotate(-4deg) translateY(0); }
+    50%       { transform: rotate(4deg) translateY(-4px); }
+}
+
+/* ── Lift effect for ALL action buttons ── */
+.btn-action,
+.btn-edit,
+.btn-del,
+.btn-logout,
+.btn-end,
+.btn-submit-ann,
+.btn-modal-submit,
+.btn-modal-close,
+.btn,
+.lab-mgmt-btn,
+.res-tab-btn,
+button[style*="background:#1e7e34"],
+button[style*="background:#217346"],
+button[style*="background:#c0392b"],
+button[style*="background:#555"] {
+    transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.btn-action:hover,
+.btn-edit:hover,
+.btn-del:hover,
+.btn-logout:hover,
+.btn-end:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2) !important;
+}
+
+/* Trashcan button */
+button[onclick*="deleteFeedback"]:hover {
+    transform: translateY(-3px) scale(1.15) !important;
+    filter: drop-shadow(0 4px 8px rgba(192,57,43,0.4));
+}
+
+/* CSV, Excel, PDF, Print buttons */
+button[onclick*="showModal('confirmExport"]:hover,
+button[onclick*="showModal('confirmPrint"]:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25) !important;
+}
+
+/* Active press effect */
+.btn-action:active,
+.btn-edit:active,
+.btn-del:active {
+    transform: scale(0.95) !important;
+}
+
+/* Add Student + Reset All Sessions buttons */
+button[onclick*="showModal('addStudentModal')"]:hover,
+button[onclick*="confirmResetAll"]:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25) !important;
+}
+
+button[onclick*="showModal('addStudentModal')"]:active,
+button[onclick*="confirmResetAll"]:active {
+    transform: scale(0.95) !important;
+}
+
+button[onclick*="showModal('addStudentModal')"],
+button[onclick*="confirmResetAll"] {
+    transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+/* Enable + Disable buttons */
+#btnEnableRes,
+#btnDisableRes {
+    transition: transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+#btnEnableRes:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 6px 18px rgba(46,204,113,0.4) !important;
+}
+
+#btnDisableRes:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 6px 18px rgba(231,76,60,0.4) !important;
+}
+
+#btnEnableRes:active,
+#btnDisableRes:active {
+    transform: scale(0.95) !important;
+}
+
+/* Blue panel hover */
+#resStatusBox,
+div[style*="background: linear-gradient(135deg, rgba(15,62,125"] {
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    cursor: default;
+}
+
+div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
+    transform: translateY(-4px) translateX(-2px) !important;
+    box-shadow: 8px 8px 0px rgba(192,132,252,0.32),
+                0 12px 28px rgba(15,62,125,0.35) !important;
+}
+
+/* ── reqModal iOS + Claymorphism ── */
+#reqModal .modal-box {
+    background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,240,255,0.88)) !important;
+    backdrop-filter: blur(40px) !important;
+    border-radius: 36px !important;
+    border: 2px solid rgba(255,255,255,0.95) !important;
+    box-shadow:
+        0 30px 60px rgba(15,62,125,0.18),
+        0 8px 20px rgba(15,62,125,0.10),
+        0 2px 0 rgba(255,255,255,1) inset,
+        8px 8px 0px rgba(192,132,252,0.2) !important;
+}
+
+#reqModal .modal-header {
+    background: linear-gradient(135deg, #0a1e50, #0F3E7D) !important;
+    border-radius: 32px 32px 0 0 !important;
+    padding: 1.2rem 1.5rem !important;
+}
+
+/* Approve button */
+#reqModal button[onclick*="confirmApproveReqModal"] {
+    background: linear-gradient(135deg, #2ecc71, #1e7e34) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 15px rgba(46,204,113,0.4),
+                0 1px 0 rgba(255,255,255,0.2) inset !important;
+    transition: all 0.18s ease !important;
+    border: none !important;
+}
+#reqModal button[onclick*="confirmApproveReqModal"]:hover {
+    transform: translateY(-3px) scale(1.04) !important;
+    box-shadow: 0 8px 24px rgba(46,204,113,0.5) !important;
+}
+#reqModal button[onclick*="confirmApproveReqModal"]:active {
+    transform: scale(0.96) !important;
+}
+
+/* Reject button */
+#reqModal button[onclick*="confirmRejectReqModal"] {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 15px rgba(231,76,60,0.4),
+                0 1px 0 rgba(255,255,255,0.2) inset !important;
+    transition: all 0.18s ease !important;
+    border: none !important;
+}
+#reqModal button[onclick*="confirmRejectReqModal"]:hover {
+    transform: translateY(-3px) scale(1.04) !important;
+    box-shadow: 0 8px 24px rgba(231,76,60,0.5) !important;
+}
+#reqModal button[onclick*="confirmRejectReqModal"]:active {
+    transform: scale(0.96) !important;
+}
+
+/* Cancel button */
+#reqModal .btn-modal-close {
+    border-radius: 14px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1),
+                0 1px 0 rgba(255,255,255,0.95) inset !important;
+    transition: all 0.18s ease !important;
+}
+#reqModal .btn-modal-close:hover {
+    transform: translateY(-3px) scale(1.04) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
+}
+#reqModal .btn-modal-close:active {
+    transform: scale(0.96) !important;
+}
+
+/* Edit PC + Delete buttons in header */
+#reqEditPCBtn {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px rgba(244,185,66,0.4),
+                0 1px 0 rgba(255,255,255,0.3) inset !important;
+    transition: all 0.18s ease !important;
+}
+#reqEditPCBtn:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 8px 22px rgba(244,185,66,0.55) !important;
+}
+#reqEditPCBtn:active { transform: scale(0.96) !important; }
+
+#reqDeleteBtn {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px rgba(192,57,43,0.4),
+                0 1px 0 rgba(255,255,255,0.2) inset !important;
+    transition: all 0.18s ease !important;
+}
+#reqDeleteBtn:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 8px 22px rgba(192,57,43,0.55) !important;
+}
+#reqDeleteBtn:active { transform: scale(0.96) !important; }
+/* Save PC + Cancel buttons in reqModal */
+#rmSavePCRow button {
+    border-radius: 14px !important;
+    transition: all 0.18s ease !important;
+}
+
+#rmSavePCRow button[onclick*="saveNewPC"] {
+    box-shadow: 0 4px 15px rgba(30,126,52,0.4),
+                0 1px 0 rgba(255,255,255,0.2) inset !important;
+}
+#rmSavePCRow button[onclick*="saveNewPC"]:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 8px 24px rgba(30,126,52,0.5) !important;
+}
+#rmSavePCRow button[onclick*="saveNewPC"]:active {
+    transform: scale(0.96) !important;
+}
+
+#rmSavePCRow button[onclick*="cancelPCEdit"] {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1),
+                0 1px 0 rgba(255,255,255,0.95) inset !important;
+}
+#rmSavePCRow button[onclick*="cancelPCEdit"]:hover {
+    transform: translateY(-3px) scale(1.05) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
+}
+#rmSavePCRow button[onclick*="cancelPCEdit"]:active {
+    transform: scale(0.96) !important;
+}
 </style>
 </head>
 <body>
@@ -280,11 +786,23 @@
                     <div class="admin-stat-panel">
                         <div class="admin-panel-header stat-header">Statistics</div>
                         <div class="admin-panel-body">
-                            <div class="stat-summary-list">
-                                <div class="stat-summary-row"><span class="stat-summary-label">Students Registered:</span><span class="stat-summary-val">{{ students|length }}</span></div>
-                                <div class="stat-summary-row"><span class="stat-summary-label">Currently Sit-in:</span><span class="stat-summary-val">{{ sessions|selectattr('status','equalto','active')|list|length }}</span></div>
-                                <div class="stat-summary-row"><span class="stat-summary-label">Total Sit-in:</span><span class="stat-summary-val">{{ sessions|length }}</span></div>
-                            </div>
+                        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:1.2rem;">
+                        <div style="background:#E6F1FB;border-radius:10px;padding:14px 16px;">
+                            <p style="font-size:11px;color:#185FA5;margin:0 0 6px;font-weight:700;">Students Registered</p>
+                            <p style="font-size:28px;font-weight:700;color:#0C447C;margin:0;line-height:1;">{{ students|length }}</p>
+                            <p style="font-size:11px;color:#185FA5;margin:4px 0 0;">Total registered</p>
+                        </div>
+                        <div style="background:#E6F1FB;border-radius:10px;padding:14px 16px;">
+                            <p style="font-size:11px;color:#185FA5;margin:0 0 6px;font-weight:700;">Currently Sit-in</p>
+                            <p style="font-size:28px;font-weight:700;color:#0C447C;margin:0;line-height:1;">{{ sessions|selectattr('status','equalto','active')|list|length }}</p>
+                            <p style="font-size:11px;color:#185FA5;margin:4px 0 0;">Active now</p>
+                        </div>
+                        <div style="background:#E6F1FB;border-radius:10px;padding:14px 16px;">
+                            <p style="font-size:11px;color:#185FA5;margin:0 0 6px;font-weight:700;">Total Sit-in</p>
+                            <p style="font-size:28px;font-weight:700;color:#0C447C;margin:0;line-height:1;">{{ sessions|length }}</p>
+                            <p style="font-size:11px;color:#185FA5;margin:4px 0 0;">All sessions</p>
+                        </div>
+                    </div>
                             <div class="donut-wrap" style="width:280px;height:280px;margin-top:0.75rem;">
                                 <canvas id="sitinPieChart"></canvas>
                                 <div class="donut-center">
@@ -458,63 +976,101 @@
                 </div>
             </div>
 
-            <!-- VIEW SIT-IN RECORDS -->
-            <div id="section-records" class="page-section">
-                <h2 class="admin-section-title">Sit-in Records</h2>
-                <div class="records-charts-row">
-                    <div class="records-chart-box">
-                        <div class="records-chart-header">Usage by Purpose</div>
-                        <div class="records-chart-body">
-                            <div class="donut-wrap" style="width:180px;height:180px;">
-                                <canvas id="recordsPurposeChart"></canvas>
-                                <div class="donut-center"><div class="donut-center-val" id="recPurposeVal">—</div><div class="donut-center-lbl" id="recPurposeLbl">total</div></div>
-                            </div>
-                            <div class="donut-legend" id="recPurposeLegend" style="width:100%;"></div>
-                        </div>
+<!-- VIEW SIT-IN RECORDS -->
+<div id="section-records" class="page-section">
+    <h2 class="admin-section-title">Sit-in Records</h2>
+
+    <!-- TAB BAR -->
+    <div style="display:inline-flex;background:rgba(255,255,255,0.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;padding:5px;margin-bottom:1.5rem;box-shadow:0 4px 20px rgba(15,62,125,0.10),0 1px 0 rgba(255,255,255,0.9) inset,4px 4px 0px rgba(192,132,252,0.15);gap:4px;width:100%;">
+        <button class="res-tab-btn res-tab-active" onclick="switchRecordsTab('records-panel-charts', this)" style="flex:1;">📊 Usage Charts</button>
+        <button class="res-tab-btn" onclick="switchRecordsTab('records-panel-table', this)" style="flex:1;">📋 Sit-in Records Table</button>
+    </div>
+
+    <!-- PANEL 1: CHARTS -->
+    <div id="records-panel-charts" class="res-tab-panel">
+        <div class="records-charts-row">
+            <div class="records-chart-box">
+                <div class="records-chart-header">Usage by Purpose</div>
+                <div class="records-chart-body">
+                    <div class="donut-wrap" style="width:180px;height:180px;">
+                        <canvas id="recordsPurposeChart"></canvas>
+                        <div class="donut-center"><div class="donut-center-val" id="recPurposeVal">—</div><div class="donut-center-lbl" id="recPurposeLbl">total</div></div>
                     </div>
-                    <div class="records-chart-box">
-                        <div class="records-chart-header">Usage by Lab</div>
-                        <div class="records-chart-body">
-                            <div class="donut-wrap" style="width:180px;height:180px;">
-                                <canvas id="recordsLabChart"></canvas>
-                                <div class="donut-center"><div class="donut-center-val" id="recLabVal">—</div><div class="donut-center-lbl" id="recLabLbl">total</div></div>
-                            </div>
-                            <div class="donut-legend" id="recLabLegend" style="width:100%;"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="admin-card">
-                    <div class="table-top-bar">
-                        <div class="table-top-right" style="margin-left:auto;">
-                            <input type="text" id="recordsSearch" placeholder="Search..." onkeyup="filterRecordsTable()" class="table-search-input">
-                        </div>
-                    </div>
-                    <div class="table-scroll">
-                        <table class="dashboard-table" id="recordsTable">
-                            <thead><tr><th>Sit-in Number</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Lab</th><th>PC</th><th>Login</th><th>Logout</th><th>Date</th></tr></thead>
-                            <tbody id="recordsTableBody">
-                                {% for s in sessions %}
-                                <tr>
-                                    <td>{{ s.id }}</td><td>{{ s.idNumber }}</td>
-                                    <td>{{ s.firstName }} {{ s.lastName }}</td>
-                                    <td>{{ s.purpose }}</td><td>{{ s.lab }}</td>
-                                    <td>{{ s.pc_number if s.pc_number else '—' }}</td>
-                                    <td>{{ s.time_in | timeformat }}</td>
-                                    <td>{{ s.time_out | timeformat if s.time_out else '—' }}</td>
-                                    <td>{{ s.date if s.date is defined else s.time_in }}</td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="8" class="no-data">No sit-in records yet.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="pagination-wrap">
-                        <div class="pagination-info" id="recordsInfo"></div>
-                        <div class="pagination-btns" id="recordsPgBtns"></div>
-                    </div>
+                    <div class="donut-legend" id="recPurposeLegend" style="width:100%;"></div>
                 </div>
             </div>
+            <div class="records-chart-box">
+                <div class="records-chart-header">Usage by Lab</div>
+                <div class="records-chart-body">
+                    <div class="donut-wrap" style="width:180px;height:180px;">
+                        <canvas id="recordsLabChart"></canvas>
+                        <div class="donut-center"><div class="donut-center-val" id="recLabVal">—</div><div class="donut-center-lbl" id="recLabLbl">total</div></div>
+                    </div>
+                    <div class="donut-legend" id="recLabLegend" style="width:100%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 2: TABLE -->
+    <div id="records-panel-table" class="res-tab-panel" style="display:none;">
+        <div class="admin-card">
+            <div class="table-top-bar">
+                <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; margin-left:auto;">
+                    <input type="text" id="recordsSearch" placeholder="Search..." onkeyup="filterRecordsTable()" class="table-search-input" style="width:140px;">
+                    <input type="date" id="recordsDateFrom" class="table-search-input" style="width:145px;" onchange="filterRecordsTable()">
+                    <span style="font-size:0.85rem; color:#555;">to</span>
+                    <input type="date" id="recordsDateTo" class="table-search-input" style="width:145px;" onchange="filterRecordsTable()">
+                    <select id="recordsFilterLab" class="filter-select" onchange="filterRecordsTable()">
+                        <option value="">All Laboratories</option>
+                        <option value="524">Lab 524</option>
+                        <option value="526">Lab 526</option>
+                        <option value="530">Lab 530</option>
+                        <option value="544">Lab 544</option>
+                    </select>
+                    <select id="recordsFilterPurpose" class="filter-select" onchange="filterRecordsTable()">
+                        <option value="">All Purposes</option>
+                        <option value="C Programming">C Programming</option>
+                        <option value="Java Programming">Java Programming</option>
+                        <option value="C# Programming">C# Programming</option>
+                        <option value="PHP Programming">PHP Programming</option>
+                        <option value="ASP.Net Programming">ASP.Net Programming</option>
+                        <option value="Python Programming">Python Programming</option>
+                        <option value="Web Development">Web Development</option>
+                        <option value="Database">Database</option>
+                        <option value="Research">Research</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table class="dashboard-table" id="recordsTable">
+                    <thead><tr><th>Sit-in Number</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Lab</th><th>PC</th><th>Login</th><th>Logout</th><th>Date</th></tr></thead>
+                    <tbody id="recordsTableBody">
+                        {% for s in sessions %}
+                        <tr>
+                            <td>{{ s.id }}</td><td>{{ s.idNumber }}</td>
+                            <td>{{ s.firstName }} {{ s.lastName }}</td>
+                            <td>{{ s.purpose }}</td><td>{{ s.lab }}</td>
+                            <td>{{ s.pc_number if s.pc_number else '—' }}</td>
+                            <td>{{ s.time_in.split(' ')[1] | timeformat if s.time_in and ' ' in s.time_in else s.time_in | timeformat }}</td>
+                            <td>{{ s.time_out.split(' ')[1] | timeformat if s.time_out and ' ' in s.time_out else '—' }}</td>
+                            <td>{{ s.time_in.split(' ')[0] if s.time_in and ' ' in s.time_in else '—' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="no-data">No sit-in records yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination-wrap">
+                <div class="pagination-info" id="recordsInfo"></div>
+                <div class="pagination-btns" id="recordsPgBtns"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
 
             <!-- SIT-IN REPORTS -->
             <div id="section-reports" class="page-section">
@@ -695,46 +1251,85 @@
     <h2 class="admin-section-title">Reservation</h2>
 
     <!-- ── TAB BAR ── -->
-    <div style="display:flex; gap:0; margin-bottom:1.5rem; border-bottom:2px solid #e4ecf8;">
-        <button class="res-tab-btn res-tab-active" onclick="switchResTab('res-panel-status', this)">
-            🔘 Reservation Status
-        </button>
-        <button class="res-tab-btn" onclick="switchResTab('res-panel-requests', this)">
-            📋 Reservation Requests
-            <span id="pendingBadge" style="background:#e74c3c;color:white;font-size:0.72rem;font-weight:700;padding:0.1rem 0.45rem;border-radius:10px;margin-left:6px;">
-                {{ all_reservations | selectattr('status','equalto','pending') | list | length }}
-            </span>
-        </button>
-        <button class="res-tab-btn" onclick="switchResTab('res-panel-log', this)">
-            📜 Log / History
-        </button>
-    </div>
+    <div style="
+    display: inline-flex;
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 2px solid rgba(255,255,255,0.9);
+    border-radius: 20px;
+    padding: 5px;
+    margin-bottom: 1.5rem;
+    box-shadow:
+        0 4px 20px rgba(15,62,125,0.10),
+        0 1px 0 rgba(255,255,255,0.9) inset,
+        4px 4px 0px rgba(192,132,252,0.15);
+    gap: 4px;
+    width: 100%;
+">
+    <button class="res-tab-btn res-tab-active" onclick="switchResTab('res-panel-status', this)" style="flex:1;">
+        🖥️ Reservation Status
+    </button>
+    <button class="res-tab-btn" onclick="switchResTab('res-panel-requests', this)" style="flex:1; position:relative;">
+        📋 Reservation Requests
+        <span id="pendingBadge" style="background:#e74c3c;color:white;font-size:0.72rem;font-weight:700;padding:0.1rem 0.45rem;border-radius:10px;margin-left:6px;">
+            {{ all_reservations | selectattr('status','equalto','pending') | list | length }}
+        </span>
+    </button>
+    <button class="res-tab-btn" onclick="switchResTab('res-panel-log', this)" style="flex:1;">
+        📜 Log / History
+    </button>
+</div>
 
-    <!-- ══════════════════════════════
+     <!-- ══════════════════════════════
          PANEL 1 — STATUS & TABLE
          ══════════════════════════════ -->
     <div id="res-panel-status" class="res-tab-panel">
-        <div class="admin-card" style="margin-bottom:1.5rem; padding:0.85rem 1.5rem;">
-            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
-                <div>
-                    <div style="display:flex; align-items:center; gap:0.75rem;">
-                        <div id="resStatusLabel" style="font-size:0.82rem; padding:0.25rem 0.75rem; border-radius:20px; border:1.5px solid #27ae60; color:#1e7e34; font-weight:700; background:#eafaf1;">Loading...</div>
-                    </div>
-                </div>
-                <div style="display:flex; gap:0.6rem;">
-                    <button onclick="showModal('confirmEnableResModal')" id="btnEnableRes" style="background:#1e7e34;color:white;border:none;padding:0.5rem 1.2rem;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">✅ Enable</button>
-                    <button onclick="showModal('confirmDisableResModal')" id="btnDisableRes" style="background:#c0392b;color:white;border:none;padding:0.5rem 1.2rem;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;">🚫 Disable</button>
-                </div>
-            </div>
-            <div style="margin-top:1rem;">
-                <label style="font-size:0.85rem;font-weight:700;color:#444;display:block;margin-bottom:0.35rem;">Disable Message (shown to students)</label>
-                <input type="text" id="resDisableMsg" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid #ddd;border-radius:6px;font-size:0.88rem;box-sizing:border-box;" placeholder="e.g. Reservations are closed during Major Exams Week." value="Reservations are currently closed during Major Exams Week. Sit-ins are not allowed.">
-            </div>
+        <div style="display:flex; gap:1.5rem; align-items:flex-start; margin-bottom:1.5rem;">
+        <div class="admin-card" style="flex:1; min-width:0; position:relative;">
+        <div style="margin-bottom:0.75rem; color:#0F3E7D; font-weight:700;">
+            🖥️ PC Availability Management (Computer Control)
+    </h3>
+    <!-- Reservation Status + controls stacked on right -->
+    <!-- Reservation Status iOS panel -->
+    <div style="
+        background: linear-gradient(135deg, rgba(15,62,125,0.92), rgba(26,111,188,0.88));
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 2px solid rgba(255,255,255,0.25);
+        border-radius: 20px;
+        padding: 0.85rem 1.25rem;
+        box-shadow:
+            0 8px 24px rgba(15,62,125,0.3),
+            0 2px 0 rgba(255,255,255,0.15) inset,
+            4px 4px 0px rgba(192,132,252,0.2);
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        min-width: 340px;
+        position: absolute;
+        top: 1.25rem;
+        right: 1.25rem;
+    ">
+    <!-- Row 1: status + buttons -->
+        <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+        <div id="resStatusLabel" style="font-size:0.82rem; padding:0.28rem 0.85rem; border-radius:20px; border:1.5px solid rgba(255,255,255,0.4); color:white; font-weight:700; background:rgba(255,255,255,0.15); backdrop-filter:blur(8px);">Loading...</div>
+        <div style="display:flex; gap:0.5rem;">
+            <button onclick="showModal('confirmEnableResModal')" id="btnEnableRes" style="background:linear-gradient(135deg,#2ecc71,#1e7e34);color:white;border:2px solid rgba(255,255,255,0.2);padding:0.38rem 1rem;border-radius:12px;font-size:0.82rem;font-weight:700;cursor:pointer;">✅ Enable</button>
+            <button onclick="showModal('confirmDisableResModal')" id="btnDisableRes" style="background:linear-gradient(135deg,#e74c3c,#c0392b);color:white;border:2px solid rgba(255,255,255,0.2);padding:0.38rem 1rem;border-radius:12px;font-size:0.82rem;font-weight:700;cursor:pointer;">🚫 Disable</button>
         </div>
-        <div class="admin-card" style="margin-top:1.5rem;">
-            <h3 style="font-size:1rem;font-weight:700;color:#0F3E7D;margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:2px solid #e8f0fb;">
-                🖥️ PC Availability Management (Computer Control)
-            </h3>
+    </div>
+    <!-- Row 2: disable message -->
+    <div style="margin-top:0.65rem;">
+        <label style="font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.85);display:block;margin-bottom:0.25rem;">Disable Message (shown to students)</label>
+        <input type="text" id="resDisableMsg"
+            style="width:100%;padding:0.4rem 0.7rem;border:1.5px solid rgba(255,255,255,0.3);border-radius:8px;font-size:0.82rem;box-sizing:border-box;background:rgba(255,255,255,0.15);color:white;backdrop-filter:blur(8px);outline:none;"
+            placeholder="e.g. Reservations are closed during Major Exams Week."
+            value="Reservations are currently closed during Major Exams Week. Sit-ins are not allowed.">
+    </div>
+    </div>
+    </div>
+    <div style="height:1px; background:linear-gradient(90deg, #e8f0fb, transparent); margin-bottom:0.5rem;"></div>
             <p style="font-size:0.85rem;color:#888;margin-bottom:1rem;">Click a PC to toggle it as unavailable (blocked) or available. Blocked PCs cannot be reserved by students.</p>
             <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;">
                 <button class="lab-mgmt-btn lab-mgmt-active" onclick="switchMgmtLab('524',this)">🖥️ Lab 524</button>
@@ -751,8 +1346,8 @@
             <div id="mgmt_pc_grid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:8px;"></div>
             <div id="mgmt_status_msg" style="margin-top:0.75rem;font-size:0.82rem;color:#888;"></div>
         </div>
+        </div>
     </div>
-    
 
     <!-- ══════════════════════════════
          PANEL 2 — RESERVATION REQUESTS
@@ -973,6 +1568,12 @@
                     <tr><td class="sitin-form-label">Student Name</td><td><input type="text" id="sitinNameDisplay" readonly class="sitin-form-input sitin-readonly" placeholder="Auto-filled"></td></tr>
                     <tr><td class="sitin-form-label">Purpose</td><td><select id="sitinPurpose" class="sitin-form-input"><option value="">Select purpose</option><option>C Programming</option><option>Java Programming</option><option>C# Programming</option><option>PHP Programming</option><option>ASP.Net Programming</option><option>Python Programming</option><option>Web Development</option><option>Database</option><option>Research</option><option>Other</option></select></td></tr>
                     <tr><td class="sitin-form-label">Lab</td><td><select id="sitinLab" class="sitin-form-input" onchange="loadSitinPCs()">
+                    <option value="">-- Select lab --</option>
+                    <option>524</option>
+                    <option>526</option>
+                    <option>530</option>
+                    <option>544</option>
+                    </select></td></tr>
                     <tr id="sitinPcRow" style="display:none;">
                         <td class="sitin-form-label">PC Number</td>
                         <td><select id="sitinPcSelect" class="sitin-form-input">
@@ -1134,19 +1735,82 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="adminLogoutModal" style="display:none;">
-        <div class="modal-box modal-sm">
-            <div class="modal-header" style="background:#c0392b;"><h3>Confirm Logout</h3><button class="modal-close" onclick="closeModal('adminLogoutModal')">&#10005;</button></div>
-            <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
-                <div style="font-size:2.5rem;margin-bottom:0.75rem;">🔒</div>
-                <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">Are you sure you want to log out?</p>
-                <div style="display:flex;gap:0.8rem;justify-content:center;">
-                    <button type="button" class="btn-modal-close" onclick="closeModal('adminLogoutModal')">No, Cancel</button>
-                    <a href="/admin/logout" style="background:#c0392b;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;text-decoration:none;display:inline-block;">Yes, Logout</a>
-                </div>
+<div class="modal-overlay" id="adminLogoutModal" style="display:none;">
+    <div style="
+        background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,240,255,0.88));
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border-radius: 36px;
+        width: 90%;
+        max-width: 480px;
+        border: 2px solid rgba(255,255,255,0.95);
+        box-shadow:
+            0 30px 60px rgba(15,62,125,0.18),
+            0 8px 20px rgba(15,62,125,0.10),
+            0 2px 0 rgba(255,255,255,1) inset,
+            6px 6px 0px rgba(192,132,252,0.15);
+        overflow: hidden;
+    ">
+        <div style="
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+            padding: 1.1rem 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(192,57,43,0.35);
+        ">
+            <span style="color:white;font-size:1rem;font-weight:800;letter-spacing:0.02em;text-shadow:0 1px 4px rgba(0,0,0,0.2);">Confirm Logout</span>
+        </div>
+        <div style="padding:1.5rem 2rem;text-align:center;">
+            <div style="
+                width:90px;height:90px;
+                background: linear-gradient(145deg, #fff8e1, #ffe082);
+                border-radius:30px;
+                margin:0 auto 1.5rem;
+                display:flex;align-items:center;justify-content:center;
+                font-size:2.6rem;
+                box-shadow:
+                    0 10px 30px rgba(255,193,7,0.35),
+                    0 4px 10px rgba(255,152,0,0.2),
+                    0 2px 0 rgba(255,255,255,0.9) inset,
+                    0 -3px 0 rgba(255,152,0,0.3) inset;
+                border:2px solid rgba(255,255,255,0.9);
+                transform:rotate(-4deg);
+                animation: clayWobble 3s ease-in-out infinite;
+            ">🔒</div>
+            <p style="color:#2c2c2e;font-size:1rem;font-weight:600;margin:0 0 2rem;line-height:1.5;">Are you sure you want to log out?</p>
+            <div style="display:flex;gap:0.75rem;justify-content:center;">
+                <button onclick="closeModal('adminLogoutModal')" style="
+                    background: linear-gradient(145deg, #f2f2f7, #e5e5ea);
+                    color:#3a3a3c;
+                    border:2px solid rgba(255,255,255,0.9);
+                    padding:0.75rem 1.5rem;
+                    border-radius:18px;
+                    font-size:0.95rem;font-weight:700;cursor:pointer;
+                    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+                    box-shadow:0 6px 20px rgba(0,0,0,0.08),0 2px 0 rgba(255,255,255,0.95) inset;
+                    transition:all 0.18s ease;flex:1;max-width:140px;
+                "
+                onmouseover="this.style.transform='translateY(-2px)'"
+                onmouseout="this.style.transform=''">No, Cancel</button>
+                <a href="/admin/logout" style="
+                    background: linear-gradient(145deg, #e74c3c, #c0392b);
+                    color:white;
+                    border:2px solid rgba(255,255,255,0.25);
+                    padding:0.75rem 1.5rem;
+                    border-radius:18px;
+                    font-size:0.95rem;font-weight:700;cursor:pointer;
+                    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+                    text-decoration:none;display:inline-flex;align-items:center;justify-content:center;
+                    box-shadow:0 8px 24px rgba(192,57,43,0.4),0 2px 0 rgba(255,255,255,0.25) inset;
+                    transition:all 0.18s ease;flex:1;max-width:140px;
+                "
+                onmouseover="this.style.transform='translateY(-2px)'"
+                onmouseout="this.style.transform=''">Yes, Logout</a>
             </div>
         </div>
     </div>
+</div>
 
         <div class="modal-overlay" id="resetAllModal" style="display:none;">
             <div class="modal-box modal-sm">
@@ -1231,18 +1895,43 @@
     <div id="adminToast" class="admin-toast"></div>
     <!-- RESERVATION REQUEST MODAL -->
 <div class="modal-overlay" id="reqModal" style="display:none;">
-    <div class="modal-box" style="max-width:860px; width:95%;">
-        <div class="modal-header"><h3>Reservation Request</h3>
+    <div class="modal-box" style="
+        max-width:1100px;
+        width:95%;
+        background: rgba(255,255,255,0.82);
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border: 2px solid rgba(255,255,255,0.95);
+        border-radius: 28px;
+        box-shadow:
+            0 30px 60px rgba(15,62,125,0.18),
+            0 8px 20px rgba(15,62,125,0.10),
+            0 2px 0 rgba(255,255,255,1) inset,
+            6px 6px 0px rgba(192,132,252,0.15);
+        overflow: visible;
+    ">
+        <div class="modal-header" style="
+            background: linear-gradient(135deg, #0a1e50, #0F3E7D);
+            border-radius: 24px 24px 0 0;
+            padding: 1.1rem 1.4rem;
+            box-shadow: 0 4px 20px rgba(10,30,80,0.25);
+        "><h3 style="font-size:1.05rem; letter-spacing:0.02em;">Reservation Request</h3>
             <div style="display:flex;align-items:center;gap:0.5rem;">
                 <button id="reqEditPCBtn" onclick="enablePCEdit()" style="background:#F4B942;color:#0F3E7D;border:none;padding:0.3rem 0.85rem;border-radius:5px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">✏️ Edit PC</button>
                 <button id="reqDeleteBtn" onclick="confirmDeleteReservation()" style="background:#c0392b;color:white;border:none;padding:0.3rem 0.85rem;border-radius:5px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">🗑️ Delete</button>
                 <button class="modal-close" onclick="closeModal('reqModal')">&#10005;</button>
             </div>
         </div>
-        <div class="modal-body" style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+        <div class="modal-body" style="
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:1.5rem;
+    background: transparent;
+    padding: 1.5rem;
+">
             <!-- LEFT: Form -->
             <div>
-                <h4 style="font-size:0.9rem;font-weight:700;color:#0F3E7D;margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:2px solid #e8f0fb;">Reservation Details</h4>
+                <h4 style="font-size:0.9rem;font-weight:800;color:#0F3E7D;margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:2px solid rgba(15,62,125,0.12);letter-spacing:0.03em;">Reservation Details</h4>
                 <table class="sitin-form-table">
                     <tr><td class="sitin-form-label">ID Number</td><td><input type="text" id="rm_id" class="sitin-form-input sitin-readonly" readonly></td></tr>
                     <tr><td class="sitin-form-label">Name</td><td><input type="text" id="rm_name" class="sitin-form-input sitin-readonly" readonly></td></tr>
@@ -1258,11 +1947,11 @@
             </div>
             <!-- RIGHT: PC Grid -->
             <div>
-                <h4 style="font-size:0.9rem;font-weight:700;color:#0F3E7D;margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:2px solid #e8f0fb;">Computer Control</h4>
+                <h4 style="font-size:0.9rem;font-weight:800;color:#0F3E7D;margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:2px solid rgba(15,62,125,0.12);letter-spacing:0.03em;">Computer Control</h4>
                 <div style="display:flex;gap:0.6rem;align-items:center;margin-bottom:0.6rem;flex-wrap:wrap;">
                     <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#E6F1FB;border:1px solid #185FA5;display:inline-block;"></span>Available</span>
                     <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#f8d7da;border:1px solid #f5c6cb;display:inline-block;"></span>Taken</span>
-                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#0F3E7D;display:inline-block;"></span>This Request</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#0F3E7D;display:inline-block;"></span>Student Request</span>
                 </div>
                 <div id="rm_pc_grid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:5px;max-height:340px;overflow-y:auto;"></div>
                     <div id="rmSavePCRow" style="display:none;margin-top:0.75rem;text-align:right;">
@@ -1507,7 +2196,7 @@
     </div>
 
             <div id="purposeDataEl" style="display:none;" data-counts='{% if purpose_counts %}{{ purpose_counts | tojson }}{% else %}{}{% endif %}'></div>
-            <div id="labDataEl" style="display:none;" data-counts='{}'></div>
+            <div id="labDataEl" style="display:none;" data-counts='{% if lab_counts %}{{ lab_counts | tojson }}{% else %}{}{% endif %}'></div>
         </main>
     </div>
 
@@ -1533,6 +2222,16 @@ function showSection(sectionId, clickedLink) {
     const lbl = document.getElementById('adminActiveLabel');
     if (lbl) lbl.textContent = ADMIN_LABELS[sectionId] || 'Home';
     closeAdminHam(); closeAllAnnMenus();
+
+    if (sectionId === 'section-records') {
+    const chartsPanel = document.getElementById('records-panel-charts');
+    const tablePanel  = document.getElementById('records-panel-table');
+    if (chartsPanel) chartsPanel.style.display = 'block';
+    if (tablePanel)  tablePanel.style.display  = 'none';
+    document.querySelectorAll('#section-records .res-tab-btn').forEach(b => b.classList.remove('res-tab-active'));
+    const firstBtn = document.querySelector('#section-records .res-tab-btn');
+    if (firstBtn) firstBtn.classList.add('res-tab-active');
+}
 }
 
         const adminHamBtn  = document.getElementById('adminHamBtn');
@@ -1549,8 +2248,8 @@ function showSection(sectionId, clickedLink) {
         } catch(e) {}
         const purposeLabels = Object.keys(purposeData).length ? Object.keys(purposeData) : ['C Programming','Java','C#','Python','Web Dev','Database','Other'];
         const purposeValues = Object.values(purposeData).length ? Object.values(purposeData) : [1,1,1,1,1,1,1];
-        const labLabels     = Object.keys(labData).length ? Object.keys(labData) : ['524','526','528','530','542','544','Mac Lab'];
-        const labValues     = Object.values(labData).length ? Object.values(labData) : [1,1,1,1,1,1,1];
+        const labLabels = Object.keys(labData).length ? Object.keys(labData) : ['524','526','530','544'];
+        const labValues = Object.values(labData).length ? Object.values(labData) : [1,1,1,1];
         const chartColors   = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#06B6D4','#F97316','#EC4899','#14B8A6','#84CC16'];
 
         function buildLegend(containerId, labels, values, colors) {
@@ -1780,9 +2479,24 @@ function showSection(sectionId, clickedLink) {
             studentsPage = 1; renderTable('students');
         }
         function filterRecordsTable() {
-            const q = document.getElementById('recordsSearch').value.toLowerCase().trim();
-            recordsFiltered = q ? allRecordsRows.filter(r => r.textContent.toLowerCase().includes(q)) : [...allRecordsRows];
-            recordsPage = 1; renderTable('records');
+            const q        = document.getElementById('recordsSearch').value.toLowerCase().trim();
+            const from     = document.getElementById('recordsDateFrom')?.value || '';
+            const to       = document.getElementById('recordsDateTo')?.value || '';
+            const lab      = document.getElementById('recordsFilterLab')?.value.trim() || '';
+            const purpose  = document.getElementById('recordsFilterPurpose')?.value.trim() || '';
+
+            recordsFiltered = allRecordsRows.filter(row => {
+                const cells = row.querySelectorAll('td');
+                const rowDate = cells[8]?.innerText.trim() || '';
+                if (q && !row.textContent.toLowerCase().includes(q)) return false;
+                if (from && rowDate < from) return false;
+                if (to   && rowDate > to)   return false;
+                if (lab     && cells[4]?.innerText.trim() !== lab)     return false;
+                if (purpose && cells[3]?.innerText.trim() !== purpose) return false;
+                return true;
+            });
+            recordsPage = 1;
+            renderTable('records');
         }
         function filterSitinTable() {
             const q = document.getElementById('sitinSearch').value.toLowerCase().trim();
@@ -2465,7 +3179,11 @@ function setReservation(enabled) {
 function switchResTab(panelId, btn) {
     document.querySelectorAll('.res-tab-panel').forEach(p => p.style.display = 'none');
     document.querySelectorAll('.res-tab-btn').forEach(b => b.classList.remove('res-tab-active'));
-    document.getElementById(panelId).style.display = 'block';
+    const panel = document.getElementById(panelId);
+    panel.style.display = 'block';
+    panel.style.animation = 'none';
+    panel.offsetHeight; // force reflow
+    panel.style.animation = '';
     btn.classList.add('res-tab-active');
     if (panelId === 'res-panel-requests') initReqPagination();
     if (panelId === 'res-panel-log') initLogPagination();
@@ -2508,10 +3226,9 @@ function openReqModal(id, idNum, name, session, purpose, lab, pc, time, date, st
     if (status === 'pending') {
         btns.innerHTML = `
             <button onclick="showModal('confirmApproveReqModal')" style="background:#1e7e34;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">✅ Approve</button>
-            <button onclick="showModal('confirmRejectReqModal')" style="background:#c0392b;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">❌ Reject</button>
-            <button type="button" class="btn-modal-close" onclick="closeModal('reqModal')">Cancel</button>`;
+            <button onclick="showModal('confirmRejectReqModal')" style="background:#c0392b;color:white;border:none;padding:0.55rem 1.4rem;border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">❌ Reject</button>`;
     } else {
-        btns.innerHTML = `<button type="button" class="btn-modal-close" onclick="closeModal('reqModal')">Close</button>`;
+        btns.innerHTML = ``;
     }
 
     // Load PC grid
@@ -2539,7 +3256,7 @@ function loadReqPCGrid(lab, date, requestedPc) {
             const isThis  = i === parseInt(requestedPc);
             const isTaken = allTaken.includes(i) && !isThis;
             const btn = document.createElement('div');
-            btn.title = isThis ? `PC ${i} — This Request` : isTaken ? `PC ${i} — Taken` : `PC ${i} — Available`;
+            btn.title = isThis ? `PC ${i} — Student Request` : isTaken ? `PC ${i} — Taken` : `PC ${i} — Available`;
             btn.style.cssText = `width:100%;padding-top:100%;position:relative;border-radius:5px;border:1.5px solid;cursor:default;`;
             if (isThis)       { btn.style.background = '#0F3E7D'; btn.style.borderColor = '#0d3569'; }
             else if (isTaken) { btn.style.background = '#f8d7da'; btn.style.borderColor = '#f5c6cb'; }
@@ -2609,6 +3326,10 @@ function updateReservationRowUI(id, status) {
             reqFiltered = reqFiltered.filter(r => r !== row1);
             row1.remove();
             renderReqTable();
+            if (allReqRows.length === 0) {
+                document.getElementById('reqTableBody').innerHTML = 
+                    '<tr><td colspan="11" class="no-data">No reservation requests for today.</td></tr>';
+            }
         }
         // Add to log table dynamically
         const logBody = document.getElementById('logTableBody');
@@ -2730,7 +3451,6 @@ function saveEditedResDate() {
     if (!newDate) { errEl.textContent = 'Please select a date.'; errEl.style.display = 'block'; return; }
     if (newDate !== today) { errEl.textContent = 'Date must be today to proceed with sit-in.'; errEl.style.display = 'block'; return; }
 
-    // Update DB then proceed
     const fd = new FormData();
     fd.append('id', dataset.resId);
     fd.append('date', newDate);
@@ -2742,6 +3462,15 @@ function saveEditedResDate() {
         if (data.success) {
             closeModal('editResDateModal');
             dataset.date = newDate;
+
+            const row = document.getElementById('req-row-' + dataset.resId);
+            if (row) {
+                const cells = row.querySelectorAll('td');
+                if (cells[8]) cells[8].textContent = newDate;
+                const sitinBtn = document.getElementById('sitin-btn-' + dataset.resId);
+                if (sitinBtn) sitinBtn.dataset.date = newDate;
+            }
+
             document.getElementById('confirmSitinResName').textContent = dataset.name;
             document.getElementById('confirmSitinResBtn').onclick = function() {
                 closeModal('confirmSitinFromResModal');
@@ -2838,11 +3567,14 @@ function submitSitinFromRes() {
                 };
             }
         } else {
-            errEl.textContent = data.message || 'Something went wrong.';
-            errEl.style.display = 'block';
-        }
-    })
-    .catch(() => { errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; });
+    document.getElementById('activeSitinWarningMsg').textContent = data.message || 'Something went wrong.';
+    showModal('activeSitinWarningModal');
+}
+})
+.catch(() => {
+    document.getElementById('activeSitinWarningMsg').textContent = 'Connection error. Please try again.';
+    showModal('activeSitinWarningModal');
+});
 }
 
 // ══════════════════════════════════════
@@ -3094,6 +3826,10 @@ function submitResLogout() {
         reqFiltered = reqFiltered.filter(r => r !== reqRow);
         reqRow.remove();
         renderReqTable();
+        if (allReqRows.length === 0) {
+            document.getElementById('reqTableBody').innerHTML = 
+                '<tr><td colspan="11" class="no-data">No reservation requests for today.</td></tr>';
+        }
 
         // Add to log table
         const logBody = document.getElementById('logTableBody');
@@ -3352,14 +4088,19 @@ function cancelPCEdit() {
 function loadReqPCGridEditable(lab, date, currentPC) {
     const grid = document.getElementById('rm_pc_grid');
     grid.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:0.82rem;padding:0.5rem;">Loading...</div>';
-    fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}`)
-    .then(r => r.json())
-    .then(data => {
-        const reserved = data.reserved || [];
+    Promise.all([
+    fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}`).then(r => r.json()),
+    fetch(`/admin/get-blocked-pcs?lab=${encodeURIComponent(lab)}`).then(r => r.json())
+])
+    .then(([resData, blockData]) => {
+        const reserved = resData.reserved || [];
+        const occupied = blockData.occupied || [];
+        const blocked  = blockData.blocked  || [];
+        const allTaken = [...new Set([...reserved, ...occupied, ...blocked])];
         grid.innerHTML = '';
         for (let i = 1; i <= 50; i++) {
             const isThis   = i === currentPC;
-            const isTaken  = reserved.includes(i) && !isThis;
+            const isTaken  = allTaken.includes(i) && !isThis;
             const btn      = document.createElement('div');
             btn.style.cssText = `width:100%;padding-top:100%;position:relative;border-radius:5px;border:1.5px solid;`;
 
@@ -3441,33 +4182,35 @@ function saveNewPC() {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            // Update the display
-            document.getElementById('rm_pc').value = 'PC ' + _newSelectedPC;
-            // Update the table row
+            const updatedPC = _newSelectedPC;
+
+            // Update Reservation Details panel
+            document.getElementById('rm_pc').value = 'PC ' + updatedPC;
+
             // Update reservation request table row
             const row = document.getElementById('req-row-' + _currentReqId);
             if (row) {
                 const cells = row.querySelectorAll('td');
-                if (cells[6]) cells[6].textContent = 'PC ' + _newSelectedPC;
+                if (cells[6]) cells[6].textContent = 'PC ' + updatedPC;
+
+                // ← ADD THIS LINE:
+                row.setAttribute('onclick', row.getAttribute('onclick').replace(
+                    /openReqModal\((\d+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),\s*\d+\s*,/,
+                    `openReqModal($1,$2,$3,$4,$5,$6, ${updatedPC},`
+                ));
+
                 const sitinBtn = document.getElementById('sitin-btn-' + _currentReqId);
-                if (sitinBtn) sitinBtn.dataset.pc = _newSelectedPC;
+                if (sitinBtn) sitinBtn.dataset.pc = updatedPC;
             }
 
-            // Update Current Sit-in table live
-            const sitinRows = document.querySelectorAll('#sitinTableBody tr');
-            sitinRows.forEach(tr => {
-                const idCell = tr.querySelectorAll('td')[1];
-                const labCell = tr.querySelectorAll('td')[4];
-                const pcCell = tr.querySelectorAll('td')[5];
-                const reservationIdNumber = document.getElementById('rm_id').value;
-                const reservationLab = document.getElementById('rm_lab').value.replace('Lab ', '');
-                if (idCell && labCell && pcCell &&
-                    idCell.textContent.trim() === reservationIdNumber &&
-                    labCell.textContent.trim() === reservationLab) {
-                    pcCell.textContent = _newSelectedPC;
+            // Update Current Sit-in table row live
+            document.querySelectorAll('#sitinTableBody tr').forEach(tr => {
+                const tds = tr.querySelectorAll('td');
+                if (tds[1] && tds[1].textContent.trim() === document.getElementById('rm_id').value.trim()) {
+                    if (tds[5]) tds[5].textContent = updatedPC;
                 }
             });
-            const updatedPC = _newSelectedPC;
+
             cancelPCEdit();
             showToast('✓ PC updated to PC ' + updatedPC + '.', 'success');
             loadMgmtGrid();
@@ -3553,6 +4296,19 @@ function sitinBtnRouter(btn) {
         handleSitinBtnClick(btn.dataset);
     }
 }
+function switchRecordsTab(panelId, btn) {
+    const recordsSection = document.getElementById('section-records');
+    recordsSection.querySelectorAll('.res-tab-panel').forEach(p => p.style.display = 'none');
+    recordsSection.querySelectorAll('.res-tab-btn').forEach(b => b.classList.remove('res-tab-active'));
+    document.getElementById(panelId).style.display = 'block';
+    btn.classList.add('res-tab-active');
+    if (panelId === 'records-panel-table') {
+        renderTable('records');
+    }
+}
+function openSitinFormForStudent(id, name, remaining) {
+    openSitinFormModal(id, name, remaining);
+}
     </script>
 <div class="modal-overlay" id="deleteFeedbackModal" style="display:none;">
     <div class="modal-box modal-sm">
@@ -3593,7 +4349,76 @@ function sitinBtnRouter(btn) {
         </div>
     </div>
 </div>
-
+<div class="modal-overlay" id="activeSitinWarningModal" style="display:none; z-index:9999;">
+    <div style="
+        background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,240,255,0.88));
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border-radius: 36px;
+        width: 90%;
+        max-width: 420px;
+        border: 2px solid rgba(255,255,255,0.95);
+        box-shadow:
+            0 30px 60px rgba(192,57,43,0.18),
+            0 8px 20px rgba(192,57,43,0.10),
+            0 2px 0 rgba(255,255,255,1) inset,
+            6px 6px 0px rgba(192,132,252,0.15);
+        overflow: hidden;
+    ">
+        <div style="
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+            padding: 1.1rem 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(192,57,43,0.35);
+        ">
+            <span style="color:white;font-size:1rem;font-weight:800;letter-spacing:0.02em;text-shadow:0 1px 4px rgba(0,0,0,0.2);">⚠️ Active Session Found</span>
+            <button onclick="closeModal('activeSitinWarningModal')" style="background:none;border:none;color:white;font-size:1.1rem;cursor:pointer;opacity:0.8;line-height:1;">&#10005;</button>
+        </div>
+        <div style="padding:1.5rem 2rem; text-align:center;">
+            <div style="
+                width:90px; height:90px;
+                background: linear-gradient(145deg, #fdecea, #f9b9b4);
+                border-radius:30px;
+                margin:0 auto 1.5rem;
+                display:flex; align-items:center; justify-content:center;
+                font-size:2.6rem;
+                box-shadow:
+                    0 10px 30px rgba(192,57,43,0.25),
+                    0 4px 10px rgba(192,57,43,0.15),
+                    0 2px 0 rgba(255,255,255,0.9) inset,
+                    0 -3px 0 rgba(192,57,43,0.2) inset;
+                border:2px solid rgba(255,255,255,0.9);
+                transform:rotate(-4deg);
+                animation: clayWobble 3s ease-in-out infinite;
+            ">🖥️</div>
+            <p id="activeSitinWarningMsg" style="
+                color:#2c2c2e;
+                font-size:0.95rem;
+                font-weight:600;
+                margin:0 0 2rem;
+                line-height:1.6;
+                letter-spacing:-0.01em;
+            "></p>
+            <button onclick="closeModal('activeSitinWarningModal')" style="
+                background: linear-gradient(145deg, #f2f2f7, #e5e5ea);
+                color:#3a3a3c;
+                border:2px solid rgba(255,255,255,0.9);
+                padding:0.75rem 2.5rem;
+                border-radius:18px;
+                font-size:0.95rem;
+                font-weight:700;
+                cursor:pointer;
+                font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;
+                box-shadow:0 6px 20px rgba(0,0,0,0.08),0 2px 0 rgba(255,255,255,0.95) inset;
+                transition:all 0.18s ease;
+            "
+            onmouseover="this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.transform=''">OK, Got it</button>
+        </div>
+    </div>
+</div>
 <div class="modal-overlay" id="confirmSitinFromResModal" style="display:none; z-index: 9999;">
     <div class="modal-box modal-sm" style="max-width: 360px;">
         <div class="modal-header" style="background:#0F3E7D;"><h3>Confirm Sit-in</h3><button class="modal-close" onclick="closeModal('confirmSitinFromResModal')">&#10005;</button></div>
@@ -3631,7 +4456,7 @@ function sitinBtnRouter(btn) {
             <div style="font-size:2.5rem;margin-bottom:0.75rem;">📅</div>
             <p style="color:#333;font-size:0.95rem;margin-bottom:0.5rem;" id="wrongDateInfo"></p>
             <p style="color:#888;font-size:0.85rem;margin-bottom:1.5rem;">
-                You can edit the reservation date/lab/PC, or force sit-in anyway.
+                You can edit the reservation date/lab/PC.
             </p>
             <input type="hidden" id="wrongDateResId">
             <div style="display:flex;gap:0.6rem;justify-content:center;">

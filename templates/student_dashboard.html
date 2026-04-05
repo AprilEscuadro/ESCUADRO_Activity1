@@ -6,11 +6,19 @@
     <title>Student Dashboard - CCS Sit-in System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
+    body {
+    background-color: #f5f7fb;
+    background-image:
+        linear-gradient(rgba(15,62,125,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15,62,125,0.08) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-attachment: fixed;
+}
         .page-section        { display: none; }
         .page-section.active { display: block; }
         .admin-sidebar { display: none !important; }
         .admin-wrapper { display: block; }
-        .admin-main { padding: 2rem; background: #f5f5f5; min-height: calc(100vh - 70px); }
+        .admin-main { padding: 2rem; background: transparent; min-height: calc(100vh - 70px); }
         .header-actions { display: flex; align-items: center; gap: 10px; position: relative; }
         .student-name-label { color: white; font-size: 0.9rem; }
 
@@ -64,19 +72,30 @@
         align-items: stretch;
     }
         .student-info-panel, .panel-card {
-        background: rgba(255, 255, 255, 0.55);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-        border: 1px solid rgba(255, 255, 255, 0.65);
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(15, 62, 125, 0.10), 0 1.5px 6px rgba(255,255,255,0.18) inset;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        min-height: 520px;
-    }
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 16px;
+    box-shadow: 
+        6px 6px 0px rgba(192, 132, 252, 0.3),
+        0 8px 24px rgba(150, 120, 220, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 520px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.student-info-panel:hover, .panel-card:hover {
+    transform: translateY(-4px) translateX(-2px);
+    box-shadow: 
+        8px 8px 0px rgba(192, 132, 252, 0.35),
+        0 12px 28px rgba(150, 120, 220, 0.15);
+}
         .panel-tab-header, .panel-card-header {
-        background: linear-gradient(135deg, rgba(15, 62, 125, 0.88), rgba(26, 111, 188, 0.82));
+        background: linear-gradient(135deg, #0a1e50, #0F3E7D);
+        box-shadow: 0 2px 12px rgba(15, 62, 125, 0.2);
         backdrop-filter: blur(8px);
         color: white;
         padding: 0.85rem 1.1rem;
@@ -115,7 +134,7 @@
         .rules-list li   { font-size: 0.84rem; color: #444; line-height: 1.55; margin-bottom: 0.45rem; }
 
         .student-avatar-wrap { text-align: center; margin-bottom: 1rem; }
-        .student-avatar-img  { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid #0F3E7D; }
+        .student-avatar-img  { width: 170px; height: 170px; border-radius: 50%; object-fit: cover; border: 3px solid #F4B942; }
         .student-info-list   { display: flex; flex-direction: column; gap: 0.55rem; }
         .info-row            { display: flex; flex-direction: column; gap: 0.1rem; }
         .info-label          { font-size: 0.75rem; color: #999; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
@@ -128,11 +147,22 @@
 
         /* EDIT PROFILE */
         .profile-edit-wrap { display: flex; justify-content: center; align-items: flex-start; padding: 0.5rem 0 2rem; }
-        .profile-edit-card { background: white; border-radius: 14px; padding: 2.25rem 2.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.10); width: 100%; max-width: 600px; }
+        .profile-edit-card { 
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 16px; 
+    padding: 2.25rem 2.5rem; 
+    box-shadow: 
+        6px 6px 0px rgba(192, 132, 252, 0.3),
+        0 8px 24px rgba(150, 120, 220, 0.1);
+    width: 100%; 
+    max-width: 600px; 
+}
         .profile-edit-title { font-size: 1.1rem; font-weight: 800; color: #0F3E7D; margin: 0 0 1.6rem; padding-bottom: 0.75rem; border-bottom: 2px solid #e8f0fb; text-align: center; }
         .avatar-edit-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-bottom: 1.8rem; }
-        .avatar-preview-img { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid #0F3E7D; }
-        .avatar-hint { font-size: 0.8rem; color: #999; }
+        .avatar-preview-img { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid #F4B942; }        .avatar-hint { font-size: 0.8rem; color: #999; }
         .btn-upload { background: none; border: 1.5px dashed #0F3E7D; color: #0F3E7D; font-size: 0.85rem; font-weight: 600; padding: 0.45rem 1.2rem; border-radius: 6px; cursor: pointer; transition: background 0.2s; font-family: Arial, sans-serif; }
         .btn-upload:hover { background: #f0f5ff; }
         .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
@@ -150,7 +180,17 @@
         .btn-primary { background: #0F3E7D; color: white; }
 
         /* HISTORY */
-        .admin-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); overflow: hidden; }
+        .admin-card { 
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px; 
+    box-shadow: 
+        5px 5px 0px rgba(192, 132, 252, 0.25),
+        0 8px 24px rgba(150, 120, 220, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    overflow: hidden; 
+}
         .table-scroll { overflow-x: auto; }
         .dashboard-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
         .dashboard-table thead th { background: #0F3E7D; color: white; padding: 0.75rem 1rem; text-align: left; font-weight: 700; white-space: nowrap; }
@@ -188,7 +228,12 @@
 
         /* MODALS */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 5000; display: flex; align-items: center; justify-content: center; }
-        .modal-box { background: white; border-radius: 12px; width: 90%; max-width: 460px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; }
+        .modal-box { 
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.8);
+            border-radius: 20px; width: 90%; max-width: 460px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); overflow: hidden; }
         .modal-header { background: #0F3E7D; color: white; padding: 0.9rem 1.25rem; display: flex; align-items: center; justify-content: space-between; }
         .modal-header h3 { margin: 0; font-size: 1rem; }
         .modal-close { background: none; border: none; color: white; font-size: 1.1rem; cursor: pointer; padding: 0 0.3rem; line-height: 1; opacity: 0.8; }
@@ -280,6 +325,235 @@
 .pg-btn.active { background: #0F3E7D; color: white; border-color: #0F3E7D; }
 .pg-btn:disabled { background: #f5f5f5; color: #ccc; border-color: #eee; cursor: not-allowed; }
 .pg-dots { color: #aaa; font-size: 0.82rem; padding: 0 2px; }
+
+.navbar {
+    background: linear-gradient(135deg, #0a1e50, #0F3E7D) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.18) !important;
+    box-shadow: 0 2px 24px rgba(10, 30, 80, 0.25) !important;
+}
+
+footer {
+    background: linear-gradient(135deg, #0a1e50, #0F3E7D) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid rgba(255,255,255,0.15) !important;
+}
+
+/* ── iOS-feel Buttons ── */
+.btn-primary {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    border-radius: 14px !important;
+    box-shadow: 
+        0 4px 15px rgba(15, 62, 125, 0.35),
+        0 1px 0 rgba(255,255,255,0.2) inset !important;
+    letter-spacing: 0.03em;
+    font-weight: 700;
+    transition: all 0.2s ease !important;
+}
+.btn-primary:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 
+        0 8px 25px rgba(15, 62, 125, 0.45),
+        0 1px 0 rgba(255,255,255,0.2) inset !important;
+}
+.btn-primary:active {
+    transform: scale(0.97) !important;
+    box-shadow: 0 2px 8px rgba(15, 62, 125, 0.3) !important;
+}
+
+.btn-modal-submit {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px rgba(15, 62, 125, 0.35),
+                0 1px 0 rgba(255,255,255,0.15) inset !important;
+    transition: all 0.18s ease !important;
+    letter-spacing: 0.02em;
+}
+.btn-modal-submit:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 20px rgba(15, 62, 125, 0.4) !important;
+}
+.btn-modal-submit:active {
+    transform: scale(0.97) !important;
+}
+
+.btn-modal-close {
+    background: rgba(235, 235, 240, 0.9) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+    transition: all 0.18s ease !important;
+    color: #333 !important;
+}
+.btn-modal-close:hover {
+    background: rgba(220, 220, 228, 0.95) !important;
+    transform: translateY(-1px) !important;
+}
+.btn-modal-close:active {
+    transform: scale(0.97) !important;
+}
+
+.btn-feedback {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 3px 10px rgba(15, 62, 125, 0.3),
+                0 1px 0 rgba(255,255,255,0.15) inset !important;
+    transition: all 0.18s ease !important;
+}
+.btn-feedback:hover:not(:disabled) {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 5px 15px rgba(15, 62, 125, 0.4) !important;
+}
+.btn-feedback:active {
+    transform: scale(0.97) !important;
+}
+
+.btn-upload {
+    background: rgba(255,255,255,0.7) !important;
+    border: 1.5px solid rgba(15, 62, 125, 0.3) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(15,62,125,0.1),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+    backdrop-filter: blur(8px) !important;
+    transition: all 0.18s ease !important;
+}
+.btn-upload:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(15,62,125,0.18) !important;
+    background: rgba(255,255,255,0.9) !important;
+}
+.btn-upload:active {
+    transform: scale(0.97) !important;
+}
+
+/* Reserve button */
+#section-reservation .admin-card button[onclick="confirmReservation()"] {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 15px rgba(15, 62, 125, 0.35),
+                0 1px 0 rgba(255,255,255,0.2) inset !important;
+    transition: all 0.2s ease !important;
+}
+#section-reservation .admin-card button[onclick="confirmReservation()"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(15, 62, 125, 0.45) !important;
+}
+#section-reservation .admin-card button[onclick="confirmReservation()"]:active {
+    transform: scale(0.97) !important;
+}
+
+/* Lab selector buttons */
+.lab-btn {
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+    backdrop-filter: blur(8px) !important;
+    background: rgba(255,255,255,0.75) !important;
+    transition: all 0.18s ease !important;
+    font-weight: 700 !important;
+}
+.lab-btn:hover:not(.full) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 15px rgba(15,62,125,0.2),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+}
+.lab-btn.selected {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    box-shadow: 0 4px 14px rgba(15,62,125,0.35),
+                0 1px 0 rgba(255,255,255,0.2) inset !important;
+    transform: translateY(-1px) !important;
+    color: white !important;
+    border-color: transparent !important;
+}
+.lab-btn:active {
+    transform: scale(0.97) !important;
+}
+
+/* Hamburger + Notif buttons */
+.hamburger-btn, .notif-btn {
+    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15),
+                0 1px 0 rgba(255,255,255,0.15) inset !important;
+    transition: all 0.18s ease !important;
+    backdrop-filter: blur(8px) !important;
+}
+.hamburger-btn:hover, .notif-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2) !important;
+}
+.hamburger-btn:active, .notif-btn:active {
+    transform: scale(0.95) !important;
+}
+/* ── iOS-feel Pagination ── */
+.pg-btn {
+    border-radius: 50% !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+    transition: all 0.18s ease !important;
+    backdrop-filter: blur(4px) !important;
+}
+.pg-btn:hover:not(:disabled) {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(15,62,125,0.2) !important;
+}
+.pg-btn.active {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    box-shadow: 0 4px 12px rgba(15,62,125,0.35) !important;
+}
+.pg-btn:active {
+    transform: scale(0.92) !important;
+}
+
+/* ── iOS-feel inputs ── */
+.field-input, .field-select {
+    border-radius: 12px !important;
+    background: rgba(255,255,255,0.7) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1.5px solid rgba(15,62,125,0.15) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+    transition: all 0.2s ease !important;
+}
+.field-input:focus, .field-select:focus {
+    border-color: #0F3E7D !important;
+    box-shadow: 0 0 0 4px rgba(15,62,125,0.12),
+                0 1px 0 rgba(255,255,255,0.9) inset !important;
+    background: rgba(255,255,255,0.92) !important;
+}
+
+/* ── iOS status badges ── */
+.status-badge {
+    border-radius: 20px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08) !important;
+    backdrop-filter: blur(4px) !important;
+    font-weight: 700 !important;
+}
+
+/* ── Notification dropdown ── */
+.notif-dropdown {
+    background: rgba(255,255,255,0.88) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border: 1px solid rgba(255,255,255,0.8) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 8px 32px rgba(15,62,125,0.18) !important;
+}
+
+/* ── Ham dropdown ── */
+.ham-dropdown {
+    background: white !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(0,0,0,0.08) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 8px 32px rgba(15,62,125,0.18) !important;
+}
+@keyframes clayWobble {
+    0%, 100% { transform: rotate(-4deg) translateY(0); }
+    50%       { transform: rotate(4deg) translateY(-4px); }
+}
 </style>
 </head>
 <body>
@@ -790,21 +1064,136 @@
 
     <!-- STUDENT LOGOUT CONFIRM MODAL -->
     <div class="modal-overlay" id="studentLogoutModal" style="display:none;">
-        <div class="modal-box" style="max-width:380px;">
-            <div class="modal-header" style="background:#c0392b;">
-                <h3>Confirm Logout</h3>
-                <button class="modal-close" onclick="closeStudentLogoutModal()">&#10005;</button>
-            </div>
-            <div class="modal-body" style="text-align:center; padding:2rem 1.5rem;">
-                <div style="font-size:2.5rem; margin-bottom:0.75rem;">&#128274;</div>
-                <p style="color:#333; font-size:0.95rem; margin-bottom:1.5rem;">Are you sure you want to log out?</p>
-                <div style="display:flex; gap:0.8rem; justify-content:center;">
-                    <button type="button" class="btn-modal-close" onclick="closeStudentLogoutModal()">No, Cancel</button>
-                    <a href="/logout" style="background:#c0392b; color:white; border:none; padding:0.55rem 1.4rem; border-radius:6px; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; text-decoration:none; display:inline-block;">Yes, Logout</a>
-                </div>
+    <div style="
+        background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,240,255,0.88));
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border-radius: 36px;
+        width: 90%;
+        max-width: 480px;
+        border: 2px solid rgba(255,255,255,0.95);
+        box-shadow:
+            0 30px 60px rgba(15,62,125,0.18),
+            0 8px 20px rgba(15,62,125,0.10),
+            0 2px 0 rgba(255,255,255,1) inset,
+            6px 6px 0px rgba(192,132,252,0.15);
+        overflow: hidden;
+    ">
+        <!-- Header -->
+        <div style="
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+            padding: 1.1rem 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(192,57,43,0.35);
+        ">
+            <span style="
+                color: white;
+                font-size: 1rem;
+                font-weight: 800;
+                letter-spacing: 0.02em;
+                text-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            ">Confirm Logout</span>
+            
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 1.5rem 2rem; text-align: center;">
+            <!-- Claymorphism icon blob -->
+            <div style="
+                width: 90px;
+                height: 90px;
+                background: linear-gradient(145deg, #fff8e1, #ffe082);
+                border-radius: 30px;
+                margin: 0 auto 1.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 2.6rem;
+                box-shadow:
+                    0 10px 30px rgba(255,193,7,0.35),
+                    0 4px 10px rgba(255,152,0,0.2),
+                    0 2px 0 rgba(255,255,255,0.9) inset,
+                    0 -3px 0 rgba(255,152,0,0.3) inset;
+                border: 2px solid rgba(255,255,255,0.9);
+                transform: rotate(-4deg);
+                animation: clayWobble 3s ease-in-out infinite;
+            ">🔒</div>
+
+            <p style="
+                color: #2c2c2e;
+                font-size: 1rem;
+                font-weight: 600;
+                margin: 0 0 2rem;
+                line-height: 1.5;
+                letter-spacing: -0.01em;
+            ">Are you sure you want to log out?</p>
+
+            <!-- Buttons -->
+            <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                <!-- No, Cancel -->
+                <button onclick="closeStudentLogoutModal()" style="
+                    background: linear-gradient(145deg, #f2f2f7, #e5e5ea);
+                    color: #3a3a3c;
+                    border: 2px solid rgba(255,255,255,0.9);
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 18px;
+                    font-size: 0.95rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    font-family: Arial, sans-serif;
+                    box-shadow:
+                        0 6px 20px rgba(0,0,0,0.08),
+                        0 2px 0 rgba(255,255,255,0.95) inset,
+                        0 -2px 0 rgba(0,0,0,0.06) inset;
+                    transition: all 0.18s ease;
+                    letter-spacing: 0.01em;
+                    flex: 1;
+                    max-width: 140px;
+                "
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 28px rgba(0,0,0,0.12), 0 2px 0 rgba(255,255,255,0.95) inset'"
+                onmouseout="this.style.transform=''; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.08), 0 2px 0 rgba(255,255,255,0.95) inset, 0 -2px 0 rgba(0,0,0,0.06) inset'"
+                onmousedown="this.style.transform='scale(0.96)'"
+                onmouseup="this.style.transform='translateY(-2px)'">
+                    No, Cancel
+                </button>
+
+                <!-- Yes, Logout -->
+                <a href="/logout" style="
+                    background: linear-gradient(145deg, #e74c3c, #c0392b);
+                    color: white;
+                    border: 2px solid rgba(255,255,255,0.25);
+                    padding: 0.75rem 1.5rem;
+                    border-radius: 18px;
+                    font-size: 0.95rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    font-family: Arial, sans-serif;
+                    text-decoration: none;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow:
+                        0 8px 24px rgba(192,57,43,0.4),
+                        0 2px 0 rgba(255,255,255,0.25) inset,
+                        0 -3px 0 rgba(0,0,0,0.15) inset;
+                    transition: all 0.18s ease;
+                    letter-spacing: 0.01em;
+                    flex: 1;
+                    max-width: 140px;
+                    text-shadow: 0 1px 4px rgba(0,0,0,0.2);
+                "
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 32px rgba(192,57,43,0.5), 0 2px 0 rgba(255,255,255,0.25) inset'"
+                onmouseout="this.style.transform=''; this.style.boxShadow='0 8px 24px rgba(192,57,43,0.4), 0 2px 0 rgba(255,255,255,0.25) inset, 0 -3px 0 rgba(0,0,0,0.15) inset'"
+                onmousedown="this.style.transform='scale(0.96)'"
+                onmouseup="this.style.transform='translateY(-2px)'">
+                    Yes, Logout
+                </a>
             </div>
         </div>
     </div>
+</div>
 
     <div class="modal-overlay" id="confirmReservationModal" style="display:none; z-index:9999;">
     <div class="modal-box" style="max-width:360px;">

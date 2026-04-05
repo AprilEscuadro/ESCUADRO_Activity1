@@ -8,7 +8,7 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
     line-height: 1.6;
     color: #333;
     background-color: #2b2b2b;
@@ -29,7 +29,7 @@ body {
    NAVIGATION BAR
    ============================================ */
 .navbar {
-    background: linear-gradient(135deg, #0a1e50, #0F3E7D);
+    background: linear-gradient(135deg, #0a1e50, #0F3E7D) !important;
     padding: 1rem 0;
     position: fixed;
     top: 0;
@@ -58,6 +58,17 @@ body {
 .navbar-logo {
     height: 45px;
     width: auto;
+    mix-blend-mode: lighten;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 0 0px transparent);
+}
+
+.navbar-logo:hover {
+    filter: 
+        drop-shadow(0 0 8px #F4B942)
+        drop-shadow(0 0 16px #F4B942)
+        drop-shadow(0 0 32px rgba(244,185,66,0.6));
+    transform: scale(1.08);
 }
 
 .site-title {
@@ -198,6 +209,15 @@ body {
     max-width: 500px;
     max-height: 300px;
     object-fit: contain;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 8px 24px rgba(15,62,125,0.15));
+    animation: imageFloat 4s ease-in-out infinite;
+}
+
+@keyframes imageFloat {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-10px); }
 }
 
 /* ============================================
@@ -1217,7 +1237,7 @@ body {
    FOOTER
    ============================================ */
 footer {
-    background-color: #0a2a57;
+    background: linear-gradient(135deg, #0a1e50, #0F3E7D) !important;
     color: #aec4e5;
     text-align: center;
     padding: 1.5rem 2rem;
@@ -1361,4 +1381,47 @@ footer {
     .dashboard-table td { padding: 0.6rem 0.5rem; }
 
     .login-options-row { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+}
+
+/* ── Login + Register buttons iOS feel ── */
+.btn-primary {
+    background: linear-gradient(135deg, #1a5db5, #0F3E7D) !important;
+    border-radius: 14px !important;
+    box-shadow:
+        0 4px 15px rgba(15,62,125,0.35),
+        0 1px 0 rgba(255,255,255,0.2) inset !important;
+    transition: all 0.2s ease !important;
+    letter-spacing: 0.03em !important;
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 8px 25px rgba(15,62,125,0.45) !important;
+}
+
+.btn-primary:active {
+    transform: scale(0.97) !important;
+}
+
+/* ── Register here + Login here links ── */
+.form-footer a {
+    transition: all 0.18s ease !important;
+    display: inline-block;
+}
+
+.form-footer a:hover {
+    transform: translateY(-2px) !important;
+    color: #F4B942 !important;
+    text-shadow: 0 2px 8px rgba(244,185,66,0.3) !important;
+}
+
+/* ── Forgot password link ── */
+.forgot-password-link {
+    transition: all 0.18s ease !important;
+    display: inline-block;
+}
+
+.forgot-password-link:hover {
+    transform: translateY(-2px) !important;
+    text-shadow: 0 2px 8px rgba(15,62,125,0.2) !important;
 }
