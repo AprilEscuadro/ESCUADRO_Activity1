@@ -1,6 +1,9 @@
 import os
 from flask import Flask, request, redirect, render_template, render_template_string, session, jsonify
 from dbhelper import (
+    get_student_notifications,
+    mark_notification_read,
+    get_read_notification_ids,
     contains_bad_words,
     init_db,
     get_student_by_id, register_student, login_student,
@@ -18,7 +21,8 @@ from dbhelper import (
     get_reservation_log, get_blocked_pcs,
     set_pc_blocked,
     update_reservation_message, get_occupied_pcs,
-    get_reserved_pcs_today,
+    get_reserved_pcs_today, mark_announcement_read,
+    get_read_announcement_ids,
 )
 
 import sqlite3 as _sqlite3
@@ -271,13 +275,23 @@ def dashboard():
 
     reservations = get_student_reservations(session['student_id'])
     res_settings = get_reservation_settings()
+    notifications = get_student_notifications(session['student_id'])
+    read_notif_ids = get_read_notification_ids(session['student_id'])
+    read_ann_ids = get_read_announcement_ids(session['student_id'])
+    unread_notif_count = sum(1 for n in notifications if n['res_id'] not in read_notif_ids)
+    unread_ann_count = sum(1 for a in announcements if a['id'] not in read_ann_ids)
     return render_template('student_dashboard.html',
         student=student,
         sessions=sessions,
         announcements=announcements,
         submitted_feedback_ids=submitted_ids,
         reservations=reservations,
-        res_settings=res_settings
+        res_settings=res_settings,
+        notifications=notifications,
+        read_notif_ids=read_notif_ids,
+        read_ann_ids=read_ann_ids,
+        unread_notif_count=unread_notif_count,
+        unread_ann_count=unread_ann_count,
     )
 
 
@@ -549,18 +563,32 @@ def admin_add_sitin_ajax():
 
     pc_number = request.form.get('pc_number', '').strip()
     pc_number = int(pc_number) if pc_number.isdigit() else None
-    session_id, error = add_sitin(id_number, purpose, lab, pc_number)
-    if error:
-        return jsonify({'success': False, 'message': error})
+    from datetime import datetime as _dt_now, timezone as _tz, timedelta as _td
+    PH_TZ = _tz(_td(hours=8))
+    now_str = _dt_now.now(PH_TZ).strftime('%H:%M')
+    # Pass only time_start — add_sitin will auto-calculate end based on next reservation
+    # If sit-in is from a reservation, use the reservation's actual time_end
+    res_time_end = None
     reservation_id = request.form.get('reservation_id', '').strip()
     if reservation_id:
+        conn3 = _sqlite3.connect('database.db')
+        res_row = conn3.execute(
+            "SELECT time_end FROM reservations WHERE id=?", (reservation_id,)
+        ).fetchone()
+        conn3.close()
+        if res_row and res_row[0]:
+            res_time_end = res_row[0]
+
+    session_id, error, time_end = add_sitin(id_number, purpose, lab, pc_number, now_str, time_end=res_time_end)
+    if error:
+        return jsonify({'success': False, 'message': error})
+    if reservation_id:
         update_reservation_status(int(reservation_id), 'sitting_in')
-        # Link the session to the reservation
         conn2 = _sqlite3.connect('database.db')
         conn2.execute("UPDATE reservations SET session_id=? WHERE id=?", (session_id, int(reservation_id)))
         conn2.commit()
         conn2.close()
-    return jsonify({'success': True, 'message': 'Sit-in successful.', 'sessionId': session_id, 'pc_number': pc_number})
+    return jsonify({'success': True, 'message': 'Sit-in successful.', 'sessionId': session_id, 'pc_number': pc_number, 'time_end': time_end})
 
 @app.route('/admin/get-active-session', methods=['GET'])
 def admin_get_active_session():
@@ -583,15 +611,23 @@ def admin_get_active_session():
 def admin_end_sitin(session_id):
     if not session.get('admin'):
         return redirect('/login')
+    
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+    now_str = datetime.now(PH_TZ).strftime('%H:%M')
+    
     end_sitin(session_id)
+    
     conn = _sqlite3.connect('database.db')
     res = conn.execute(
         "SELECT id FROM reservations WHERE session_id=? AND status='sitting_in'",
         (session_id,)
     ).fetchone()
-    conn.close()
     if res:
+        conn.execute("UPDATE reservations SET time_out=? WHERE id=?", (now_str, res[0]))
+        conn.commit()
         update_reservation_status(res[0], 'done')
+    conn.close()
     return redirect('/admin/dashboard')
 
 
@@ -658,8 +694,20 @@ def admin_delete_announcement():
 def admin_end_sitin_from_res(session_id, res_id):
     if not session.get('admin'):
         return jsonify({'success': False}), 401
+    
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+    now_str = datetime.now(PH_TZ).strftime('%H:%M')
+    
     end_sitin(session_id)
     update_reservation_status(res_id, 'done')
+    
+    # Save actual logout time to reservation
+    conn = _sqlite3.connect('database.db')
+    conn.execute("UPDATE reservations SET time_out=? WHERE id=?", (now_str, res_id))
+    conn.commit()
+    conn.close()
+    
     return jsonify({'success': True})
 # ══════════════════════════════════════════
 # ROUTE — ADMIN TOGGLE PIN ANNOUNCEMENT (AJAX)
@@ -782,15 +830,50 @@ def admin_auto_expire():
 # ══════════════════════════════════════════
 @app.route('/admin/get-blocked-pcs', methods=['GET'])
 def admin_get_blocked_pcs():
-    if not session.get('admin'):
+    if not session.get('admin') and not session.get('student_id'):
         return jsonify({'success': False}), 401
-    lab = request.args.get('lab', '').strip()
+    lab        = request.args.get('lab', '').strip()
+    date       = request.args.get('date', '').strip()
+    time_start = request.args.get('time_start', '').strip()
+    time_end   = request.args.get('time_end', '').strip()
     if not lab:
-        return jsonify({'blocked': [], 'occupied': []})
+        return jsonify({'blocked': [], 'occupied': [], 'reserved': []})
+    
     blocked  = get_blocked_pcs(lab)
-    occupied = get_occupied_pcs(lab)
-    reserved = get_reserved_pcs_today(lab)
-    return jsonify({'blocked': blocked, 'occupied': occupied, 'reserved': reserved})
+    from datetime import date as _date
+    _today = _date.today().isoformat()
+    if date == _today:
+        occupied = get_occupied_pcs(lab, slot_start=time_start, slot_end=time_end)
+    else:
+        occupied = []
+    
+    conn = _sqlite3.connect('database.db')
+    if date and time_start and time_end:
+        rows = conn.execute("""
+            SELECT pc_number FROM reservations
+            WHERE lab=? AND date=?
+            AND status NOT IN ('rejected', 'expired', 'done', 'cancelled')
+            AND time_in < ? AND COALESCE(time_end, time_in) > ?
+        """, (lab, date, time_end, time_start)).fetchall()
+    elif date:
+        rows = conn.execute("""
+            SELECT pc_number FROM reservations
+            WHERE lab=? AND date=?
+            AND status NOT IN ('rejected', 'expired', 'done', 'cancelled')
+        """, (lab, date)).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT pc_number FROM reservations
+            WHERE lab=? AND date=date('now','localtime')
+            AND status NOT IN ('rejected', 'expired', 'done', 'cancelled')
+        """, (lab,)).fetchall()
+    conn.close()
+    
+    return jsonify({
+        'blocked':  blocked,
+        'occupied': occupied,
+        'reserved': [r[0] for r in rows if r[0]]
+    })
 
 # ══════════════════════════════════════════
 #  Toggle a PC blocked/unblocked
@@ -848,7 +931,16 @@ def student_reserve():
     lab       = request.form.get('lab', '').strip()
     pc_number = request.form.get('pc_number', '').strip()
     time_in   = request.form.get('time_in', '').strip()
+    time_end  = request.form.get('time_end', '').strip()
     date      = request.form.get('date', '').strip()
+    if not time_end:
+        # default +2 hours
+        from datetime import datetime, timedelta
+        try:
+            t = datetime.strptime(time_in, '%H:%M')
+            time_end = (t + timedelta(hours=2)).strftime('%H:%M')
+        except:
+            time_end = time_in
 
     if not purpose or not lab or not time_in or not date or not pc_number:
         return jsonify({'success': False, 'message': 'All fields are required.'})
@@ -879,11 +971,88 @@ def student_reserve():
     if not student or student['sitin_count'] <= 0:
         return jsonify({'success': False, 'message': 'No remaining sessions.'})
 
-    res_id, error = add_reservation(id_number, purpose, lab, int(pc_number), time_in, date)
+    res_id, error = add_reservation(id_number, purpose, lab, int(pc_number), time_in, date, time_end)
     if error:
         return jsonify({'success': False, 'message': error})
     return jsonify({'success': True, 'reservationId': res_id})
 
+@app.route('/student/mark-notification-read', methods=['POST'])
+def student_mark_notification_read():
+    if not session.get('student_id'):
+        return jsonify({'success': False}), 401
+    res_id = request.form.get('res_id', '').strip()
+    if res_id:
+        mark_notification_read(session['student_id'], int(res_id))
+    return jsonify({'success': True})
+
+@app.route('/student/cancel-reservation', methods=['POST'])
+def student_cancel_reservation():
+    if not session.get('student_id'):
+        return jsonify({'success': False, 'message': 'Not logged in.'}), 401
+    res_id = request.form.get('id', '').strip()
+    id_number = session['student_id']
+    conn = _sqlite3.connect('database.db')
+    row = conn.execute(
+        "SELECT status FROM reservations WHERE id=? AND idNumber=?",
+        (res_id, id_number)
+    ).fetchone()
+    if not row:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Reservation not found.'})
+    if row[0] not in ('pending', 'approved'):
+        conn.close()
+        return jsonify({'success': False, 'message': 'Only pending or approved reservations can be cancelled.'})
+    conn.execute(
+        "UPDATE reservations SET status='cancelled', message='Cancelled by student.' WHERE id=?",
+        (res_id,)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/admin/reservations/update-pc-time', methods=['POST'])
+def admin_update_reservation_pc_time():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    res_id    = request.form.get('id', '').strip()
+    pc_number = request.form.get('pc_number', '').strip()
+    time_in   = request.form.get('time_in', '').strip()
+    time_end  = request.form.get('time_end', '').strip()
+
+    if not res_id:
+        return jsonify({'success': False, 'message': 'Missing reservation ID.'})
+
+    conn = _sqlite3.connect('database.db')
+    updates = []
+    params  = []
+    if pc_number:
+        updates.append('pc_number=?')
+        params.append(int(pc_number))
+    if time_in:
+        updates.append('time_in=?')
+        params.append(time_in)
+    if time_end:
+        updates.append('time_end=?')
+        params.append(time_end)
+    date = request.form.get('date', '').strip()
+    if date:
+        updates.append('date=?')
+        params.append(date)
+    if not updates:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Nothing to update.'})
+
+    params.append(int(res_id))
+    conn.execute(f"UPDATE reservations SET {', '.join(updates)} WHERE id=?", params)
+
+    # Only update pc_number on linked session if changed
+    res = conn.execute("SELECT session_id FROM reservations WHERE id=?", (int(res_id),)).fetchone()
+    if res and res[0] and pc_number:
+        conn.execute("UPDATE sitin_sessions SET pc_number=? WHERE id=? AND status='active'",
+                     (int(pc_number), res[0]))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
 # ══════════════════════════════════════════
 # ROUTE — STUDENT RESERVATION
 # ══════════════════════════════════════════
@@ -897,6 +1066,31 @@ def admin_update_reservation():
     update_reservation_status(int(res_id), status)
     if message:
         update_reservation_message(int(res_id), message)
+
+    # ── NEW: if approved, shorten current sitter's time_end on that PC ──
+    if status == 'approved':
+        conn = _sqlite3.connect('database.db')
+        res = conn.execute(
+            "SELECT lab, pc_number, time_in, date FROM reservations WHERE id=?",
+            (int(res_id),)
+        ).fetchone()
+        if res:
+            lab, pc_number, approved_time_in, res_date = res
+            from datetime import date as _date
+            today = _date.today().isoformat()
+            if res_date == today and pc_number:
+                active = conn.execute("""
+                    SELECT id FROM sitin_sessions
+                    WHERE lab=? AND pc_number=? AND status='active'
+                """, (lab, pc_number)).fetchone()
+                if active:
+                    conn.execute("""
+                        UPDATE sitin_sessions SET time_end=?
+                        WHERE id=?
+                    """, (approved_time_in, active[0]))
+                    conn.commit()
+        conn.close()
+
     return jsonify({'success': True})
 
 @app.route('/admin/reservation-settings', methods=['POST'])
@@ -910,73 +1104,84 @@ def admin_reservation_settings():
 
 @app.route('/admin/get-reserved-pcs', methods=['GET'])
 def admin_get_reserved_pcs():
-    lab  = request.args.get('lab', '').strip()
-    date = request.args.get('date', '').strip()
+    lab        = request.args.get('lab', '').strip()
+    date       = request.args.get('date', '').strip()
+    time_start = request.args.get('time_start', '').strip()
+    time_end   = request.args.get('time_end', '').strip()
     if not lab or not date:
-        return jsonify({'reserved': []})
-    
+        return jsonify({'reserved': [], 'blocked': [], 'occupied': []})
+
     import sqlite3 as _sq
     conn = _sq.connect('database.db')
-    
-    # Only actual reservations for that date
-    rows = conn.execute("""
-        SELECT pc_number FROM reservations
-        WHERE lab=? AND date=? AND status NOT IN ('rejected', 'expired', 'done')
-    """, (lab, date)).fetchall()
-    
-    # Blocked PCs
+
+    # If time slot provided, only get PCs that OVERLAP with this slot
+    if time_start and time_end:
+        rows = conn.execute("""
+            SELECT pc_number FROM reservations
+            WHERE lab=? AND date=?
+            AND status NOT IN ('rejected', 'expired', 'done', 'cancelled')
+            AND time_in < ? AND COALESCE(time_end, time_in) > ?
+        """, (lab, date, time_end, time_start)).fetchall()
+    else:
+        # No time slot = show all reserved for that date
+        rows = conn.execute("""
+            SELECT pc_number FROM reservations
+            WHERE lab=? AND date=?
+            AND status NOT IN ('rejected', 'expired', 'done', 'cancelled')
+        """, (lab, date)).fetchall()
+
     blocked = conn.execute(
         "SELECT pc_number FROM blocked_pcs WHERE lab=?", (lab,)
     ).fetchall()
-    
-    # Currently occupied (active sit-in)
-    occupied = conn.execute("""
-        SELECT pc_number FROM sitin_sessions
-        WHERE lab=? AND status='active' AND pc_number IS NOT NULL
-    """, (lab,)).fetchall()
-    
+
     conn.close()
-    
-    reserved_list = [r[0] for r in rows if r[0]]
-    blocked_list  = [r[0] for r in blocked]
-    occupied_list = [r[0] for r in occupied]
-    
+
+    # Occupied = active sit-ins, filtered by time slot overlap if provided
+    from datetime import date as _date
+    today = _date.today().isoformat()
+
+    if date == today:
+        occupied = get_occupied_pcs(lab, slot_start=time_start or None, slot_end=time_end or None)
+    else:
+        occupied = []
+
     return jsonify({
-        'reserved': reserved_list,
-        'blocked':  blocked_list,
-        'occupied': occupied_list
+        'reserved': [r[0] for r in rows if r[0]],
+        'blocked':  [r[0] for r in blocked if r[0]],
+        'occupied': occupied
     })
 
 @app.route('/admin/get-available-pcs', methods=['GET'])
 def admin_get_available_pcs():
     if not session.get('admin'):
         return jsonify({'success': False}), 401
-    lab = request.args.get('lab', '').strip()
-    date = request.args.get('date', '').strip()
-    if not date:
-        from datetime import date as _date
-        date = _date.today().isoformat()
+    lab  = request.args.get('lab', '').strip()
     if not lab:
         return jsonify({'available': []})
-    
-    from datetime import date as _dt
-    today = _dt.today().isoformat()
-    
-    total_pcs = 50
+
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+    now_str = datetime.now(PH_TZ).strftime('%H:%M')
+    today = datetime.now(PH_TZ).strftime('%Y-%m-%d')
+
     blocked  = get_blocked_pcs(lab)
     occupied = get_occupied_pcs(lab)
-    
-    # Also exclude PCs reserved for today
+
     conn = _sqlite3.connect('database.db')
-    reserved_today = conn.execute("""
+    # Only block PCs where reservation starts within 30 minutes or already started
+    reserved_rows = conn.execute("""
         SELECT pc_number FROM reservations
-        WHERE lab=? AND date=? AND status IN ('pending', 'approved', 'sitting_in')
-    """, (lab, today)).fetchall()
+        WHERE lab=? AND date=? 
+        AND status IN ('pending', 'approved', 'sitting_in')
+        AND time_in <= ?
+    """, (lab, today, 
+          (datetime.now(PH_TZ) + timedelta(minutes=30)).strftime('%H:%M')
+    )).fetchall()
     conn.close()
-    reserved_today = [r[0] for r in reserved_today]
-    
-    unavailable = set(blocked + occupied + reserved_today)
-    available = [i for i in range(1, total_pcs + 1) if i not in unavailable]
+
+    reserved_soon = [r[0] for r in reserved_rows]
+    unavailable = set(blocked + occupied + reserved_soon)
+    available = [i for i in range(1, 51) if i not in unavailable]
     return jsonify({'available': available})
 
 @app.route('/admin/reservations/update-pc', methods=['POST'])
@@ -1026,19 +1231,193 @@ def admin_edit_reservation_details():
 def format_time(time_str):
     if not time_str:
         return '—'
-    try:
-        from datetime import datetime
-        t = datetime.strptime(time_str.strip(), '%H:%M:%S')
-        return t.strftime('%I:%M %p')
-    except:
+    from datetime import datetime, timedelta
+    for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
         try:
-            from datetime import datetime
-            t = datetime.strptime(time_str.strip(), '%H:%M')
+            t = datetime.strptime(time_str.strip(), fmt)
+            # If hour is between 0-15, likely UTC — add 8 hours
+            if t.hour <= 15:
+                t = t + timedelta(hours=8)
             return t.strftime('%I:%M %p')
         except:
-            return time_str
+            continue
+    for fmt in ('%H:%M:%S', '%H:%M'):
+        try:
+            t = datetime.strptime(time_str.strip(), fmt)
+            return t.strftime('%I:%M %p')
+        except:
+            continue
+    return time_str
 
 app.jinja_env.filters['timeformat'] = format_time
+
+@app.route('/student/mark-announcement-read', methods=['POST'])
+def student_mark_announcement_read():
+    if not session.get('student_id'):
+        return jsonify({'success': False}), 401
+    ann_id = request.form.get('ann_id', '').strip()
+    if ann_id:
+        mark_announcement_read(session['student_id'], int(ann_id))
+    return jsonify({'success': True})
+
+@app.route('/admin/sitin/check-overdue', methods=['POST'])
+def admin_check_overdue():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    from datetime import datetime
+    now = datetime.now().strftime('%H:%M')
+    conn = _sqlite3.connect('database.db')
+    # Mark sessions as overdue where time_end has passed but still active
+    overdue = conn.execute("""
+        SELECT id FROM sitin_sessions
+        WHERE status='active' AND session_status != 'overdue'
+        AND time_end IS NOT NULL AND time_end <= ?
+    """, (now,)).fetchall()
+    overdue_ids = [r[0] for r in overdue]
+    if overdue_ids:
+        conn.execute("""
+            UPDATE sitin_sessions SET session_status='overdue'
+            WHERE status='active' AND session_status != 'overdue'
+            AND time_end IS NOT NULL AND time_end <= ?
+        """, (now,))
+        conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'overdue_ids': overdue_ids})
+
+@app.route('/admin/sitin/extend/<int:session_id>', methods=['POST'])
+def admin_extend_sitin(session_id):
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+
+    TIME_SLOTS = [
+        ('08:00','10:00'),('10:00','12:00'),('12:00','14:00'),
+        ('14:00','16:00'),('16:00','18:00'),('18:00','20:00'),
+    ]
+
+    conn = _sqlite3.connect('database.db')
+    row = conn.execute(
+        "SELECT lab, pc_number, time_end FROM sitin_sessions WHERE id=?",
+        (session_id,)
+    ).fetchone()
+    if not row:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Session not found.'})
+
+    lab = row[0]
+    pc_number = row[1]
+    current_end = row[2]
+
+    if current_end >= '20:00':
+        conn.close()
+        return jsonify({'success': False, 'message': 'Cannot extend. Already at maximum time (8:00 PM).'})
+
+    # Calculate new_end FIRST
+    new_end = '20:00'
+    for i, (s, e) in enumerate(TIME_SLOTS):
+        if s <= current_end < e or current_end == e:
+            if i + 1 < len(TIME_SLOTS):
+                new_end = TIME_SLOTS[i + 1][1]
+            break
+
+    # Check next reservation on this PC
+    today = datetime.now(PH_TZ).strftime('%Y-%m-%d')
+    next_res = conn.execute("""
+        SELECT time_in FROM reservations
+        WHERE lab=? AND pc_number=? AND date=?
+        AND status IN ('pending','approved')
+        AND time_in >= ?
+        ORDER BY time_in ASC LIMIT 1
+    """, (lab, pc_number, today, current_end)).fetchone()
+
+    # Only block if reservation conflicts with the new extended slot
+    if next_res and next_res[0] < new_end:
+        t = next_res[0]
+        try:
+            dt = datetime.strptime(t, '%H:%M')
+            hr = dt.hour
+            hr12 = hr % 12 or 12
+            ampm = 'PM' if hr >= 12 else 'AM'
+            hr2 = hr + 2
+            hr2_12 = hr2 % 12 or 12
+            ampm2 = 'PM' if hr2 >= 12 else 'AM'
+            slot_label = f'{hr12}:00 {ampm} – {hr2_12}:00 {ampm2}'
+        except:
+            slot_label = t
+        conn.close()
+        return jsonify({
+            'success': False,
+            'message': f'Cannot extend. A student has reserved this PC at {slot_label}.'
+        })
+
+    conn.execute("""
+        UPDATE sitin_sessions
+        SET time_end=?, session_status='extended'
+        WHERE id=?
+    """, (new_end, session_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'new_end': new_end})
+
+# ══════════════════════════════════════════
+# ROUTE — AUTO LOGOUT IF OVERDUE FOR 15 MINUTES
+# ══════════════════════════════════════════
+@app.route('/admin/sitin/auto-logout-overdue', methods=['POST'])
+def admin_auto_logout_overdue():
+    if not session.get('admin') and not session.get('student_id'):
+        return jsonify({'success': False}), 401
+
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+    now = datetime.now(PH_TZ)
+    now_str = now.strftime('%H:%M')
+
+    conn = _sqlite3.connect('database.db')
+    # Find sessions overdue by 15+ minutes
+    overdue_rows = conn.execute("""
+        SELECT id, idNumber, lab, pc_number FROM sitin_sessions
+        WHERE status = 'active'
+        AND time_end IS NOT NULL
+        AND time_end <= ?
+    """, ((now - timedelta(minutes=15)).strftime('%H:%M'),)).fetchall()
+
+    auto_logged = []
+    for row in overdue_rows:
+        session_id = row[0]
+        id_number  = row[1]
+
+        # End the session
+        now_ph = now.strftime('%Y-%m-%d %H:%M:%S')
+        conn.execute("""
+            UPDATE sitin_sessions
+            SET time_out=?, status='done'
+            WHERE id=?
+        """, (now_ph, session_id))
+        conn.execute("""
+            UPDATE students SET sitin_count = sitin_count - 1
+            WHERE idNumber = ? AND sitin_count > 0
+        """, (id_number,))
+
+        # Update reservation if linked
+        res = conn.execute("""
+            SELECT id FROM reservations
+            WHERE session_id=? AND status='sitting_in'
+        """, (session_id,)).fetchone()
+        if res:
+            conn.execute("""
+                UPDATE reservations SET status='done', time_out=?
+                WHERE id=?
+            """, (now_str, res[0]))
+
+        auto_logged.append(session_id)
+
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'auto_logged': auto_logged})
+
+
 # ══════════════════════════════════════════
 # ROUTE — ADMIN LOGOUT
 # ══════════════════════════════════════════

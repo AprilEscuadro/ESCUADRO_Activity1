@@ -253,6 +253,9 @@ def init_db():
         "ALTER TABLE feedback ADD COLUMN is_flagged INTEGER DEFAULT 0",
         "ALTER TABLE feedback ADD COLUMN pc_number INTEGER DEFAULT NULL",
         "ALTER TABLE sitin_sessions ADD COLUMN pc_number INTEGER DEFAULT NULL",
+        "ALTER TABLE sitin_sessions ADD COLUMN time_end TEXT DEFAULT NULL",
+        "ALTER TABLE sitin_sessions ADD COLUMN time_start TEXT DEFAULT NULL",
+        "ALTER TABLE sitin_sessions ADD COLUMN session_status TEXT DEFAULT 'sitting_in'",
     ]:
         try:
             conn.execute(migration)
@@ -345,6 +348,8 @@ def get_all_sessions():
                s.time_in,
                s.time_out,
                s.status,
+               s.time_start,
+               s.time_end,
                st.firstName,
                st.lastName,
                st.middleName,
@@ -359,16 +364,19 @@ def get_all_sessions():
 def get_student_sessions(id_number):
     conn = get_db()
     sessions = conn.execute("""
-        SELECT * FROM sitin_sessions
+        SELECT id, idNumber, purpose, lab, pc_number,
+               time_in, time_out, status, time_start, time_end
+        FROM sitin_sessions
         WHERE idNumber = ?
         ORDER BY time_in DESC
     """, (id_number,)).fetchall()
     conn.close()
     return sessions
 
-def add_sitin(id_number, purpose, lab, pc_number=None):
+def add_sitin(id_number, purpose, lab, pc_number=None, time_start=None, time_end=None):
+    from datetime import datetime, date as _date
     conn = get_db()
-    # Check if PC is already occupied
+
     if pc_number:
         existing = conn.execute("""
             SELECT id FROM sitin_sessions
@@ -376,26 +384,66 @@ def add_sitin(id_number, purpose, lab, pc_number=None):
         """, (lab, pc_number)).fetchone()
         if existing:
             conn.close()
-            return None, 'PC is already occupied by another student.'
+            return None, 'PC is already occupied by another student.', None
+
+    if not time_start:
+        from datetime import datetime, timezone, timedelta
+        PH_TZ = timezone(timedelta(hours=8))
+        time_start = datetime.now(PH_TZ).strftime('%H:%M')
+
+    today = _date.today().isoformat()
+    DEFAULT_END = '20:00'
+
+    TIME_SLOTS = [
+        ('08:00', '10:00'),
+        ('10:00', '12:00'),
+        ('12:00', '14:00'),
+        ('14:00', '16:00'),
+        ('16:00', '18:00'),
+        ('18:00', '20:00'),
+    ]
+
+    # Find which time slot the walk-in falls into
+    slot_end = None
+    for slot_s, slot_e in TIME_SLOTS:
+        if slot_s <= time_start < slot_e:
+            slot_end = slot_e
+            break
+    if not slot_end:
+        slot_end = DEFAULT_END
+
+    # ── KEY FIX: if time_end already passed in (from reservation), skip calculation ──
+    if not time_end:
+        time_end = slot_end
+
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+    now_ph = datetime.now(PH_TZ).strftime('%Y-%m-%d %H:%M:%S')
+
     cursor = conn.execute("""
-        INSERT INTO sitin_sessions (idNumber, purpose, lab, pc_number)
-        VALUES (?, ?, ?, ?)
-    """, (id_number, purpose, lab, pc_number))
+        INSERT INTO sitin_sessions
+        (idNumber, purpose, lab, pc_number, time_in, time_start, time_end, status, session_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'sitting_in')
+    """, (id_number, purpose, lab, pc_number, now_ph, time_start, time_end))
     session_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    return session_id, None
+    return session_id, None, time_end
 
 def end_sitin(session_id):
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+    now_ph = datetime.now(PH_TZ).strftime('%Y-%m-%d %H:%M:%S')
+    
     conn = get_db()
     row = conn.execute(
         "SELECT idNumber FROM sitin_sessions WHERE id = ?", (session_id,)
     ).fetchone()
     conn.execute("""
         UPDATE sitin_sessions
-        SET time_out = CURRENT_TIMESTAMP, status = 'done'
+        SET time_out = ?, status = 'done'
         WHERE id = ?
-    """, (session_id,))
+    """, (now_ph, session_id))
     if row:
         conn.execute("""
             UPDATE students SET sitin_count = sitin_count - 1
@@ -484,7 +532,11 @@ def get_lab_counts():
         GROUP BY lab_normalized
     """).fetchall()
     conn.close()
-    return {row['lab_normalized']: row['cnt'] for row in rows}
+    result = {'524': 0, '526': 0, '528': 0, '530': 0, '542': 0, '544': 0}
+    for row in rows:
+        if row['lab_normalized'] in result:
+            result[row['lab_normalized']] = row['cnt']
+    return result
 # ══════════════════════════════════════════
 # FEEDBACK QUERIES
 # ══════════════════════════════════════════
@@ -562,6 +614,16 @@ def init_reservations_table():
         conn.execute("ALTER TABLE reservations ADD COLUMN session_id INTEGER DEFAULT NULL")
     except Exception:
         pass
+    try:
+        conn.execute("ALTER TABLE reservations ADD COLUMN time_end TEXT DEFAULT NULL")
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE reservations ADD COLUMN time_out TEXT DEFAULT NULL")
+        conn.commit()
+    except Exception:
+        pass
 
     conn.execute("""
         CREATE TABLE IF NOT EXISTS blocked_pcs (
@@ -574,31 +636,49 @@ def init_reservations_table():
     conn.commit()
     conn.close()
 
-def add_reservation(id_number, purpose, lab, pc_number, time_in, date):
+def add_reservation(id_number, purpose, lab, pc_number, time_in, date, time_end=None):
     conn = get_db()
-    
-    # Check if student already has a pending or approved reservation
+
     existing = conn.execute("""
-        SELECT id FROM reservations 
-        WHERE idNumber = ? AND status IN ('pending', 'approved')
-    """, (id_number,)).fetchone()
+        SELECT id FROM reservations
+        WHERE idNumber = ? AND date = ? AND status IN ('pending', 'approved')
+    """, (id_number, date)).fetchone()
     if existing:
         conn.close()
-        return None, 'You already have an active or pending reservation. Wait for it to be resolved first.'
-    
-    # Check if student already has a reservation on the same date
-    same_day = conn.execute("""
-        SELECT id FROM reservations
-        WHERE idNumber = ? AND date = ? AND status NOT IN ('rejected', 'expired', 'done')
-    """, (id_number, date)).fetchone()
-    if same_day:
+        return None, 'You already have a pending or approved reservation on this date.'
+
+    active_sitin = conn.execute("""
+        SELECT id FROM sitin_sessions
+        WHERE idNumber = ? AND status = 'active'
+    """, (id_number,)).fetchone()
+    if active_sitin:
         conn.close()
-        return None, 'You already have a reservation on this date.'
-    
+        return None, '⚠️ You currently have an active sit-in session. You may only book a future reservation once your current session has ended.'
+
+    active_reservation = conn.execute("""
+        SELECT id FROM reservations
+        WHERE idNumber = ? AND status = 'sitting_in'
+    """, (id_number,)).fetchone()
+    if active_reservation:
+        conn.close()
+        return None, '⚠️ You are currently sitting in via a reservation. You may book another reservation once your current session is completed.'
+
+    # Check if PC is already reserved at this time slot
+    if pc_number and time_end:
+        conflict = conn.execute("""
+            SELECT id FROM reservations
+            WHERE lab=? AND pc_number=? AND date=?
+            AND status NOT IN ('rejected','expired','done','cancelled')
+            AND time_in < ? AND COALESCE(time_end, time_in) > ?
+        """, (lab, pc_number, date, time_end, time_in)).fetchone()
+        if conflict:
+            conn.close()
+            return None, f'PC {pc_number} is already reserved at that time slot. Please choose another PC.'
+
     cursor = conn.execute("""
-        INSERT INTO reservations (idNumber, purpose, lab, pc_number, time_in, date)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (id_number, purpose, lab, pc_number, time_in, date))
+        INSERT INTO reservations (idNumber, purpose, lab, pc_number, time_in, time_end, date)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (id_number, purpose, lab, pc_number, time_in, time_end, date))
     res_id = cursor.lastrowid
     conn.commit()
     conn.close()
@@ -619,7 +699,7 @@ def get_all_reservations():
         SELECT r.*, s.firstName, s.lastName, s.middleName
         FROM reservations r
         JOIN students s ON r.idNumber = s.idNumber
-        WHERE r.status IN ('pending', 'approved', 'sitting_in')
+        WHERE r.status IN ('pending', 'approved')
         ORDER BY r.created_at DESC
     """).fetchall()
     conn.close()
@@ -681,11 +761,13 @@ def get_reservation_log():
     conn = get_db()
     rows = conn.execute("""
         SELECT r.id, r.idNumber, r.purpose, r.lab, r.pc_number,
-               r.time_in, r.date, r.status,
-               s.firstName, s.lastName, s.middleName
+               r.time_out, r.date, r.status,
+               s.firstName, s.lastName, s.middleName,
+               ss.time_in AS actual_login
         FROM reservations r
         JOIN students s ON r.idNumber = s.idNumber
-        WHERE r.status IN ('rejected', 'expired', 'done')
+        LEFT JOIN sitin_sessions ss ON r.session_id = ss.id
+        WHERE r.status IN ('rejected', 'expired', 'done', 'cancelled')
         ORDER BY r.created_at DESC
     """).fetchall()
     conn.close()
@@ -727,7 +809,7 @@ def get_reserved_pcs(lab, date):
     conn = get_db()
     rows = conn.execute("""
         SELECT pc_number FROM reservations
-        WHERE lab=? AND date=? AND status NOT IN ('rejected', 'expired', 'done')
+        WHERE lab=? AND date=? AND status NOT IN ('rejected', 'expired', 'done', 'cancelled')
     """, (lab, date)).fetchall()
     blocked = conn.execute(
         "SELECT pc_number FROM blocked_pcs WHERE lab = ?", (lab,)
@@ -742,15 +824,38 @@ def get_reserved_pcs(lab, date):
     occupied_list = [r['pc_number'] for r in occupied]
     return list(set(reserved + blocked_list + occupied_list))
     
-def get_occupied_pcs(lab):
-    """Return list of PC numbers currently occupied (active sit-in sessions)."""
+def get_occupied_pcs(lab, slot_start=None, slot_end=None):
+    from datetime import datetime, timedelta
     conn = get_db()
     rows = conn.execute("""
-        SELECT pc_number FROM sitin_sessions
+        SELECT pc_number, time_start, time_end FROM sitin_sessions
         WHERE lab = ? AND status = 'active' AND pc_number IS NOT NULL
     """, (lab,)).fetchall()
     conn.close()
-    return [r['pc_number'] for r in rows]
+
+    if not slot_start or not slot_end:
+        return [r['pc_number'] for r in rows]
+
+    try:
+        slot_s = datetime.strptime(slot_start, '%H:%M')
+        slot_e = datetime.strptime(slot_end, '%H:%M')
+    except:
+        return [r['pc_number'] for r in rows]
+
+    occupied = []
+    for r in rows:
+        try:
+            sitin_s = datetime.strptime(r['time_start'], '%H:%M')
+            # Use actual time_end from DB if available, else fallback to +2hrs
+            if r['time_end']:
+                sitin_e = datetime.strptime(r['time_end'], '%H:%M')
+            else:
+                sitin_e = sitin_s + timedelta(hours=2)
+            if sitin_s < slot_e and sitin_e > slot_s:
+                occupied.append(r['pc_number'])
+        except:
+            occupied.append(r['pc_number'])
+    return occupied
 
 def get_reserved_pcs_today(lab):
     from datetime import date
@@ -762,3 +867,147 @@ def get_reserved_pcs_today(lab):
     """, (lab, today)).fetchall()
     conn.close()
     return [r['pc_number'] for r in rows if r['pc_number']]
+
+def get_student_notifications(id_number):
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT id AS res_id,
+               'reservation' AS type,
+               CASE status
+                   WHEN 'approved' THEN 'Reservation Approved'
+                   WHEN 'rejected' THEN 'Reservation Rejected'
+                   WHEN 'expired'  THEN 'Reservation Expired'
+                   WHEN 'done'     THEN 'Session Completed'
+                   ELSE 'Reservation Update'
+               END AS title,
+               COALESCE(message, 'Your reservation status has been updated to: ' || status) AS body,
+               created_at,
+               status
+        FROM reservations
+        WHERE idNumber = ?
+        AND status IN ('approved','rejected','expired','done')
+        ORDER BY created_at DESC
+        LIMIT 20
+    """, (id_number,)).fetchall()
+    conn.close()
+    return rows
+
+def mark_notification_read(id_number, res_id):
+    conn = get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS notification_reads (
+            id_number TEXT,
+            res_id    INTEGER,
+            PRIMARY KEY (id_number, res_id)
+        )
+    """)
+    conn.execute(
+        "INSERT OR IGNORE INTO notification_reads (id_number, res_id) VALUES (?, ?)",
+        (id_number, res_id)
+    )
+    conn.commit()
+    conn.close()
+
+def get_read_notification_ids(id_number):
+    conn = get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS notification_reads (
+            id_number TEXT,
+            res_id    INTEGER,
+            PRIMARY KEY (id_number, res_id)
+        )
+    """)
+    rows = conn.execute(
+        "SELECT res_id FROM notification_reads WHERE id_number = ?",
+        (id_number,)
+    ).fetchall()
+    conn.close()
+    return {r['res_id'] for r in rows}
+
+def mark_announcement_read(id_number, ann_id):
+    conn = get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS announcement_reads (
+            id_number TEXT,
+            ann_id    INTEGER,
+            PRIMARY KEY (id_number, ann_id)
+        )
+    """)
+    conn.execute(
+        "INSERT OR IGNORE INTO announcement_reads (id_number, ann_id) VALUES (?, ?)",
+        (id_number, ann_id)
+    )
+    conn.commit()
+    conn.close()
+
+def get_read_announcement_ids(id_number):
+    conn = get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS announcement_reads (
+            id_number TEXT,
+            ann_id    INTEGER,
+            PRIMARY KEY (id_number, ann_id)
+        )
+    """)
+    # Auto-mark announcements older than 7 days as read for this user
+    conn.execute("""
+        INSERT OR IGNORE INTO announcement_reads (id_number, ann_id)
+        SELECT ?, id FROM announcements
+        WHERE datetime(created_at) < datetime('now', '-7 days')
+    """, (id_number,))
+    conn.commit()
+    rows = conn.execute(
+        "SELECT ann_id FROM announcement_reads WHERE id_number = ?",
+        (id_number,)
+    ).fetchall()
+    conn.close()
+    return {r['ann_id'] for r in rows}
+
+def get_session_by_id(session_id):
+    conn = get_db()
+    row = conn.execute(
+        "SELECT * FROM sitin_sessions WHERE id=?", (session_id,)
+    ).fetchone()
+    conn.close()
+    return row
+
+def update_session_status(session_id, session_status):
+    conn = get_db()
+    conn.execute(
+        "UPDATE sitin_sessions SET session_status=? WHERE id=?",
+        (session_status, session_id)
+    )
+    conn.commit()
+    conn.close()
+
+def extend_session(session_id, new_time_end, session_status='auto_extended'):
+    conn = get_db()
+    conn.execute(
+        "UPDATE sitin_sessions SET time_end=?, session_status=? WHERE id=?",
+        (new_time_end, session_status, session_id)
+    )
+    conn.commit()
+    conn.close()
+
+def check_pc_conflict_after(lab, pc_number, date, time_start, exclude_res_id=None):
+    """Check if any reservation conflicts after time_start for the same PC."""
+    conn = get_db()
+    if exclude_res_id:
+        row = conn.execute("""
+            SELECT id, time_in FROM reservations
+            WHERE lab=? AND pc_number=? AND date=?
+            AND status NOT IN ('rejected','expired','done','cancelled')
+            AND time_in >= ?
+            AND id != ?
+            ORDER BY time_in ASC LIMIT 1
+        """, (lab, pc_number, date, time_start, exclude_res_id)).fetchone()
+    else:
+        row = conn.execute("""
+            SELECT id, time_in FROM reservations
+            WHERE lab=? AND pc_number=? AND date=?
+            AND status NOT IN ('rejected','expired','done','cancelled')
+            AND time_in >= ?
+            ORDER BY time_in ASC LIMIT 1
+        """, (lab, pc_number, date, time_start)).fetchone()
+    conn.close()
+    return row

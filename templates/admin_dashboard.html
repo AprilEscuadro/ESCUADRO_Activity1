@@ -737,6 +737,94 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
 #rmSavePCRow button[onclick*="cancelPCEdit"]:active {
     transform: scale(0.96) !important;
 }
+.posted-ann-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.posted-ann-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.posted-ann-list::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #F4B942, #0F3E7D);
+    border-radius: 10px;
+}
+
+.posted-ann-list::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #0F3E7D, #F4B942);
+}
+#addStudentModal .modal-box {
+    background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,240,255,0.88)) !important;
+    backdrop-filter: blur(40px) !important;
+    -webkit-backdrop-filter: blur(40px) !important;
+    border: 2px solid rgba(255,255,255,0.95) !important;
+    border-radius: 28px !important;
+    box-shadow:
+        0 30px 60px rgba(15,62,125,0.18),
+        0 8px 20px rgba(15,62,125,0.10),
+        0 2px 0 rgba(255,255,255,1) inset,
+        6px 6px 0px rgba(192,132,252,0.15) !important;
+}
+
+#addStudentModal .modal-header {
+    background: linear-gradient(135deg, #0a1e50, #0F3E7D) !important;
+    border-radius: 24px 24px 0 0 !important;
+}
+
+#addStudentModal .modal-body {
+    background: transparent !important;
+}
+/* Overdue row styling */
+@keyframes overdueBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+.row-overdue {
+    background: rgba(255, 0, 0, 0.07) !important;
+    outline: 2px solid #e74c3c;
+    outline-offset: -2px;
+}
+.row-overdue td { background: transparent !important; }
+.badge-overdue {
+    display: inline-block;
+    background: #e74c3c;
+    color: white;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    animation: overdueBlink 1s ease-in-out infinite;
+}
+.btn-extend {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    border: none;
+    padding: 0.35rem 0.8rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 3px 8px rgba(230,126,34,0.35);
+    transition: all 0.18s ease;
+}
+.btn-extend:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 14px rgba(230,126,34,0.5);
+}
+.btn-extend:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+body { visibility: hidden; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.ai-insight-card { animation: fadeInUp 0.4s ease forwards; }
+.lb-rank-medal { display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;font-size:0.9rem;font-weight:800; }
+.lb-bar-wrap { background:#f0f0f0;border-radius:20px;height:8px;overflow:hidden;flex:1; }
+.lb-bar-fill { height:100%;border-radius:20px;transition:width 0.8s cubic-bezier(0.4,0,0.2,1); }
 </style>
 </head>
 <body>
@@ -775,6 +863,8 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                 ✓ Logged in successfully!
             </div>
             <script>
+                localStorage.removeItem('adminSection');
+                history.replaceState(null, '', '/admin/dashboard');
                 setTimeout(() => { const t = document.getElementById('loginSuccessToast'); if (t) t.style.display = 'none'; }, 3000);
             </script>
             {% endif %}
@@ -893,50 +983,136 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
             </div>
 
             <!-- STUDENTS -->
-            <div id="section-students" class="page-section">
-                <h2 class="admin-section-title">Students Information</h2>
-                <div class="admin-card">
-                    <div class="table-top-bar">
-                        <div class="table-top-left">
-                        <button onclick="showModal('addStudentModal')" style="background:#1e7e34;color:white;border:none;padding:0.5rem 1.2rem;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">
-                            ➕ Add Student
-                        </button>
-                        <button onclick="confirmResetAll()" style="background:#e67e22;color:white;border:none;padding:0.5rem 1.2rem;border-radius:6px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">
-                            🔄 Reset All Sessions
-                        </button>
-                        </div>
-                        <div class="table-top-right">
-                            <input type="text" id="studentSearch" placeholder="Search..." onkeyup="filterStudentTable()" class="table-search-input">
-                        </div>
-                    </div>
-                    <div class="table-scroll">
-                        <table class="dashboard-table" id="studentTable">
-                            <thead><tr><th>ID Number</th><th>Name</th><th>Year Level</th><th>Course</th><th>Remaining Session</th><th>Actions</th></tr></thead>
-                            <tbody>
-                                {% for s in students %}
-                                <tr>
-                                    <td>{{ s.idNumber }}</td>
-                                    <td>{{ s.lastName }}, {{ s.firstName }}{% if s.middleName %} {{ s.middleName }}{% endif %}</td>
-                                    <td>{{ s.yearLevel }}{% if s.yearLevel == '1' %}st{% elif s.yearLevel == '2' %}nd{% elif s.yearLevel == '3' %}rd{% else %}th{% endif %}</td>
-                                    <td>{{ s.course }}</td>
-                                    <td><span class="sitin-remaining {% if s.sitin_count <= 5 %}remaining-low{% elif s.sitin_count <= 10 %}remaining-mid{% else %}remaining-ok{% endif %}">{{ s.sitin_count }}</span></td>
-                                    <td>
-                                        <button class="btn-action btn-edit" data-id="{{ s.idNumber }}" data-firstname="{{ s.firstName }}" data-lastname="{{ s.lastName }}" data-middlename="{{ s.middleName or '' }}" data-email="{{ s.email }}" data-course="{{ s.course }}" data-yearlevel="{{ s.yearLevel }}" data-address="{{ s.address or '' }}" data-sitin="{{ s.sitin_count }}" onclick="openEditModal(this.dataset)">Edit</button>
-                                        <button class="btn-action btn-del" onclick="confirmDelete('{{ s.idNumber }}')">Delete</button>
-                                    </td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="6" class="no-data">No students registered yet.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="pagination-wrap">
-                        <div class="pagination-info" id="studentsInfo"></div>
-                        <div class="pagination-btns" id="studentsPgBtns"></div>
-                    </div>
+<div id="section-students" class="page-section">
+    <h2 class="admin-section-title">Students</h2>
+
+    <!-- Students Sub-Tab Bar -->
+    <div style="display:inline-flex;background:rgba(255,255,255,0.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;padding:5px;margin-bottom:1.5rem;box-shadow:0 4px 20px rgba(15,62,125,0.10),0 1px 0 rgba(255,255,255,0.9) inset,4px 4px 0px rgba(192,132,252,0.15);gap:4px;width:100%;">
+        <button class="res-tab-btn res-tab-active" id="studTab1" onclick="switchStudTab('stud-panel-info', this)" style="flex:1;">👨‍🎓 Students Information</button>
+        <button class="res-tab-btn" id="studTab2" onclick="switchStudTab('stud-panel-leaderboard', this)" style="flex:1;">🏆 Leaderboard</button>
+    </div>
+
+    <!-- PANEL 1: Students Information -->
+    <div id="stud-panel-info" class="res-tab-panel">
+        <div class="admin-card">
+            <div class="table-top-bar">
+                <div class="table-top-left">
+                    <button onclick="showModal('addStudentModal')" style="background:linear-gradient(135deg,#2ecc71,#1e7e34);color:white;border:none;padding:0.5rem 1.2rem;border-radius:14px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;box-shadow:0 4px 14px rgba(30,126,52,0.35),0 1px 0 rgba(255,255,255,0.2) inset;transition:all 0.18s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+                        ➕ Add Student
+                    </button>
+                    <button onclick="confirmResetAll()" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:white;border:none;padding:0.5rem 1.2rem;border-radius:14px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;box-shadow:0 4px 14px rgba(230,126,34,0.35),0 1px 0 rgba(255,255,255,0.2) inset;transition:all 0.18s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+                        🔄 Reset All Sessions
+                    </button>
+                </div>
+                <div class="table-top-right">
+                    <input type="text" id="studentSearch" placeholder="Search..." onkeyup="filterStudentTable()" class="table-search-input">
                 </div>
             </div>
+            <div class="table-scroll">
+                <table class="dashboard-table" id="studentTable">
+                    <thead><tr><th>ID Number</th><th>Name</th><th>Year Level</th><th>Course</th><th>Remaining Session</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        {% for s in students %}
+                        <tr>
+                            <td>{{ s.idNumber }}</td>
+                            <td>{{ s.lastName }}, {{ s.firstName }}{% if s.middleName %} {{ s.middleName }}{% endif %}</td>
+                            <td>{{ s.yearLevel }}{% if s.yearLevel == '1' %}st{% elif s.yearLevel == '2' %}nd{% elif s.yearLevel == '3' %}rd{% else %}th{% endif %}</td>
+                            <td>{{ s.course }}</td>
+                            <td><span class="sitin-remaining {% if s.sitin_count <= 5 %}remaining-low{% elif s.sitin_count <= 10 %}remaining-mid{% else %}remaining-ok{% endif %}">{{ s.sitin_count }}</span></td>
+                            <td>
+                                <button class="btn-action btn-edit" data-id="{{ s.idNumber }}" data-firstname="{{ s.firstName }}" data-lastname="{{ s.lastName }}" data-middlename="{{ s.middleName or '' }}" data-email="{{ s.email }}" data-course="{{ s.course }}" data-yearlevel="{{ s.yearLevel }}" data-address="{{ s.address or '' }}" data-sitin="{{ s.sitin_count }}" onclick="openEditModal(this.dataset)">Edit</button>
+                                <button class="btn-action btn-del" onclick="confirmDelete('{{ s.idNumber }}')">Delete</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="no-data">No students registered yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination-wrap">
+                <div class="pagination-info" id="studentsInfo"></div>
+                <div class="pagination-btns" id="studentsPgBtns"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL 2: Leaderboard -->
+    <div id="stud-panel-leaderboard" class="res-tab-panel" style="display:none;">
+        <!-- Summary Cards -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">
+            <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);padding:1.25rem;text-align:center;">
+                <div style="font-size:2rem;margin-bottom:0.4rem;">👑</div>
+                <div style="font-size:0.78rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem;">Top Sit-in Student</div>
+                <div id="lbTopName" style="font-size:1rem;font-weight:800;color:#0F3E7D;">—</div>
+                <div id="lbTopSessions" style="font-size:0.82rem;color:#888;margin-top:0.2rem;">— sessions used</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);padding:1.25rem;text-align:center;">
+                <div style="font-size:2rem;margin-bottom:0.4rem;">📊</div>
+                <div style="font-size:0.78rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem;">Average Sessions Used</div>
+                <div id="lbAvgSessions" style="font-size:1rem;font-weight:800;color:#0F3E7D;">—</div>
+                <div style="font-size:0.82rem;color:#888;margin-top:0.2rem;">per student</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);padding:1.25rem;text-align:center;">
+                <div style="font-size:2rem;margin-bottom:0.4rem;">🎯</div>
+                <div style="font-size:0.78rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem;">Most Active Course</div>
+                <div id="lbTopCourse" style="font-size:1rem;font-weight:800;color:#0F3E7D;">—</div>
+                <div id="lbTopCourseCount" style="font-size:0.82rem;color:#888;margin-top:0.2rem;">— students</div>
+            </div>
+        </div>
+
+        <!-- Leaderboard Table -->
+        <div class="admin-card">
+            <div class="table-top-bar" style="margin-bottom:1rem;">
+                <div style="font-size:0.95rem;font-weight:800;color:#0F3E7D;">🏆 Top Students by Sessions Used</div>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <select id="lbFilterCourse" class="filter-select" onchange="renderLeaderboard()">
+                        <option value="">All Courses</option>
+                        <option value="BSIT">BSIT</option>
+                        <option value="BSCS">BSCS</option>
+                        <option value="BSCoE">BSCoE</option>
+                        <option value="CISCO">CISCO</option>
+                        <option value="BSCE">BSCE</option>
+                        <option value="BSME">BSME</option>
+                        <option value="BSEE">BSEE</option>
+                        <option value="BSIE">BSIE</option>
+                    </select>
+                    <select id="lbFilterYear" class="filter-select" onchange="renderLeaderboard()">
+                        <option value="">All Years</option>
+                        <option value="1">1st Year</option>
+                        <option value="2">2nd Year</option>
+                        <option value="3">3rd Year</option>
+                        <option value="4">4th Year</option>
+                    </select>
+                    <select id="lbLimit" class="filter-select" onchange="renderLeaderboard()">
+                        <option value="10">Top 10</option>
+                        <option value="20">Top 20</option>
+                        <option value="50">Top 50</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table class="dashboard-table" id="leaderboardTable">
+                    <thead>
+                        <tr>
+                            <th style="width:60px;">Rank</th>
+                            <th>ID Number</th>
+                            <th>Name</th>
+                            <th>Course</th>
+                            <th>Year</th>
+                            <th>Sessions Used</th>
+                            <th>Remaining</th>
+                            <th>Activity Bar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                        <tr><td colspan="8" class="no-data">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
             <!-- SIT-IN -->
             <div id="section-sitin" class="page-section">
@@ -949,7 +1125,7 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                     </div>
                     <div class="table-scroll">
                         <table class="dashboard-table" id="sitinTable">
-                        <thead><tr><th>Sit ID Number</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Sit Lab</th><th>PC Number</th><th>Session</th><th>Status</th><th>Actions</th></tr></thead>                            <tbody id="sitinTableBody">
+                        <thead><tr><th>Sit ID Number</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Sit Lab</th><th>PC Number</th><th>Session</th><th>Available Until</th><th>Status</th><th>Actions</th></tr></thead>                            <tbody id="sitinTableBody">
                                 {% for s in sessions %}
                                 {% if s.status == 'active' %}
                                 <tr>
@@ -958,8 +1134,22 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                                     <td>{{ s.purpose }}</td><td>{{ s.lab }}</td>
                                     <td>{{ s.pc_number if s.pc_number else '—' }}</td>
                                     <td>{{ s.sitin_count if s.sitin_count else '—' }}</td>
-                                    <td><span class="status-badge status-active">Active</span></td>
-                                    <td><button class="btn-action btn-logout" data-id="{{ s.id }}" onclick="confirmLogout(this.dataset.id)">Logout</button></td>
+                                    <td>
+                                        {% if s.time_end %}
+                                            <span style="font-weight:700;color:#e67e22;">Until {{ s.time_end | timeformat }}</span>
+                                        {% else %}
+                                            <span style="color:#27ae60;font-weight:700;">No Limit</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-active" id="status-badge-{{ s.id }}">Sitting In</span>
+                                    </td>
+                                    <td style="white-space:nowrap;">
+                                        <button class="btn-extend" id="extend-btn-{{ s.id }}"
+                                            onclick="confirmExtend({{ s.id }})">Extend</button>
+                                        <button class="btn-action btn-logout" data-id="{{ s.id }}"
+                                            onclick="confirmLogout(this.dataset.id)">Logout</button>
+                                    </td>
                                 </tr>
                                 {% endif %}
                                 {% endfor %}
@@ -986,31 +1176,163 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
         <button class="res-tab-btn" onclick="switchRecordsTab('records-panel-table', this)" style="flex:1;">📋 Sit-in Records Table</button>
     </div>
 
-    <!-- PANEL 1: CHARTS -->
+    <!-- PANEL 1: CHARTS (Analytics + Most Visited Lab + AI Recommendation) -->
     <div id="records-panel-charts" class="res-tab-panel">
-        <div class="records-charts-row">
-            <div class="records-chart-box">
-                <div class="records-chart-header">Usage by Purpose</div>
-                <div class="records-chart-body">
-                    <div class="donut-wrap" style="width:180px;height:180px;">
-                        <canvas id="recordsPurposeChart"></canvas>
-                        <div class="donut-center"><div class="donut-center-val" id="recPurposeVal">—</div><div class="donut-center-lbl" id="recPurposeLbl">total</div></div>
-                    </div>
-                    <div class="donut-legend" id="recPurposeLegend" style="width:100%;"></div>
-                </div>
+
+        <!-- ── SECTION 1: ANALYTICS ── -->
+        <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);overflow:hidden;margin-bottom:1.5rem;">
+            <div style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);padding:0.85rem 1.25rem;display:flex;align-items:center;gap:0.6rem;">
+                <span style="font-size:1rem;">📊</span>
+                <span style="color:white;font-weight:700;font-size:0.95rem;letter-spacing:0.03em;">ANALYTICS</span>
             </div>
-            <div class="records-chart-box">
-                <div class="records-chart-header">Usage by Lab</div>
-                <div class="records-chart-body">
-                    <div class="donut-wrap" style="width:180px;height:180px;">
-                        <canvas id="recordsLabChart"></canvas>
-                        <div class="donut-center"><div class="donut-center-val" id="recLabVal">—</div><div class="donut-center-lbl" id="recLabLbl">total</div></div>
+            <div style="padding:1.25rem;">
+                <!-- Donut Charts Row -->
+                <div class="records-charts-row">
+                    <div class="records-chart-box">
+                        <div class="records-chart-header">Usage by Purpose</div>
+                        <div class="records-chart-body">
+                            <div class="donut-wrap" style="width:180px;height:180px;">
+                                <canvas id="recordsPurposeChart"></canvas>
+                                <div class="donut-center"><div class="donut-center-val" id="recPurposeVal">—</div><div class="donut-center-lbl" id="recPurposeLbl">total</div></div>
+                            </div>
+                            <div class="donut-legend" id="recPurposeLegend" style="width:100%;"></div>
+                        </div>
                     </div>
-                    <div class="donut-legend" id="recLabLegend" style="width:100%;"></div>
+                    <div class="records-chart-box">
+                        <div class="records-chart-header">Usage by Lab</div>
+                        <div class="records-chart-body">
+                            <div class="donut-wrap" style="width:180px;height:180px;">
+                                <canvas id="recordsLabChart"></canvas>
+                                <div class="donut-center"><div class="donut-center-val" id="recLabVal">—</div><div class="donut-center-lbl" id="recLabLbl">total</div></div>
+                            </div>
+                            <div class="donut-legend" id="recLabLegend" style="width:100%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Peak Hours + Trend Bar Charts -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem;">
+                    <div class="records-chart-box">
+                        <div class="records-chart-header">📈 Sit-in Trend (by Day)</div>
+                        <div class="records-chart-body" style="height:220px;padding:1rem;">
+                            <canvas id="trendBarChart" style="max-height:180px;"></canvas>
+                        </div>
+                    </div>
+                    <div class="records-chart-box">
+                        <div class="records-chart-header">⏰ Peak Hours</div>
+                        <div class="records-chart-body" style="height:220px;padding:1rem;">
+                            <canvas id="peakHoursChart" style="max-height:180px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats Row -->
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:1.5rem;">
+                    <div style="background:#E6F1FB;border-radius:14px;padding:1rem;text-align:center;">
+                        <div style="font-size:0.72rem;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Total Sessions</div>
+                        <div id="statTotalSessions" style="font-size:1.8rem;font-weight:800;color:#0C447C;line-height:1;">—</div>
+                    </div>
+                    <div style="background:#eafaf1;border-radius:14px;padding:1rem;text-align:center;">
+                        <div style="font-size:0.72rem;font-weight:700;color:#1e7e34;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Busiest Lab</div>
+                        <div id="statBusiestLab" style="font-size:1.8rem;font-weight:800;color:#1e7e34;line-height:1;">—</div>
+                    </div>
+                    <div style="background:#fff3cd;border-radius:14px;padding:1rem;text-align:center;">
+                        <div style="font-size:0.72rem;font-weight:700;color:#856404;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Top Purpose</div>
+                        <div id="statTopPurpose" style="font-size:1rem;font-weight:800;color:#856404;line-height:1.2;margin-top:0.3rem;">—</div>
+                    </div>
+                    <div style="background:#fdecea;border-radius:14px;padding:1rem;text-align:center;">
+                        <div style="font-size:0.72rem;font-weight:700;color:#c0392b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Active Today</div>
+                        <div id="statActiveToday" style="font-size:1.8rem;font-weight:800;color:#c0392b;line-height:1;">—</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- ── SECTION 2: MOST VISITED LABORATORY ── -->
+        <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);overflow:hidden;margin-bottom:1.5rem;">
+            <div style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);padding:0.85rem 1.25rem;display:flex;align-items:center;gap:0.6rem;">
+                <span style="font-size:1rem;">🏫</span>
+                <span style="color:white;font-weight:700;font-size:0.95rem;letter-spacing:0.03em;">MOST VISITED LABORATORY</span>
+            </div>
+            <div style="padding:1.25rem;">
+                <div id="labRankingGrid" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+
+                <!-- Lab Scoring Table (like grade computation) -->
+                <div style="margin-top:1.5rem;background:rgba(15,62,125,0.04);border-radius:14px;padding:1rem;">
+                    <div style="font-size:0.82rem;font-weight:800;color:#0F3E7D;margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">📋 Lab Score Computation</div>
+                    <div class="table-scroll">
+                        <table class="dashboard-table" id="labScoreTable" style="font-size:0.82rem;">
+                            <thead>
+                                <tr>
+                                    <th>Laboratory</th>
+                                    <th>Total Visits</th>
+                                    <th>Weight (40%)</th>
+                                    <th>Avg Rating</th>
+                                    <th>Weight (30%)</th>
+                                    <th>Unique Users</th>
+                                    <th>Weight (20%)</th>
+                                    <th>Recency Score</th>
+                                    <th>Weight (10%)</th>
+                                    <th style="background:#F4B942;color:#0F3E7D;">FINAL SCORE</th>
+                                </tr>
+                            </thead>
+                            <tbody id="labScoreBody">
+                                <tr><td colspan="10" class="no-data">Computing scores...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:0.6rem;font-size:0.75rem;color:#888;">
+                        Formula: <code style="background:rgba(15,62,125,0.08);padding:0.1rem 0.4rem;border-radius:4px;">Score = (Visits×0.4) + (Rating×20×0.3) + (UniqueUsers×0.2) + (Recency×0.1)</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── SECTION 3: AI RECOMMENDATION SYSTEM ── -->
+        <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);overflow:hidden;margin-bottom:1.5rem;">
+            <div style="background:linear-gradient(135deg,#1a0050,#4a0F9D);padding:0.85rem 1.25rem;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:0.6rem;">
+                    <span style="font-size:1rem;">🤖</span>
+                    <span style="color:white;font-weight:700;font-size:0.95rem;letter-spacing:0.03em;">AI RECOMMENDATION SYSTEM</span>
+                    <span style="background:rgba(244,185,66,0.25);color:#F4B942;font-size:0.7rem;font-weight:800;padding:0.15rem 0.55rem;border-radius:20px;border:1px solid rgba(244,185,66,0.4);">BETA</span>
+                </div>
+                <button onclick="generateAIInsights()" id="aiGenBtn" style="background:rgba(255,255,255,0.15);color:white;border:1.5px solid rgba(255,255,255,0.35);padding:0.4rem 1rem;border-radius:12px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;transition:all 0.18s ease;backdrop-filter:blur(8px);" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+                    ✨ Generate Insights
+                </button>
+            </div>
+            <div style="padding:1.25rem;">
+                <div id="aiInsightsContainer">
+                    <!-- Default state -->
+                    <div id="aiDefaultState" style="text-align:center;padding:2rem 1rem;">
+                        <div style="font-size:3rem;margin-bottom:1rem;">🤖</div>
+                        <div style="font-size:0.95rem;font-weight:700;color:#0F3E7D;margin-bottom:0.4rem;">AI-Powered System Insights</div>
+                        <div style="font-size:0.85rem;color:#888;max-width:400px;margin:0 auto 1.5rem;">Analyzes sit-in patterns, lab utilization, peak hours, and student behavior to generate actionable recommendations for CCS administration.</div>
+                        <button onclick="generateAIInsights()" style="background:linear-gradient(135deg,#6c3fb5,#4a0F9D);color:white;border:none;padding:0.6rem 1.5rem;border-radius:14px;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;box-shadow:0 4px 14px rgba(74,15,157,0.4);">
+                            ✨ Generate AI Insights Now
+                        </button>
+                    </div>
+
+                    <!-- Loading state (hidden by default) -->
+                    <div id="aiLoadingState" style="display:none;text-align:center;padding:2rem 1rem;">
+                        <div style="display:inline-block;width:40px;height:40px;border:3px solid rgba(74,15,157,0.2);border-top-color:#4a0F9D;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:1rem;"></div>
+                        <div style="font-size:0.88rem;color:#888;" id="aiLoadingMsg">Analyzing sit-in patterns...</div>
+                    </div>
+
+                    <!-- Results state (hidden by default) -->
+                    <div id="aiResultsState" style="display:none;">
+                        <div id="aiInsightCards" style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem;"></div>
+                        <div id="aiRecommendations" style=""></div>
+                        <div style="margin-top:1rem;display:flex;justify-content:flex-end;">
+                            <button onclick="generateAIInsights()" style="background:rgba(74,15,157,0.08);color:#4a0F9D;border:1.5px solid rgba(74,15,157,0.2);padding:0.4rem 1rem;border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;transition:all 0.18s ease;" onmouseover="this.style.background='rgba(74,15,157,0.15)'" onmouseout="this.style.background='rgba(74,15,157,0.08)'">
+                                🔄 Refresh Insights
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- end records-panel-charts -->
 
     <!-- PANEL 2: TABLE -->
     <div id="records-panel-table" class="res-tab-panel" style="display:none;">
@@ -1026,6 +1348,8 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                         <option value="524">Lab 524</option>
                         <option value="526">Lab 526</option>
                         <option value="530">Lab 530</option>
+                        <option value="528">Lab 528</option>
+                        <option value="542">Lab 542</option>
                         <option value="544">Lab 544</option>
                     </select>
                     <select id="recordsFilterPurpose" class="filter-select" onchange="filterRecordsTable()">
@@ -1095,8 +1419,10 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                                     <option value="524">Lab 524</option>
                                     <option value="526">Lab 526</option>
                                     <option value="530">Lab 530</option>
+                                    <option value="528">Lab 528</option>
+                                    <option value="542">Lab 542</option>
                                     <option value="544">Lab 544</option>
-                                </select>
+                                    </select>
                                 <select id="reportFilterPurpose" class="filter-select" onchange="filterReportsTable()">
                                     <option value="">All Purposes</option>
                                     <option value="C Programming">C Programming</option>
@@ -1174,8 +1500,10 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                         <option value="524">Lab 524</option>
                         <option value="526">Lab 526</option>
                         <option value="530">Lab 530</option>
+                        <option value="528">Lab 528</option>
+                        <option value="542">Lab 542</option>
                         <option value="544">Lab 544</option>
-                    </select>
+                        </select>
                     <select id="feedbackFilterRating" class="filter-select" onchange="filterFeedbackTable()">
                         <option value="">All Ratings</option>
                         <option value="5">★★★★★ (5)</option>
@@ -1331,11 +1659,25 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
     </div>
     <div style="height:1px; background:linear-gradient(90deg, #e8f0fb, transparent); margin-bottom:0.5rem;"></div>
             <p style="font-size:0.85rem;color:#888;margin-bottom:1rem;">Click a PC to toggle it as unavailable (blocked) or available. Blocked PCs cannot be reserved by students.</p>
-            <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;">
-                <button class="lab-mgmt-btn lab-mgmt-active" onclick="switchMgmtLab('524',this)">🖥️ Lab 524</button>
-                <button class="lab-mgmt-btn" onclick="switchMgmtLab('526',this)">🖥️ Lab 526</button>
-                <button class="lab-mgmt-btn" onclick="switchMgmtLab('530',this)">🖥️ Lab 530</button>
-                <button class="lab-mgmt-btn" onclick="switchMgmtLab('544',this)">🖥️ Lab 544</button>
+            <div style="display:flex;gap:0.4rem;margin-bottom:1rem;flex-wrap:wrap;">
+                <button class="lab-mgmt-btn lab-mgmt-active" onclick="switchMgmtLab('524',this)" style="padding:0.55rem 1.3rem;font-size:0.9rem;">Lab 524</button>
+                <button class="lab-mgmt-btn" onclick="switchMgmtLab('526',this)" style="padding:0.55rem 1.3rem;font-size:0.9rem;">Lab 526</button>
+                <button class="lab-mgmt-btn" onclick="switchMgmtLab('528',this)" style="padding:0.55rem 1.3rem;font-size:0.9rem;">Lab 528</button>
+                <button class="lab-mgmt-btn" onclick="switchMgmtLab('530',this)" style="padding:0.55rem 1.3rem;font-size:0.9rem;">Lab 530</button>
+                <button class="lab-mgmt-btn" onclick="switchMgmtLab('542',this)" style="padding:0.55rem 1.3rem;font-size:0.9rem;">Lab 542</button>
+                <button class="lab-mgmt-btn" onclick="switchMgmtLab('544',this)" style="padding:0.55rem 1.3rem;font-size:0.9rem;">Lab 544</button>
+            </div>
+            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;">
+            <input type="date" id="mgmt_filter_date" class="filter-select" onchange="loadMgmtGrid()" style="width:160px;">
+                <select id="mgmt_filter_timeslot" class="filter-select" onchange="loadMgmtGrid()">
+                    <option value="">All Time Slots</option>
+                    <option value="08:00|10:00">8:00 AM – 10:00 AM</option>
+                    <option value="10:00|12:00">10:00 AM – 12:00 PM</option>
+                    <option value="12:00|14:00">12:00 PM – 2:00 PM</option>
+                    <option value="14:00|16:00">2:00 PM – 4:00 PM</option>
+                    <option value="16:00|18:00">4:00 PM – 6:00 PM</option>
+                    <option value="18:00|20:00">6:00 PM – 8:00 PM</option>
+                </select>
             </div>
             <div style="display:flex;gap:1rem;margin-bottom:0.75rem;flex-wrap:wrap;">
                 <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#eafaf1;border:1.5px solid #27ae60;display:inline-block;"></span>Available</span>
@@ -1363,6 +1705,8 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
             <option value="524">Lab 524</option>
             <option value="526">Lab 526</option>
             <option value="530">Lab 530</option>
+            <option value="528">Lab 528</option>
+            <option value="542">Lab 542</option>
             <option value="544">Lab 544</option>
         </select>
         <select id="reqFilterPC" class="filter-select" onchange="filterReqTable()">
@@ -1390,7 +1734,7 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                             <th>Purpose</th>
                             <th>Lab</th>
                             <th>PC Number</th>
-                            <th>Time</th>
+                            <th>Time Slot</th>
                             <th>Date</th>
                             <th>Status</th>
                             <th>Action</th>
@@ -1415,7 +1759,17 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                             <td>{{ r.purpose }}</td>
                             <td>{{ r.lab }}</td>
                             <td>PC {{ r.pc_number if r.pc_number else '—' }}</td>
-                            <td>{{ r.time_in | timeformat }}</td>
+                            <td>
+                            {% if r.time_in %}
+                                {% set h = r.time_in.split(':')[0] | int %}
+                                {% set ampm = 'PM' if h >= 12 else 'AM' %}
+                                {% set h12 = (h % 12) or 12 %}
+                                {% set h2 = h + 2 %}
+                                {% set ampm2 = 'PM' if h2 >= 12 else 'AM' %}
+                                {% set h2_12 = (h2 % 12) or 12 %}
+                                {{ h12 }}:00 {{ ampm }} – {{ h2_12 }}:00 {{ ampm2 }}
+                            {% else %}—{% endif %}
+                        </td>
                             <td>{{ r.date }}</td>
                             <td id="req-status-{{ r.id }}">
                                 <span class="status-badge 
@@ -1484,6 +1838,8 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                         <option value="524">Lab 524</option>
                         <option value="526">Lab 526</option>
                         <option value="530">Lab 530</option>
+                        <option value="528">Lab 528</option>
+                        <option value="542">Lab 542</option>
                         <option value="544">Lab 544</option>
                     </select>
                     <select id="logFilterPurpose" class="filter-select" onchange="filterLogTable()">
@@ -1504,6 +1860,7 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                         <option value="rejected">Rejected</option>
                         <option value="expired">Expired</option>
                         <option value="done">Done</option>
+                        <option value="cancelled">Cancelled</option>
                     </select>
                 </div>
             </div>
@@ -1517,7 +1874,8 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                             <th>Purpose</th>
                             <th>Lab</th>
                             <th>PC</th>
-                            <th>Time</th>
+                            <th>Login</th>
+                            <th>Logout</th>
                             <th>Date</th>
                             <th>Status</th>
                         </tr>
@@ -1531,7 +1889,8 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                             <td>{{ r.purpose }}</td>
                             <td>{{ r.lab }}</td>
                             <td>PC {{ r.pc_number if r.pc_number else '—' }}</td>
-                            <td>{{ r.time_in | timeformat }}</td>
+                            <td>{{ r.actual_login | timeformat if r.actual_login else '—' }}</td>
+                            <td>{{ r.time_out | timeformat if r.time_out else '—' }}</td>
                             <td>{{ r.date }}</td>
                             <td>
                                 <span class="status-badge"
@@ -1571,7 +1930,9 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                     <option value="">-- Select lab --</option>
                     <option>524</option>
                     <option>526</option>
+                    <option>528</option>
                     <option>530</option>
+                    <option>542</option>
                     <option>544</option>
                     </select></td></tr>
                     <tr id="sitinPcRow" style="display:none;">
@@ -1587,6 +1948,7 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
             </div>
         </div>
     </div>
+</div>
 
     <div class="modal-overlay" id="editStudentModal" style="display:none;">
         <div class="modal-box" style="max-width:500px;">
@@ -1725,7 +2087,7 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                     <tr><td class="sitin-form-label">ID Number</td><td><input type="text" id="sfm_id" class="sitin-form-input sitin-readonly" readonly></td></tr>
                     <tr><td class="sitin-form-label">Student Name</td><td><input type="text" id="sfm_name" class="sitin-form-input sitin-readonly" readonly></td></tr>
                     <tr><td class="sitin-form-label">Purpose</td><td><select id="sfm_purpose" class="sitin-form-input"><option value="">-- Select purpose --</option><option>C Programming</option><option>Java Programming</option><option>C# Programming</option><option>PHP Programming</option><option>ASP.Net Programming</option><option>Python Programming</option><option>Web Development</option><option>Database</option><option>Research</option><option>Other</option></select></td></tr>
-                    <tr><td class="sitin-form-label">Lab</td><td><select id="sfm_lab" class="sitin-form-input" onchange="loadAvailablePCs()"><option value="">-- Select lab --</option><option>524</option><option>526</option><option>530</option><option>544</option></select></td></tr>
+                    <tr><td class="sitin-form-label">Lab</td><td><select id="sfm_lab" class="sitin-form-input" onchange="loadAvailablePCs()"><option value="">-- Select lab --</option><option>524</option><option>526</option><option>528</option><option>530</option><option>542</option><option>544</option></select></td></tr>
                     <tr id="sfm_pc_row" style="display:none;"><td class="sitin-form-label">PC Number</td><td><select id="sfm_pc" class="sitin-form-input"><option value="">-- Select PC --</option></select></td></tr>
                     <tr><td class="sitin-form-label">Remaining Session</td><td><input type="text" id="sfm_remaining" class="sitin-form-input sitin-readonly" readonly></td></tr>
                 </table>
@@ -1939,7 +2301,7 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
                     <tr><td class="sitin-form-label">Purpose</td><td><input type="text" id="rm_purpose" class="sitin-form-input sitin-readonly" readonly></td></tr>
                     <tr><td class="sitin-form-label">Lab</td><td><input type="text" id="rm_lab" class="sitin-form-input sitin-readonly" readonly></td></tr>
                     <tr><td class="sitin-form-label">PC Number</td><td><input type="text" id="rm_pc" class="sitin-form-input sitin-readonly" readonly></td></tr>
-                    <tr><td class="sitin-form-label">Time</td><td><input type="text" id="rm_time" class="sitin-form-input sitin-readonly" readonly></td></tr>
+                    <tr><td class="sitin-form-label">Time Slot</td><td><input type="text" id="rm_time" class="sitin-form-input sitin-readonly" readonly></td></tr>
                     <tr><td class="sitin-form-label">Date</td><td><input type="text" id="rm_date" class="sitin-form-input sitin-readonly" readonly></td></tr>
                 </table>
                 <div id="rmStatusRow" style="margin-top:1rem;text-align:center;"></div>
@@ -1948,10 +2310,24 @@ div[style*="background: linear-gradient(135deg, rgba(15,62,125"]:hover {
             <!-- RIGHT: PC Grid -->
             <div>
                 <h4 style="font-size:0.9rem;font-weight:800;color:#0F3E7D;margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:2px solid rgba(15,62,125,0.12);letter-spacing:0.03em;">Computer Control</h4>
+                <div id="rmDateTimeslotRow" style="display:none;gap:0.5rem;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;">
+                    <input type="date" id="rm_grid_date" class="filter-select" style="width:160px;" onchange="onRMGridDateChange(this.value)">
+                    <select id="rm_grid_timeslot" class="filter-select" onchange="onRMGridTimeslotChange()">
+                        <option value="">All Time Slots</option>
+                        <option value="08:00|10:00">8:00 AM – 10:00 AM</option>
+                        <option value="10:00|12:00">10:00 AM – 12:00 PM</option>
+                        <option value="12:00|14:00">12:00 PM – 2:00 PM</option>
+                        <option value="14:00|16:00">2:00 PM – 4:00 PM</option>
+                        <option value="16:00|18:00">4:00 PM – 6:00 PM</option>
+                        <option value="18:00|20:00">6:00 PM – 8:00 PM</option>
+                    </select>
+                </div>
                 <div style="display:flex;gap:0.6rem;align-items:center;margin-bottom:0.6rem;flex-wrap:wrap;">
-                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#E6F1FB;border:1px solid #185FA5;display:inline-block;"></span>Available</span>
-                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#f8d7da;border:1px solid #f5c6cb;display:inline-block;"></span>Taken</span>
-                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#0F3E7D;display:inline-block;"></span>Student Request</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;font-weight:600;"><span style="width:12px;height:12px;border-radius:3px;background:#eafaf1;border:1.5px solid #27ae60;display:inline-block;"></span>Available</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;font-weight:600;"><span style="width:12px;height:12px;border-radius:3px;background:#f8d7da;border:1.5px solid #c0392b;display:inline-block;"></span>Unavailable</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;font-weight:600;"><span style="width:12px;height:12px;border-radius:50%;background:#c0392b;display:inline-block;"></span>Occupied</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;font-weight:600;"><span style="width:12px;height:12px;border-radius:3px;background:#fff3cd;border:1.5px solid #F4B942;display:inline-block;"></span>Reserved</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.75rem;color:#555;font-weight:600;"><span style="width:12px;height:12px;border-radius:3px;background:#0F3E7D;display:inline-block;"></span>Student Request</span>
                 </div>
                 <div id="rm_pc_grid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:5px;max-height:340px;overflow-y:auto;"></div>
                     <div id="rmSavePCRow" style="display:none;margin-top:0.75rem;text-align:right;">
@@ -2217,12 +2593,23 @@ function showSection(sectionId, clickedLink) {
     document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
     const target = document.getElementById(sectionId);
     if (target) target.classList.add('active');
+    localStorage.setItem('adminSection', sectionId); // ADD THIS
     document.querySelectorAll('.ham-dropdown a').forEach(l => l.classList.remove('ham-active'));
     if (clickedLink) clickedLink.classList.add('ham-active');
     const lbl = document.getElementById('adminActiveLabel');
     if (lbl) lbl.textContent = ADMIN_LABELS[sectionId] || 'Home';
     closeAdminHam(); closeAllAnnMenus();
 
+    if (sectionId === 'section-students') {
+        const infoPanel = document.getElementById('stud-panel-info');
+        const lbPanel = document.getElementById('stud-panel-leaderboard');
+        if (infoPanel) infoPanel.style.display = 'block';
+        if (lbPanel) lbPanel.style.display = 'none';
+        document.querySelectorAll('#section-students .res-tab-btn').forEach(b => b.classList.remove('res-tab-active'));
+        const firstStudTab = document.getElementById('studTab1');
+        if (firstStudTab) firstStudTab.classList.add('res-tab-active');
+    }
+    
     if (sectionId === 'section-records') {
     const chartsPanel = document.getElementById('records-panel-charts');
     const tablePanel  = document.getElementById('records-panel-table');
@@ -2231,6 +2618,7 @@ function showSection(sectionId, clickedLink) {
     document.querySelectorAll('#section-records .res-tab-btn').forEach(b => b.classList.remove('res-tab-active'));
     const firstBtn = document.querySelector('#section-records .res-tab-btn');
     if (firstBtn) firstBtn.classList.add('res-tab-active');
+    setTimeout(() => buildLabRankings(), 200);
 }
 }
 
@@ -2359,7 +2747,7 @@ function showSection(sectionId, clickedLink) {
             document.getElementById('annForm').submit();
         }
 
-        function submitSitinQuick() {
+    function submitSitinQuick() {
     const idNumber = document.getElementById('sitinIdInput').value.trim();
     const name = document.getElementById('sitinNameDisplay').value;
     const purpose = document.getElementById('sitinPurpose').value;
@@ -2380,7 +2768,7 @@ function showSection(sectionId, clickedLink) {
     fetch('/admin/sitin/add-ajax', { method: 'POST', body: fd })
     .then(r => r.json())
     .then(data => {
-        if (data.success) { closeModal('sitinModal'); showToast('✓ Sit-in successful.', 'success'); addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, pc); }
+        if (data.success) { closeModal('sitinModal'); showToast('✓ Sit-in successful.', 'success'); addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, pc, data.time_end); }
         else { errEl.textContent = data.message || 'Something went wrong.'; errEl.style.display = 'block'; }
     })
 }
@@ -2686,15 +3074,58 @@ function exportFeedbackPDFConfirmed() {
             closeModal('confirmSitinModal');
             btn.disabled = true; btn.textContent = 'Saving…';
             const fd = new FormData(); fd.append('idNumber', idNumber); fd.append('purpose', purpose); fd.append('lab', lab); fd.append('pc_number', pc || '');
-            fetch('/admin/sitin/add-ajax', { method: 'POST', body: fd }).then(r => r.json()).then(data => { btn.disabled = false; btn.textContent = 'Sit-In'; if (data.success) { closeSitinFormModal(); showToast('✓ Sit-in successful.', 'success'); addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, pc || data.pc_number || '—'); } else { errEl.textContent = data.message || 'Something went wrong.'; errEl.style.display = 'block'; } }).catch(() => { btn.disabled = false; btn.textContent = 'Sit-In'; errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; });
+            fetch('/admin/sitin/add-ajax', { method: 'POST', body: fd }).then(r => r.json()).then(data => { btn.disabled = false; btn.textContent = 'Sit-In'; if (data.success) { closeSitinFormModal(); showToast('✓ Sit-in successful.', 'success'); addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, pc || data.pc_number || '—', data.time_end); } else { errEl.textContent = data.message || 'Something went wrong.'; errEl.style.display = 'block'; } }).catch(() => { btn.disabled = false; btn.textContent = 'Sit-In'; errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; });
         }
 
-        function addSitinRow(sessionId, idNumber, name, purpose, lab, remaining, pc) {
-            const tbody = document.getElementById('sitinTableBody'); const placeholder = tbody.querySelector('td[colspan="8"]'); if (placeholder) placeholder.closest('tr').remove();
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${sessionId||'—'}</td><td>${idNumber}</td><td>${name}</td><td>${purpose}</td><td>${lab}</td><td>${pc||'—'}</td><td>${remaining}</td><td><span class="status-badge status-active">Active</span></td><td><button class="btn-action btn-logout" data-id="${sessionId}" onclick="confirmLogout(this.dataset.id)">Logout</button></td>`;            tbody.insertBefore(tr, tbody.firstChild);
-            allSitinRows.unshift(tr); sitinFiltered.unshift(tr); renderTable('sitin');
+        function addSitinRow(sessionId, idNumber, name, purpose, lab, remaining, pc, timeEnd) {
+    const tbody = document.getElementById('sitinTableBody');
+    const placeholder = tbody.querySelector('td[colspan]');
+    if (placeholder) placeholder.closest('tr').remove();
+
+    // Format timeEnd display
+    let availUntilHtml = '';
+        if (timeEnd && timeEnd !== '20:00') {
+            const [h, m] = timeEnd.split(':');
+            let hr = parseInt(h);
+            const ampm = hr >= 12 ? 'PM' : 'AM';
+            hr = hr % 12 || 12;
+            availUntilHtml = `<span style="font-weight:700;color:#e67e22;">Until ${hr}:${m} ${ampm}</span>`;
+        } else if (timeEnd === '20:00') {
+            availUntilHtml = `<span style="font-weight:700;color:#27ae60;">Until 8:00 PM</span>`;
+        } else {
+            availUntilHtml = `<span style="color:#27ae60;font-weight:700;">No Limit</span>`;
         }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td>${sessionId||'—'}</td>
+        <td>${idNumber}</td>
+        <td>${name}</td>
+        <td>${purpose}</td>
+        <td>${lab}</td>
+        <td>${pc||'—'}</td>
+        <td>${remaining}</td>
+        <td>${availUntilHtml}</td>
+        <td><span class="status-badge status-active" id="status-badge-${sessionId}">Sitting In</span></td>
+        <td style="white-space:nowrap;">
+            <button class="btn-extend" id="extend-btn-${sessionId}" onclick="confirmExtend(${sessionId})">Extend</button>
+            <button class="btn-action btn-logout" data-id="${sessionId}" onclick="confirmLogout(this.dataset.id)">Logout</button>
+        </td>`;
+    tbody.insertBefore(tr, tbody.firstChild);
+    allSitinRows.unshift(tr);
+    sitinFiltered.unshift(tr);
+    renderTable('sitin');
+
+    // Auto-switch to Sit-in section
+    showSection('section-sitin', null);
+    // Highlight the ham dropdown link
+    document.querySelectorAll('.ham-dropdown a').forEach(a => {
+        a.classList.remove('ham-active');
+        if (a.getAttribute('onclick') && a.getAttribute('onclick').includes('section-sitin')) {
+            a.classList.add('ham-active');
+        }
+    });
+}
 
         function confirmAdminLogout() { closeAdminHam(); showModal('adminLogoutModal'); }
 
@@ -2703,7 +3134,22 @@ function exportFeedbackPDFConfirmed() {
         });
 
         window.addEventListener('DOMContentLoaded', function() {
+            document.body.style.visibility = 'visible';
             const goTo = sessionStorage.getItem('adminGoTo');
+            const savedSection = localStorage.getItem('adminSection');
+            if (savedSection && !goTo) {
+                const target = document.getElementById(savedSection);
+                if (target) {
+                    document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+                    target.classList.add('active');
+                    document.querySelectorAll('.ham-dropdown a').forEach(a => {
+                        a.classList.remove('ham-active');
+                        if (a.getAttribute('onclick') && a.getAttribute('onclick').includes(savedSection)) {
+                            a.classList.add('ham-active');
+                        }
+                    });
+                }
+            }
             if (goTo) {
                 sessionStorage.removeItem('adminGoTo');
                 const target = document.getElementById(goTo);
@@ -2714,6 +3160,7 @@ function exportFeedbackPDFConfirmed() {
                 }
             }
             initPagination();
+            buildLabRankings();
             // Auto-expire approved reservations older than 1 hour
             fetch('/admin/reservations/auto-expire', { method: 'POST' });
         });
@@ -3212,8 +3659,24 @@ function openReqModal(id, idNum, name, session, purpose, lab, pc, time, date, st
     document.getElementById('rm_purpose').value = purpose;
     document.getElementById('rm_lab').value     = 'Lab ' + lab;
     document.getElementById('rm_pc').value      = 'PC ' + pc;
-    document.getElementById('rm_time').value    = time;
+    // Convert time to 12hr format and show as time slot
+function toSlotLabel(t) {
+    if (!t) return '—';
+    const [h, m] = t.split(':');
+    let hr = parseInt(h);
+    const ampm = hr >= 12 ? 'PM' : 'AM';
+    hr = hr % 12 || 12;
+    const start = `${hr}:${m || '00'} ${ampm}`;
+    // Add 2 hours for end
+    let hr2 = parseInt(h) + 2;
+    const ampm2 = hr2 >= 12 ? 'PM' : 'AM';
+    hr2 = hr2 % 12 || 12;
+    const end = `${hr2}:${m || '00'} ${ampm2}`;
+    return `${start} – ${end}`;
+}
+document.getElementById('rm_time').value = toSlotLabel(time);
     document.getElementById('rm_date').value    = date;
+    document.getElementById('rm_grid_date').value = date;
 
     // Status badge
     const statusRow = document.getElementById('rmStatusRow');
@@ -3232,47 +3695,141 @@ function openReqModal(id, idNum, name, session, purpose, lab, pc, time, date, st
     }
 
     // Load PC grid
+    document.getElementById('rm_time').dataset.original = toSlotLabel(time);
     loadReqPCGrid(lab, date, pc);
+
+    const editBtn = document.getElementById('reqEditPCBtn');
+if (editBtn) {
+    editBtn.style.display = (status === 'pending' || status === 'approved') ? '' : 'none';
+}
+_editingReqPC = false;
+_newReqPC     = null;
+_newReqTime   = null;
+document.getElementById('rmSavePCRow').style.display = 'none';
+document.getElementById('rmDateTimeslotRow').style.display = 'none';
     showModal('reqModal');
 }
+
+let _editingReqPC = false;
+let _newReqPC = null;
+let _newReqTime = null;
+let _newReqDate = null;
 
 function loadReqPCGrid(lab, date, requestedPc) {
     const grid = document.getElementById('rm_pc_grid');
     grid.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:0.82rem;padding:0.5rem;">Loading...</div>';
-    
-    // Fetch BOTH reserved PCs and occupied PCs
+
+    const rmTime = document.getElementById('rm_time').value;
+    let reqSlotStart = '', reqSlotEnd = '';
+    if (rmTime && rmTime.includes('–')) {
+        const parts = rmTime.split('–');
+        const parseTime = t => {
+            t = t.trim();
+            const [hm, ap] = t.split(' ');
+            let [h, m] = hm.split(':');
+            h = parseInt(h);
+            if (ap === 'PM' && h !== 12) h += 12;
+            if (ap === 'AM' && h === 12) h = 0;
+            return h.toString().padStart(2,'0') + ':' + (m || '00');
+        };
+        reqSlotStart = parseTime(parts[0]);
+        reqSlotEnd   = parseTime(parts[1]);
+    }
+
     Promise.all([
-        fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}`).then(r => r.json()),
-        fetch(`/admin/get-blocked-pcs?lab=${encodeURIComponent(lab)}`).then(r => r.json())
+        fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}&time_start=${encodeURIComponent(reqSlotStart)}&time_end=${encodeURIComponent(reqSlotEnd)}`).then(r => r.json()),
+        fetch(`/admin/get-blocked-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}&time_start=${encodeURIComponent(reqSlotStart)}&time_end=${encodeURIComponent(reqSlotEnd)}`).then(r => r.json())
     ])
     .then(([resData, blockData]) => {
         const reserved = resData.reserved || [];
-        const occupied = blockData.occupied || [];
+        const occupied = blockData.occupied || resData.occupied || [];
         const blocked  = blockData.blocked  || [];
-        const allTaken = [...new Set([...reserved, ...occupied, ...blocked])];
 
         grid.innerHTML = '';
         for (let i = 1; i <= 50; i++) {
-            const isThis  = i === parseInt(requestedPc);
-            const isTaken = allTaken.includes(i) && !isThis;
+            const isThis     = i === parseInt(requestedPc);
+            const isOccupied = occupied.includes(i) && !isThis;
+            const isBlocked  = blocked.includes(i)  && !isThis;
+            const isReserved = reserved.includes(i)  && !isThis;
+
             const btn = document.createElement('div');
-            btn.title = isThis ? `PC ${i} — Student Request` : isTaken ? `PC ${i} — Taken` : `PC ${i} — Available`;
-            btn.style.cssText = `width:100%;padding-top:100%;position:relative;border-radius:5px;border:1.5px solid;cursor:default;`;
-            if (isThis)       { btn.style.background = '#0F3E7D'; btn.style.borderColor = '#0d3569'; }
-            else if (isTaken) { btn.style.background = '#f8d7da'; btn.style.borderColor = '#f5c6cb'; }
-            else              { btn.style.background = '#E6F1FB'; btn.style.borderColor = '#185FA5'; }
-            
+            btn.style.cssText = `width:100%;padding-top:100%;position:relative;border-radius:5px;border:1.5px solid;`;
+
+            if (isThis) {
+                btn.style.background  = '#0F3E7D';
+                btn.style.borderColor = '#0d3569';
+                btn.style.cursor      = _editingReqPC ? 'pointer' : 'default';
+                btn.title             = `PC ${i} — Student Request (click to select)`;
+                btn.setAttribute('data-type', 'original');
+                if (_editingReqPC) {
+                    btn.setAttribute('data-selectable', '1');
+                    btn.onclick = function() {
+                        grid.querySelectorAll('[data-type="available"][data-selectable]').forEach(b => {
+                            b.style.background  = '#eafaf1';
+                            b.style.borderColor = '#27ae60';
+                            b.querySelectorAll('span').forEach(s => s.style.color = '#185FA5');
+                        });
+                        btn.style.background  = '#F4B942';
+                        btn.style.borderColor = '#e6a800';
+                        btn.querySelectorAll('span').forEach(s => s.style.color = '#7a5800');
+                        _newReqPC = i;
+                        document.getElementById('rmNewPCLabel').textContent = `Selected: PC ${i}`;
+                    };
+                }
+            } else if (isOccupied) {
+                btn.style.background  = '#f8d7da';
+                btn.style.borderColor = '#c0392b';
+                btn.style.cursor      = 'not-allowed';
+                btn.title = `PC ${i} — Occupied`;
+            } else if (isBlocked) {
+                btn.style.background  = '#f8d7da';
+                btn.style.borderColor = '#c0392b';
+                btn.style.cursor      = 'not-allowed';
+                btn.title = `PC ${i} — Unavailable`;
+            } else if (isReserved) {
+                btn.style.background  = '#fff3cd';
+                btn.style.borderColor = '#F4B942';
+                btn.style.cursor      = 'not-allowed';
+                btn.title = `PC ${i} — Reserved`;
+            } else {
+                btn.style.background  = '#eafaf1';
+                btn.style.borderColor = '#27ae60';
+                btn.style.cursor      = _editingReqPC ? 'pointer' : 'default';
+                btn.title = `PC ${i} — Available`;
+
+                if (_editingReqPC) {
+                    btn.setAttribute('data-selectable', '1');
+                    btn.setAttribute('data-type', 'available');
+                    btn.onclick = function() {
+                        // Restore original (student request) PC back to dark blue
+                        grid.querySelectorAll('[data-type="original"][data-selectable]').forEach(b => {
+                            b.style.background  = '#0F3E7D';
+                            b.style.borderColor = '#0d3569';
+                            b.querySelectorAll('span').forEach(s => s.style.color = 'white');
+                        });
+                        // Reset all available PCs to green
+                        grid.querySelectorAll('[data-type="available"][data-selectable]').forEach(b => {
+                            b.style.background  = '#eafaf1';
+                            b.style.borderColor = '#27ae60';
+                            b.querySelectorAll('span').forEach(s => s.style.color = '#185FA5');
+                        });
+                        btn.style.background  = '#1e7e34';
+                        btn.style.borderColor = '#1e7e34';
+                        btn.querySelectorAll('span').forEach(s => s.style.color = 'white');
+                        _newReqPC = i;
+                        document.getElementById('rmNewPCLabel').textContent = `Selected: PC ${i}`;
+                    };
+                }
+            }
+
             const labelContainer = document.createElement('div');
             labelContainer.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;`;
-            
             const pcLabel = document.createElement('span');
             pcLabel.textContent = '🖥️';
-            pcLabel.style.cssText = `font-size:0.7rem;font-weight:700;color:${isThis ? 'white' : isTaken ? '#c0392b' : '#185FA5'};line-height:1;`;
-
+            pcLabel.style.cssText = `font-size:0.7rem;font-weight:700;color:${isThis ? 'white' : (isOccupied||isBlocked) ? '#c0392b' : isReserved ? '#856404' : '#185FA5'};line-height:1;`;
             const numLabel = document.createElement('span');
             numLabel.textContent = i;
-            numLabel.style.cssText = `font-size:0.57rem;font-weight:700;color:${isThis ? 'white' : isTaken ? '#c0392b' : '#185FA5'};line-height:1;`;
-            
+            numLabel.style.cssText = `font-size:0.57rem;font-weight:700;color:${isThis ? 'white' : (isOccupied||isBlocked) ? '#c0392b' : isReserved ? '#856404' : '#185FA5'};line-height:1;`;
             labelContainer.appendChild(pcLabel);
             labelContainer.appendChild(numLabel);
             btn.appendChild(labelContainer);
@@ -3320,7 +3877,7 @@ function updateReservationRowUI(id, status) {
     const statusCell = document.getElementById('req-status-' + id);
 
     // If rejected/expired/done → remove from req table, reload log
-    if (['rejected', 'expired', 'done'].includes(status)) {
+    if (['rejected', 'expired', 'done', 'cancelled'].includes(status)) {
         if (row1) {
             allReqRows = allReqRows.filter(r => r !== row1);
             reqFiltered = reqFiltered.filter(r => r !== row1);
@@ -3340,7 +3897,11 @@ function updateReservationRowUI(id, status) {
             const tr = document.createElement('tr');
             tr.setAttribute('data-date', cells[8]?.innerText || '');
             const badgeColor = status === 'done' ? 'status-active' : status === 'rejected' ? 'status-done' : '';
-            const badgeStyle = status === 'expired' ? 'style="background:#fff3cd;color:#856404;"' : '';
+            const badgeStyle = status === 'expired' 
+                ? 'style="background:#fff3cd;color:#856404;"' 
+                : status === 'cancelled' 
+                ? 'style="background:#f8d7da;color:#c0392b;"' 
+                : '';
             tr.innerHTML = `<td>${cells[0]?.innerText}</td><td>${cells[1]?.innerText}</td><td>${cells[2]?.innerText}</td><td>${cells[4]?.innerText}</td><td>${cells[5]?.innerText}</td><td>${cells[6]?.innerText}</td><td>${cells[7]?.innerText}</td><td>${cells[8]?.innerText}</td><td><span class="status-badge ${badgeColor}" ${badgeStyle}>${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>`;
             logBody.insertBefore(tr, logBody.firstChild);
             allLogRows.unshift(tr);
@@ -3412,7 +3973,7 @@ function handleSitinBtnClick(dataset) {
     // Store dataset immediately
     document._pendingWrongDateDataset = dataset;
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
     const resDate = dataset.date || '';
 
     if (resDate && resDate !== today) {
@@ -3433,7 +3994,7 @@ function handleSitinBtnClick(dataset) {
 function openEditResDateModal() {
     const dataset = document._pendingWrongDateDataset;
     if (!dataset) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
     document.getElementById('editResDate_input').value = today;
     document.getElementById('editResLab_input').value = dataset.lab;
     document.getElementById('editResPC_input').value = 'PC ' + (dataset.pc || '—');
@@ -3497,7 +4058,7 @@ function forceSitinAnyway() {
 }
 
 function openSitinFromReservation(dataset) {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
     const resDate = dataset.date || '';
 
     if (resDate && resDate !== today) {
@@ -3547,34 +4108,31 @@ function submitSitinFromRes() {
         if (data.success) {
             closeModal('sitinFromResModal');
             showToast('✓ Sit-in successful.', 'success');
-            addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, document._currentSfrPc || data.pc_number || '—');
+            addSitinRow(data.sessionId, idNumber, name, purpose, lab, remaining, document._currentSfrPc || data.pc_number || '—', data.time_end);
 
-            // Update req table row
-            const statusCell = document.getElementById('req-status-' + resId);
-            if (statusCell) {
-                statusCell.innerHTML = `<span class="status-badge" style="background:#cce5ff;color:#004085;">Sitting In</span>`;
+            // Remove row from Reservation Requests table entirely
+            const reqRow = document.getElementById('req-row-' + resId);
+            if (reqRow) {
+                allReqRows = allReqRows.filter(r => r !== reqRow);
+                reqFiltered = reqFiltered.filter(r => r !== reqRow);
+                reqRow.remove();
+                renderReqTable();
+                if (allReqRows.length === 0) {
+                    document.getElementById('reqTableBody').innerHTML =
+                        '<tr><td colspan="11" class="no-data">No reservation requests for today.</td></tr>';
+                }
             }
-            const sitinBtn = document.getElementById('sitin-btn-' + resId);
-            if (sitinBtn) {
-                sitinBtn.textContent = 'Logout';
-                sitinBtn.style.background = '#e67e22';
-                sitinBtn.removeAttribute('disabled');
-                sitinBtn.style.opacity = '1';
-                sitinBtn.style.cursor = 'pointer';
-                sitinBtn.onclick = function(e) {
-                    e.stopPropagation();
-                    confirmResLogout(data.sessionId, resId);
-                };
-            }
+            updatePendingBadge();
+
         } else {
-    document.getElementById('activeSitinWarningMsg').textContent = data.message || 'Something went wrong.';
-    showModal('activeSitinWarningModal');
-}
-})
-.catch(() => {
-    document.getElementById('activeSitinWarningMsg').textContent = 'Connection error. Please try again.';
-    showModal('activeSitinWarningModal');
-});
+            document.getElementById('activeSitinWarningMsg').textContent = data.message || 'Something went wrong.';
+            showModal('activeSitinWarningModal');
+        }
+    })
+    .catch(() => {
+        document.getElementById('activeSitinWarningMsg').textContent = 'Connection error. Please try again.';
+        showModal('activeSitinWarningModal');
+    });
 }
 
 // ══════════════════════════════════════
@@ -3809,6 +4367,7 @@ function submitResLogout() {
     .then(data => {
         if (data.success) {
     showToast('✓ Session ended. PC is now vacant.', 'success');
+    loadMgmtGrid();
 
     // Remove from active sit-in table
     document.querySelectorAll('#sitinTableBody tr').forEach(row => {
@@ -3844,7 +4403,7 @@ function submitResLogout() {
             <td>${cells[4]?.innerText}</td>
             <td>${cells[5]?.innerText}</td>
             <td>${cells[6]?.innerText}</td>
-            <td>${cells[7]?.innerText}</td>
+            <td>${formatTimeTo12hr(cells[7]?.innerText)}</td>
             <td>${cells[8]?.innerText}</td>
             <td><span class="status-badge" style="background:#cce5ff;color:#004085;">Done</span></td>`;
         logBody.insertBefore(tr, logBody.firstChild);
@@ -3890,6 +4449,186 @@ function submitDeleteReservation() {
     })
     .catch(() => showToast('✗ Connection error.', 'error'));
 }
+function enablePCEdit() {
+    _editingReqPC = true;
+    _newReqPC     = null;
+    _newReqTime   = null;
+    _newReqDate   = null;
+
+    document.getElementById('reqEditPCBtn').style.display = 'none';
+    document.getElementById('rmSavePCRow').style.display  = 'block';
+    document.getElementById('rmNewPCLabel').textContent   = 'Select a PC and/or change date/time slot';
+    document.getElementById('rmDateTimeslotRow').style.display = 'flex';
+
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+    const dateInput = document.getElementById('rm_grid_date');
+    dateInput.min = today;
+    updateRMTimeslotOptions(dateInput.value || today);
+
+    const lab = document.getElementById('rm_lab').value.replace('Lab ', '');
+    const date = document.getElementById('rm_date').value;
+    const currentPC = parseInt(document.getElementById('rm_pc').value.replace('PC ', ''));
+    loadReqPCGrid(lab, date, currentPC);
+}
+
+function updateRMTimeslotOptions(selectedDate) {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+    const phNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+    const currentHour = phNow.getHours();
+    const slots = [
+        { value: '08:00|10:00', label: '8:00 AM – 10:00 AM', startHour: 8 },
+        { value: '10:00|12:00', label: '10:00 AM – 12:00 PM', startHour: 10 },
+        { value: '12:00|14:00', label: '12:00 PM – 2:00 PM',  startHour: 12 },
+        { value: '14:00|16:00', label: '2:00 PM – 4:00 PM',   startHour: 14 },
+        { value: '16:00|18:00', label: '4:00 PM – 6:00 PM',   startHour: 16 },
+        { value: '18:00|20:00', label: '6:00 PM – 8:00 PM',   startHour: 18 },
+    ];
+    const select = document.getElementById('rm_grid_timeslot');
+    const currentVal = select.value;
+    select.innerHTML = '<option value="">All Time Slots</option>';
+    slots.forEach(slot => {
+        if (selectedDate === today && slot.startHour <= currentHour) return;
+        const opt = document.createElement('option');
+        opt.value = slot.value;
+        opt.textContent = slot.label;
+        if (opt.value === currentVal) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+function onRMGridDateChange(newDate) {
+    const d = new Date(newDate + 'T00:00:00');
+    if (d.getDay() === 0) {
+        showToast('✗ Reservations are not allowed on Sundays.', 'error');
+        document.getElementById('rm_grid_date').value = document.getElementById('rm_date').value;
+        return;
+    }
+    _newReqDate = newDate;
+    _newReqPC   = null;
+    _newReqTime = null;
+    document.getElementById('rm_date').value = newDate;
+    document.getElementById('rm_grid_timeslot').value = '';
+    document.getElementById('rmNewPCLabel').textContent = 'Select a time slot then a PC';
+    updateRMTimeslotOptions(newDate);
+    const lab = document.getElementById('rm_lab').value.replace('Lab ', '');
+    const pc  = parseInt(document.getElementById('rm_pc').value.replace('PC ', ''));
+    loadReqPCGrid(lab, newDate, pc);
+}
+
+function onRMTimeSlotChange() {
+    const slot = document.getElementById('rmTimeSlotSelect').value;
+    _newReqTime = slot || null;
+    _newReqPC   = null;
+    document.getElementById('rmNewPCLabel').textContent = 'Now click an available PC';
+    const lab  = document.getElementById('rm_lab').value.replace('Lab ', '');
+    const date = document.getElementById('rm_date').value;
+    const currentPC = parseInt(document.getElementById('rm_pc').value.replace('PC ', ''));
+
+    // Temporarily update rm_time so loadReqPCGrid uses new time slot
+    if (_newReqTime) {
+        const [s, e] = _newReqTime.split('|');
+        const fmt = t => { let [h,m]=t.split(':'); h=parseInt(h); const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${m} ${ap}`; };
+        document.getElementById('rm_time').value = `${fmt(s)} – ${fmt(e)}`;
+    }
+    loadReqPCGrid(lab, date, currentPC);
+}
+
+function cancelPCEdit() {
+    _editingReqPC = false;
+    _newReqPC     = null;
+    _newReqTime   = null;
+    _newReqDate   = null;
+    document.getElementById('rmSavePCRow').style.display  = 'none';
+    document.getElementById('reqEditPCBtn').style.display = '';
+    document.getElementById('rmDateTimeslotRow').style.display = 'none';
+    // Restore original time
+    document.getElementById('rm_time').value = document.getElementById('rm_time').dataset.original || document.getElementById('rm_time').value;
+    document.getElementById('rm_grid_date').value = document.getElementById('rm_date').value;
+    const lab  = document.getElementById('rm_lab').value.replace('Lab ', '');
+    const date = document.getElementById('rm_date').value;
+    const currentPC = parseInt(document.getElementById('rm_pc').value.replace('PC ', ''));
+    loadReqPCGrid(lab, date, currentPC);
+}
+
+function saveNewPC() {
+    if (!_newReqPC && !_newReqTime && !_newReqDate) {
+        showToast('✗ Please select a PC, time slot, or date first.', 'error');
+        return;
+    }
+    const fd = new FormData();
+    fd.append('id', _currentReqId);
+    if (_newReqPC)   fd.append('pc_number', _newReqPC);
+    if (_newReqTime) {
+        const [tStart, tEnd] = _newReqTime.split('|');
+        fd.append('time_in',  tStart);
+        fd.append('time_end', tEnd);
+    }
+    if (_newReqDate) fd.append('date', _newReqDate);
+
+    fetch('/admin/reservations/update-pc-time', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const fmt = t => { let [h,m]=t.split(':'); h=parseInt(h); const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${m} ${ap}`; };
+            // Update modal fields
+            if (_newReqPC)   document.getElementById('rm_pc').value = 'PC ' + _newReqPC;
+            if (_newReqDate) document.getElementById('rm_date').value = _newReqDate;
+            if (_newReqTime) {
+                const [s, e] = _newReqTime.split('|');
+                document.getElementById('rm_time').value = `${fmt(s)} – ${fmt(e)}`;
+            }
+            // Update req table row immediately
+            const row = document.getElementById('req-row-' + _currentReqId);
+            if (row) {
+                const cells = row.querySelectorAll('td');
+                if (_newReqPC   && cells[6]) cells[6].textContent = 'PC ' + _newReqPC;
+                if (_newReqTime && cells[7]) {
+                    const [s, e] = _newReqTime.split('|');
+                    cells[7].textContent = `${fmt(s)} – ${fmt(e)}`;
+                }
+                if (_newReqDate && cells[8]) cells[8].textContent = _newReqDate;
+                const sitinBtn = document.getElementById('sitin-btn-' + _currentReqId);
+                if (sitinBtn) {
+                    if (_newReqPC)   sitinBtn.dataset.pc   = _newReqPC;
+                    if (_newReqDate) sitinBtn.dataset.date = _newReqDate;
+                }
+            }
+            // Save new values BEFORE cancelPCEdit restores originals
+            const savedPC   = _newReqPC;
+            const savedTime = _newReqTime;
+            const savedDate = _newReqDate;
+
+            cancelPCEdit();
+
+            // Re-apply new values to modal fields AFTER cancelPCEdit
+            if (savedPC)   document.getElementById('rm_pc').value   = 'PC ' + savedPC;
+            if (savedDate) document.getElementById('rm_date').value  = savedDate;
+            if (savedTime) {
+                const [s, e] = savedTime.split('|');
+                document.getElementById('rm_time').value = `${fmt(s)} – ${fmt(e)}`;
+                document.getElementById('rm_time').dataset.original = `${fmt(s)} – ${fmt(e)}`;
+            }
+            if (savedDate) {
+                document.getElementById('rm_grid_date').value = savedDate;
+                document.getElementById('rm_time').dataset.original = document.getElementById('rm_time').value;
+            }
+
+            loadMgmtGrid();
+            const sfmLab   = document.getElementById('sfm_lab').value;
+            if (sfmLab)    loadAvailablePCs();
+            const sitinLab = document.getElementById('sitinLab').value;
+            if (sitinLab)  loadSitinPCs();
+            showToast('✓ Reservation updated successfully.', 'success');
+            const lab       = document.getElementById('rm_lab').value.replace('Lab ', '');
+            const finalDate = savedDate || document.getElementById('rm_date').value;
+            const updatedPC = savedPC   || parseInt(document.getElementById('rm_pc').value.replace('PC ', ''));
+            loadReqPCGrid(lab, finalDate, updatedPC);
+        } else {
+            showToast('✗ ' + (data.message || 'Failed to update.'), 'error');
+        }
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
+}
 // ══════════════════════════════════════
 // PC AVAILABILITY MANAGEMENT
 // ══════════════════════════════════════
@@ -3910,58 +4649,78 @@ function loadMgmtGrid() {
         grid.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:0.85rem;padding:0.5rem;">Loading...</div>';
     }
 
-    fetch('/admin/get-blocked-pcs?lab=' + encodeURIComponent(_mgmtLab))
-    .then(r => r.json())
-    .then(data => {
-        _blockedPCs = data.blocked || [];
-        const occupiedPCs = data.occupied || [];
-        const reservedPCs = data.reserved || [];
+    const mgmtDate = document.getElementById('mgmt_filter_date')?.value || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+    const mgmtSlot = document.getElementById('mgmt_filter_timeslot')?.value || '';
+    const [mgmtSlotStart, mgmtSlotEnd] = mgmtSlot ? mgmtSlot.split('|') : ['',''];
+
+    Promise.all([
+        fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(_mgmtLab)}&date=${encodeURIComponent(mgmtDate || new Date().toLocaleDateString('en-CA', {timeZone:'Asia/Manila'}))}&time_start=${encodeURIComponent(mgmtSlotStart)}&time_end=${encodeURIComponent(mgmtSlotEnd)}`).then(r => r.json()),
+        fetch(`/admin/get-blocked-pcs?lab=${encodeURIComponent(_mgmtLab)}&date=${encodeURIComponent(mgmtDate || new Date().toLocaleDateString('en-CA'))}&time_start=${encodeURIComponent(mgmtSlotStart)}&time_end=${encodeURIComponent(mgmtSlotEnd)}`).then(r => r.json())
+    ])
+    .then(([resData, blockData]) => {
+        const reserved = mgmtDate && mgmtSlotStart ? (resData.reserved || []) : [];
+        const occupied = resData.occupied || blockData.occupied || [];
+        const blocked  = blockData.blocked  || [];
+
+        _blockedPCs = blocked;
         grid.innerHTML = '';
         let blockedCount = _blockedPCs.length;
 
         for (let i = 1; i <= 50; i++) {
             const isBlocked  = _blockedPCs.includes(i);
-            const isOccupied = occupiedPCs.includes(i);
-            const isReserved = reservedPCs.includes(i) && !isOccupied && !isBlocked;
+            const isOccupied = occupied.includes(i);
+            const isReserved = reserved.includes(i) && !isOccupied && !isBlocked;
+
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.style.cssText = `width:100%;height:60px;border-radius:8px;border:2px solid;font-size:0.65rem;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:Arial,sans-serif;transition:all 0.15s;`;
-            if (isOccupied) {
-                btn.style.background = '#f8d7da';
-                btn.style.borderColor = '#c0392b';
-                btn.style.color = '#c0392b';
-                btn.style.cursor = 'not-allowed';
-                btn.style.opacity = '0.85';
+
+            if (isOccupied && !isBlocked) {
+                // RED CIRCLE = Occupied (active sit-in) — cannot toggle
+                btn.style.background   = '#f8d7da';
+                btn.style.borderColor  = '#c0392b';
+                btn.style.color        = '#c0392b';
+                btn.style.cursor       = 'not-allowed';
                 btn.title = `PC ${i} — In Use (student sitting in)`;
                 btn.disabled = true;
+                btn.innerHTML = `<span style="font-size:0.9rem;">🔴</span><span>${i}</span>`;
+
             } else if (isBlocked) {
-                btn.style.background = '#f8d7da';
-                btn.style.borderColor = '#c0392b';
-                btn.style.color = '#c0392b';
-                btn.style.cursor = 'pointer';
-                btn.title = `PC ${i} — Blocked (click to unblock)`;
+                // PINK/RED = Unavailable (manually blocked by admin) — can toggle
+                btn.style.background   = '#f8d7da';
+                btn.style.borderColor  = '#c0392b';
+                btn.style.color        = '#c0392b';
+                btn.style.cursor       = 'pointer';
+                btn.title = `PC ${i} — Unavailable (click to make available)`;
+                btn.innerHTML = `<span style="font-size:0.9rem;">🖥️</span><span>${i}</span>`;
                 btn.onclick = () => togglePcBlock(i, btn);
+
             } else if (isReserved) {
-                btn.style.background = '#fff3cd';
-                btn.style.borderColor = '#F4B942';
-                btn.style.color = '#856404';
-                btn.style.cursor = 'not-allowed';
+                // YELLOW = Reserved — cannot toggle
+                btn.style.background   = '#fff3cd';
+                btn.style.borderColor  = '#F4B942';
+                btn.style.color        = '#856404';
+                btn.style.cursor       = 'not-allowed';
                 btn.title = `PC ${i} — Reserved by a student`;
                 btn.disabled = true;
                 btn.innerHTML = `<span style="font-size:0.9rem;">📋</span><span>${i}</span>`;
+
             } else {
-                btn.style.background = '#eafaf1';
-                btn.style.borderColor = '#27ae60';
-                btn.style.color = '#27ae60';
-                btn.style.cursor = 'pointer';
-                btn.title = `PC ${i} — Available (click to block)`;
+                // GREEN = Available — can toggle to block
+                btn.style.background   = '#eafaf1';
+                btn.style.borderColor  = '#27ae60';
+                btn.style.color        = '#27ae60';
+                btn.style.cursor       = 'pointer';
+                btn.title = `PC ${i} — Available (click to make unavailable)`;
+                btn.innerHTML = `<span style="font-size:0.9rem;">🖥️</span><span>${i}</span>`;
                 btn.onclick = () => togglePcBlock(i, btn);
             }
-            btn.innerHTML = `<span style="font-size:0.9rem;">${isOccupied ? '🔴' : '🖥️'}</span><span>${i}</span>`;
+
             grid.appendChild(btn);
         }
-        msg.textContent = `Lab ${_mgmtLab}: ${blockedCount} manually blocked, ${occupiedPCs.length} in use, ${50 - blockedCount - occupiedPCs.length} available.`;
-        msg.style.color = (blockedCount + occupiedPCs.length) > 0 ? '#c0392b' : '#27ae60';
+
+        msg.textContent = `Lab ${_mgmtLab}: ${blockedCount} manually blocked, ${occupied.length} in use, ${50 - blockedCount - occupied.length} available.`;
+        msg.style.color = (blockedCount + occupied.length) > 0 ? '#c0392b' : '#27ae60';
     })
     .catch(() => {
         grid.innerHTML = '<div style="color:#c0392b;font-size:0.85rem;">Failed to load.</div>';
@@ -3980,37 +4739,64 @@ function togglePcBlock(pcNumber, btn) {
     fetch('/admin/toggle-pc-block', { method: 'POST', body: fd })
     .then(r => r.json())
     .then(data => {
-        if (data.success) {
-            if (newBlocked) {
-                _blockedPCs.push(pcNumber);
-                btn.style.background = '#f8d7da';
-                btn.style.borderColor = '#c0392b';
-                btn.style.color = '#c0392b';
-                btn.title = `PC ${pcNumber} — Blocked (click to unblock)`;
-            } else {
-                _blockedPCs = _blockedPCs.filter(p => p !== pcNumber);
-                btn.style.background = '#eafaf1';
-                btn.style.borderColor = '#27ae60';
-                btn.style.color = '#27ae60';
-                btn.title = `PC ${pcNumber} — Available (click to block)`;
-            }
-            const msg = document.getElementById('mgmt_status_msg');
-            const blockedCount = _blockedPCs.length;
-            msg.textContent = `Lab ${_mgmtLab}: ${blockedCount} PC(s) blocked, ${50 - blockedCount} available.`;
-            msg.style.color = blockedCount > 0 ? '#c0392b' : '#27ae60';
-            showToast(newBlocked ? `🚫 PC ${pcNumber} blocked.` : `✅ PC ${pcNumber} unblocked.`, newBlocked ? 'error' : 'success');
+    if (data.success) {
+        if (newBlocked) {
+            _blockedPCs.push(pcNumber);
+            btn.style.background   = '#f8d7da';
+            btn.style.borderColor  = '#c0392b';
+            btn.style.color        = '#c0392b';
+            btn.title = `PC ${pcNumber} — Unavailable (click to make available)`;
+            // Keep onclick so admin can unblock
+            btn.onclick = () => togglePcBlock(pcNumber, btn);
+        } else {
+            _blockedPCs = _blockedPCs.filter(p => p !== pcNumber);
+            btn.style.background   = '#eafaf1';
+            btn.style.borderColor  = '#27ae60';
+            btn.style.color        = '#27ae60';
+            btn.title = `PC ${pcNumber} — Available (click to make unavailable)`;
+            btn.onclick = () => togglePcBlock(pcNumber, btn);
         }
-    })
+        const msg = document.getElementById('mgmt_status_msg');
+        const blockedCount = _blockedPCs.length;
+        msg.textContent = `Lab ${_mgmtLab}: ${blockedCount} PC(s) blocked, ${50 - blockedCount} available.`;
+        msg.style.color = blockedCount > 0 ? '#c0392b' : '#27ae60';
+        showToast(newBlocked ? `🚫 PC ${pcNumber} set to Unavailable.` : `✅ PC ${pcNumber} set to Available.`, newBlocked ? 'error' : 'success');
+    }
+})
     .catch(() => showToast('✗ Connection error.', 'error'));
 }
 
 // Load the grid when reservation section is opened
 document.addEventListener('DOMContentLoaded', function() {
-    // Load mgmt grid after short delay to ensure DOM is ready
+    document.getElementById('mgmt_filter_date').value = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
     setTimeout(() => loadMgmtGrid(), 500);
-    // Auto-refresh the PC grid every 10 seconds
     setInterval(() => loadMgmtGrid(), 10000);
-    // Auto-expire reservations every 60 seconds
+
+// Auto-logout overdue sessions every 30 seconds
+setInterval(() => {
+    fetch('/admin/sitin/auto-logout-overdue', { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+        if (data.auto_logged && data.auto_logged.length > 0) {
+            data.auto_logged.forEach(id => {
+                // Remove from sit-in table
+                document.querySelectorAll('#sitinTableBody tr').forEach(row => {
+                    const logoutBtn = row.querySelector(`[data-id="${id}"]`);
+                    if (logoutBtn) {
+                        allSitinRows = allSitinRows.filter(r => r !== row);
+                        sitinFiltered = sitinFiltered.filter(r => r !== row);
+                        row.remove();
+                    }
+                });
+                renderTable('sitin');
+            });
+            showToast(`⚠️ ${data.auto_logged.length} session(s) auto-logged out due to overtime.`, 'error');
+        }
+    })
+    .catch(() => {});
+}, 30000);
+
+    // Existing auto-expire reservations
     setInterval(() => {
         fetch('/admin/reservations/auto-expire', { method: 'POST' })
         .then(r => r.json())
@@ -4059,170 +4845,6 @@ function loadAvailablePCs() {
 
 let _editingPC = false;
 let _newSelectedPC = null;
-
-function enablePCEdit() {
-    _editingPC = true;
-    _newSelectedPC = null;
-    document.getElementById('rmSavePCRow').style.display = 'block';
-    document.getElementById('rmNewPCLabel').textContent = 'Click a PC to select';
-    document.getElementById('reqEditPCBtn').style.display = 'none';
-    // Reload grid in edit mode
-    const lab  = document.getElementById('rm_lab').value.replace('Lab ', '');
-    const date = document.getElementById('rm_date').value;
-    const currentPC = parseInt(document.getElementById('rm_pc').value.replace('PC ', ''));
-    loadReqPCGridEditable(lab, date, currentPC);
-}
-
-function cancelPCEdit() {
-    _editingPC = false;
-    _newSelectedPC = null;
-    document.getElementById('rmSavePCRow').style.display = 'none';
-    document.getElementById('reqEditPCBtn').style.display = '';
-    // Reload original grid
-    const lab  = document.getElementById('rm_lab').value.replace('Lab ', '');
-    const date = document.getElementById('rm_date').value;
-    const currentPC = parseInt(document.getElementById('rm_pc').value.replace('PC ', ''));
-    loadReqPCGrid(lab, date, currentPC);
-}
-
-function loadReqPCGridEditable(lab, date, currentPC) {
-    const grid = document.getElementById('rm_pc_grid');
-    grid.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:0.82rem;padding:0.5rem;">Loading...</div>';
-    Promise.all([
-    fetch(`/admin/get-reserved-pcs?lab=${encodeURIComponent(lab)}&date=${encodeURIComponent(date)}`).then(r => r.json()),
-    fetch(`/admin/get-blocked-pcs?lab=${encodeURIComponent(lab)}`).then(r => r.json())
-])
-    .then(([resData, blockData]) => {
-        const reserved = resData.reserved || [];
-        const occupied = blockData.occupied || [];
-        const blocked  = blockData.blocked  || [];
-        const allTaken = [...new Set([...reserved, ...occupied, ...blocked])];
-        grid.innerHTML = '';
-        for (let i = 1; i <= 50; i++) {
-            const isThis   = i === currentPC;
-            const isTaken  = allTaken.includes(i) && !isThis;
-            const btn      = document.createElement('div');
-            btn.style.cssText = `width:100%;padding-top:100%;position:relative;border-radius:5px;border:1.5px solid;`;
-
-            if (isTaken) {
-                btn.style.background   = '#f8d7da';
-                btn.style.borderColor  = '#f5c6cb';
-                btn.style.cursor       = 'not-allowed';
-                btn.title = `PC ${i} — Taken`;
-            } else if (isThis) {
-                btn.style.background  = '#0F3E7D';
-                btn.style.borderColor = '#0d3569';
-                btn.style.cursor      = 'pointer';
-                btn.title = `PC ${i} — Current (click to reselect)`;
-                btn.setAttribute('data-selectable', '1');
-                btn.onclick = function() {
-                    grid.querySelectorAll('[data-selectable]').forEach(b => {
-                        b.style.background   = '#E6F1FB';
-                        b.style.borderColor  = '#185FA5';
-                        b.querySelector('span:last-child').style.color = '#185FA5';
-                        b.querySelector('span:first-child').style.color = '#185FA5';
-                    });
-                    btn.style.background  = '#1e7e34';
-                    btn.style.borderColor = '#1e7e34';
-                    btn.querySelector('span:last-child').style.color = 'white';
-                    btn.querySelector('span:first-child').style.color = 'white';
-                    _newSelectedPC = i;
-                    document.getElementById('rmNewPCLabel').textContent = `Selected: PC ${i}`;
-                };
-            } else {
-                btn.style.background  = '#E6F1FB';
-                btn.style.borderColor = '#185FA5';
-                btn.style.cursor      = 'pointer';
-                btn.title = `PC ${i} — Click to select`;
-                btn.onclick = function() {
-                    // Deselect all
-                    grid.querySelectorAll('[data-selectable]').forEach(b => {
-                        b.style.background   = '#E6F1FB';
-                        b.style.borderColor  = '#185FA5';
-                        b.querySelector('span:last-child').style.color = '#185FA5';
-                        b.querySelector('span:first-child').style.color = '#185FA5';
-                    });
-                    // Select this
-                    btn.style.background  = '#1e7e34';
-                    btn.style.borderColor = '#1e7e34';
-                    btn.querySelector('span:last-child').style.color = 'white';
-                    btn.querySelector('span:first-child').style.color = 'white';
-                    _newSelectedPC = i;
-                    document.getElementById('rmNewPCLabel').textContent = `Selected: PC ${i}`;
-                };
-                btn.setAttribute('data-selectable', '1');
-            }
-
-            const labelContainer = document.createElement('div');
-            labelContainer.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;`;
-            const pcLabel = document.createElement('span');
-            pcLabel.textContent = '🖥️';
-            pcLabel.style.cssText = `font-size:0.7rem;font-weight:700;color:${isTaken ? '#c0392b' : isThis ? 'white' : '#185FA5'};line-height:1;`;
-            const numLabel = document.createElement('span');
-            numLabel.textContent = i;
-            numLabel.style.cssText = `font-size:0.57rem;font-weight:700;color:${isTaken ? '#c0392b' : isThis ? 'white' : '#185FA5'};line-height:1;`;
-            labelContainer.appendChild(pcLabel);
-            labelContainer.appendChild(numLabel);
-            btn.appendChild(labelContainer);
-            grid.appendChild(btn);
-        }
-    })
-    .catch(() => { grid.innerHTML = '<div style="color:#c0392b;font-size:0.82rem;">Failed to load.</div>'; });
-}
-
-function saveNewPC() {
-    if (!_newSelectedPC) {
-        showToast('✗ Please click an available PC first.', 'error');
-        return;
-    }
-    const fd = new FormData();
-    fd.append('id', _currentReqId);
-    fd.append('pc_number', _newSelectedPC);
-    fetch('/admin/reservations/update-pc', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            const updatedPC = _newSelectedPC;
-
-            // Update Reservation Details panel
-            document.getElementById('rm_pc').value = 'PC ' + updatedPC;
-
-            // Update reservation request table row
-            const row = document.getElementById('req-row-' + _currentReqId);
-            if (row) {
-                const cells = row.querySelectorAll('td');
-                if (cells[6]) cells[6].textContent = 'PC ' + updatedPC;
-
-                // ← ADD THIS LINE:
-                row.setAttribute('onclick', row.getAttribute('onclick').replace(
-                    /openReqModal\((\d+),([^,]+),([^,]+),([^,]+),([^,]+),([^,]+),\s*\d+\s*,/,
-                    `openReqModal($1,$2,$3,$4,$5,$6, ${updatedPC},`
-                ));
-
-                const sitinBtn = document.getElementById('sitin-btn-' + _currentReqId);
-                if (sitinBtn) sitinBtn.dataset.pc = updatedPC;
-            }
-
-            // Update Current Sit-in table row live
-            document.querySelectorAll('#sitinTableBody tr').forEach(tr => {
-                const tds = tr.querySelectorAll('td');
-                if (tds[1] && tds[1].textContent.trim() === document.getElementById('rm_id').value.trim()) {
-                    if (tds[5]) tds[5].textContent = updatedPC;
-                }
-            });
-
-            cancelPCEdit();
-            showToast('✓ PC updated to PC ' + updatedPC + '.', 'success');
-            loadMgmtGrid();
-            const lab  = document.getElementById('rm_lab').value.replace('Lab ', '');
-            const date = document.getElementById('rm_date').value;
-            loadReqPCGrid(lab, date, updatedPC);
-        } else {
-            showToast('✗ ' + (data.message || 'Failed to update PC.'), 'error');
-        }
-    })
-    .catch(() => showToast('✗ Connection error.', 'error'));
-}
 
 function applyRejectReason(sel) {
     if (sel.value) {
@@ -4308,6 +4930,479 @@ function switchRecordsTab(panelId, btn) {
 }
 function openSitinFormForStudent(id, name, remaining) {
     openSitinFormModal(id, name, remaining);
+}
+function checkWaitingLogout() {
+    const now = new Date();
+    const nowStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    document.querySelectorAll('#sitinTableBody tr').forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (!cells.length) return;
+        const availUntilCell = cells[7]; // "Available Until" column
+        const statusCell = cells[8];     // "Status" column
+        if (!availUntilCell || !statusCell) return;
+        const badge = statusCell.querySelector('.status-badge');
+        if (!badge) return;
+        const untilText = availUntilCell.innerText.trim();
+        // Check if it says "Until HH:MM AM/PM"
+        if (untilText.startsWith('Until')) {
+            // If this session's time_end has passed, flag it
+            const timeMatch = untilText.match(/Until (\d{1,2}:\d{2} [AP]M)/);
+            if (timeMatch) {
+                const [h, mPart] = timeMatch[1].split(':');
+                const [m, ampm] = mPart.split(' ');
+                let hour = parseInt(h);
+                if (ampm === 'PM' && hour !== 12) hour += 12;
+                if (ampm === 'AM' && hour === 12) hour = 0;
+                const endMinutes = hour * 60 + parseInt(m);
+                const nowMinutes = now.getHours() * 60 + now.getMinutes();
+                if (nowMinutes >= endMinutes) {
+                    badge.textContent = '⚠️ Waiting Logout';
+                    badge.style.background = '#fff3cd';
+                    badge.style.color = '#856404';
+                }
+            }
+        }
+    });
+}
+// Run on load and every minute
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(checkWaitingLogout, 1000);
+    setInterval(checkWaitingLogout, 60000);
+});
+// ══════════════════════════════════════
+// EXTEND SESSION
+// ══════════════════════════════════════
+let _pendingExtendId = null;
+
+function confirmExtend(sessionId) {
+    _pendingExtendId = sessionId;
+    document.getElementById('extendModalMsg').style.display = 'none';
+    document.getElementById('extendConfirmBtn').disabled = false;
+    document.getElementById('extendConfirmBtn').textContent = 'Yes, Extend';
+    document.getElementById('extendConfirmBtn').onclick = submitExtend;
+    showModal('extendModal');
+}
+
+function submitExtend() {
+    if (!_pendingExtendId) return;
+    const btn = document.getElementById('extendConfirmBtn');
+    const msgEl = document.getElementById('extendModalMsg');
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+
+    fetch('/admin/sitin/extend/' + _pendingExtendId, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('extendModal');
+            showToast(`✓ Session extended until ${formatTimeStr(data.new_end)}.`, 'success');
+            // Update the Available Until cell in the row
+            document.querySelectorAll('#sitinTableBody tr').forEach(row => {
+                const extBtn = row.querySelector(`#extend-btn-${_pendingExtendId}`);
+                if (extBtn) {
+                    const availCell = row.cells[7];
+                    if (availCell) {
+                        availCell.innerHTML = `<span style="font-weight:700;color:#e67e22;">
+                            Until ${formatTimeStr(data.new_end)}</span>`;
+                    }
+                    // Remove overdue styling
+                    row.classList.remove('row-overdue');
+                    const badge = row.querySelector('.badge-overdue');
+                    if (badge) {
+                        badge.textContent = 'Sitting In';
+                        badge.className = 'status-badge status-active';
+                        badge.style.animation = 'none';
+                    }
+                }
+            });
+        } else {
+            msgEl.textContent = '✗ ' + (data.message || 'Cannot extend.');
+            msgEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'Yes, Extend';
+        }
+    })
+    .catch(() => {
+        msgEl.textContent = '✗ Connection error.';
+        msgEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Yes, Extend';
+    });
+}
+
+function formatTimeStr(t) {
+    if (!t) return '—';
+    const [h, m] = t.split(':');
+    let hr = parseInt(h);
+    const ampm = hr >= 12 ? 'PM' : 'AM';
+    hr = hr % 12 || 12;
+    return `${hr}:${m} ${ampm}`;
+}
+
+// ══════════════════════════════════════
+// OVERDUE CHECKER (runs every 30s)
+// ══════════════════════════════════════
+function checkOverdueSessions() {
+    fetch('/admin/sitin/check-overdue', { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+        if (data.overdue_ids && data.overdue_ids.length > 0) {
+            data.overdue_ids.forEach(id => {
+                document.querySelectorAll('#sitinTableBody tr').forEach(row => {
+                    const logoutBtn = row.querySelector(`[data-id="${id}"]`);
+                    if (logoutBtn) {
+                        row.classList.add('row-overdue');
+                        const badge = row.querySelector('.status-badge');
+                        if (badge) {
+                            badge.outerHTML = `<span class="badge-overdue">⚠️ Overdue</span>`;
+                        }
+                        // Disable extend if next reservation conflict
+                        const extBtn = row.querySelector(`#extend-btn-${id}`);
+                        // Extend button stays enabled — backend will check conflict
+                    }
+                });
+            });
+        }
+    })
+    .catch(() => {});
+}
+
+// Run overdue check every 30 seconds
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(checkOverdueSessions, 2000);
+    setInterval(checkOverdueSessions, 30000);
+});
+
+function formatTimeTo12hr(t) {
+    if (!t) return '—';
+    try {
+        const [h, m] = t.trim().split(':');
+        let hr = parseInt(h);
+        const ampm = hr >= 12 ? 'PM' : 'AM';
+        hr = hr % 12 || 12;
+        return `${hr}:${m} ${ampm}`;
+    } catch { return t; }
+}
+function onRMGridTimeslotChange() {
+    const slot = document.getElementById('rm_grid_timeslot').value;
+    _newReqTime = slot || null;
+    _newReqPC   = null;
+    const date = document.getElementById('rm_grid_date').value || document.getElementById('rm_date').value;
+    const lab  = document.getElementById('rm_lab').value.replace('Lab ', '');
+    const pc   = parseInt(document.getElementById('rm_pc').value.replace('PC ', ''));
+    if (slot) {
+        const [s, e] = slot.split('|');
+        const fmt = t => { let [h,m]=t.split(':'); h=parseInt(h); const ap=h>=12?'PM':'AM'; h=h%12||12; return `${h}:${m} ${ap}`; };
+        document.getElementById('rm_time').value = `${fmt(s)} – ${fmt(e)}`;
+    }
+    document.getElementById('rmNewPCLabel').textContent = 'Now select a PC';
+    loadReqPCGrid(lab, date, pc);
+}
+// ══════════════════════════════════════
+// STUDENTS SUB-TAB
+// ══════════════════════════════════════
+function switchStudTab(panelId, btn) {
+    document.querySelectorAll('#section-students .res-tab-panel').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('#section-students .res-tab-btn').forEach(b => b.classList.remove('res-tab-active'));
+    document.getElementById(panelId).style.display = 'block';
+    btn.classList.add('res-tab-active');
+    if (panelId === 'stud-panel-leaderboard') buildLeaderboard();
+}
+
+function buildLeaderboard() {
+    const rows = [...document.querySelectorAll('#studentTable tbody tr')].filter(r => !r.querySelector('td[colspan]'));
+    const courseFilter = document.getElementById('lbFilterCourse')?.value || '';
+    const yearFilter   = document.getElementById('lbFilterYear')?.value || '';
+    const limit        = parseInt(document.getElementById('lbLimit')?.value || '10');
+    const MAX_DEFAULT  = 30; // default sitin_count before any sessions used
+
+    let data = rows.map(r => {
+        const cells = r.querySelectorAll('td');
+        const remaining = parseInt(cells[4]?.querySelector('.sitin-remaining')?.textContent || '30');
+        const used = MAX_DEFAULT - remaining < 0 ? 0 : MAX_DEFAULT - remaining;
+        const idNum  = cells[0]?.innerText.trim();
+        const name   = cells[1]?.innerText.trim();
+        const year   = cells[2]?.innerText.replace(/st|nd|rd|th/,'').trim();
+        const course = cells[3]?.innerText.trim();
+        return { idNum, name, year, course, used, remaining };
+    });
+
+    if (courseFilter) data = data.filter(d => d.course === courseFilter);
+    if (yearFilter)   data = data.filter(d => d.year === yearFilter);
+    data.sort((a, b) => b.used - a.used);
+
+    // Summary cards
+    if (data.length > 0) {
+        document.getElementById('lbTopName').textContent = data[0].name.split(',')[0];
+        document.getElementById('lbTopSessions').textContent = data[0].used + ' sessions used';
+        const avg = data.reduce((s, d) => s + d.used, 0) / data.length;
+        document.getElementById('lbAvgSessions').textContent = avg.toFixed(1);
+        // Most active course
+        const courseCounts = {};
+        data.forEach(d => { courseCounts[d.course] = (courseCounts[d.course] || 0) + 1; });
+        const topCourse = Object.entries(courseCounts).sort((a,b) => b[1]-a[1])[0];
+        if (topCourse) {
+            document.getElementById('lbTopCourse').textContent = topCourse[0];
+            document.getElementById('lbTopCourseCount').textContent = topCourse[1] + ' students';
+        }
+    }
+
+    const top = data.slice(0, limit);
+    const maxUsed = top.length > 0 ? top[0].used : 1;
+    const medals = ['🥇','🥈','🥉'];
+    const barColors = ['linear-gradient(90deg,#F4B942,#f39c12)','linear-gradient(90deg,#aaa,#888)','linear-gradient(90deg,#cd7f32,#b5651d)'];
+
+    const tbody = document.getElementById('leaderboardBody');
+    tbody.innerHTML = '';
+    if (top.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="no-data">No data available.</td></tr>';
+        return;
+    }
+    top.forEach((d, i) => {
+        const rank = i + 1;
+        const pct  = maxUsed > 0 ? Math.round((d.used / maxUsed) * 100) : 0;
+        const barColor = i < 3 ? barColors[i] : 'linear-gradient(90deg,#0F3E7D,#185FA5)';
+        const medalHtml = rank <= 3
+            ? `<span class="lb-rank-medal" style="background:${['#fff8dc','#e8e8e8','#f5e6d3'][i]};color:${['#b8860b','#888','#8b4513'][i]};">${medals[i]}</span>`
+            : `<span class="lb-rank-medal" style="background:#f0f0f0;color:#555;font-size:0.78rem;">#${rank}</span>`;
+        const remainClass = d.remaining <= 5 ? 'remaining-low' : d.remaining <= 10 ? 'remaining-mid' : 'remaining-ok';
+        const tr = document.createElement('tr');
+        if (rank <= 3) tr.style.background = ['rgba(244,185,66,0.08)','rgba(200,200,200,0.08)','rgba(205,127,50,0.08)'][i];
+        tr.innerHTML = `
+            <td style="text-align:center;">${medalHtml}</td>
+            <td>${d.idNum}</td>
+            <td style="font-weight:${rank<=3?'700':'400'};color:${rank===1?'#0F3E7D':'inherit'};">${d.name}</td>
+            <td><span style="background:#E6F1FB;color:#0F3E7D;padding:0.2rem 0.6rem;border-radius:10px;font-size:0.78rem;font-weight:700;">${d.course}</span></td>
+            <td>${d.year}${['','st','nd','rd','th'][parseInt(d.year)]||'th'}</td>
+            <td style="font-weight:700;color:#0F3E7D;font-size:1rem;">${d.used}</td>
+            <td><span class="sitin-remaining ${remainClass}">${d.remaining}</span></td>
+            <td style="min-width:120px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
+                    <span style="font-size:0.75rem;color:#888;min-width:28px;">${pct}%</span>
+                </div>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// ══════════════════════════════════════
+// AI INSIGHTS ENGINE
+// ══════════════════════════════════════
+const AI_LOADING_MSGS = [
+    'Analyzing sit-in patterns...',
+    'Computing lab utilization scores...',
+    'Detecting peak hour trends...',
+    'Generating smart recommendations...',
+    'Finalizing insights...'
+];
+
+function generateAIInsights() {
+    document.getElementById('aiDefaultState').style.display  = 'none';
+    document.getElementById('aiResultsState').style.display  = 'none';
+    document.getElementById('aiLoadingState').style.display  = 'block';
+
+    let step = 0;
+    const msgEl = document.getElementById('aiLoadingMsg');
+    const interval = setInterval(() => {
+        if (step < AI_LOADING_MSGS.length) { msgEl.textContent = AI_LOADING_MSGS[step++]; }
+    }, 480);
+
+    setTimeout(() => {
+        clearInterval(interval);
+        const insights = computeAIInsights();
+        renderAIInsights(insights);
+        document.getElementById('aiLoadingState').style.display  = 'none';
+        document.getElementById('aiResultsState').style.display  = 'block';
+    }, 2600);
+}
+
+function computeAIInsights() {
+    const sessionRows = [...document.querySelectorAll('#recordsTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
+    const studentRows = [...document.querySelectorAll('#studentTable tbody tr')].filter(r => !r.querySelector('td[colspan]'));
+
+    const total = sessionRows.length;
+    const labCounts = {}, purposeCounts = {}, hourCounts = {};
+    let activeSessions = 0;
+
+    sessionRows.forEach(r => {
+        const cells = r.querySelectorAll('td');
+        const lab     = cells[4]?.innerText.trim();
+        const purpose = cells[3]?.innerText.trim();
+        const loginT  = cells[6]?.innerText.trim();
+        const logoutT = cells[7]?.innerText.trim();
+
+        if (lab)     labCounts[lab]         = (labCounts[lab]         || 0) + 1;
+        if (purpose) purposeCounts[purpose] = (purposeCounts[purpose] || 0) + 1;
+        if (!logoutT || logoutT === '—') activeSessions++;
+
+        if (loginT && loginT !== '—') {
+            const hrMatch = loginT.match(/(\d{1,2}):\d{2}\s*(AM|PM)/i);
+            if (hrMatch) {
+                let h = parseInt(hrMatch[1]);
+                const ap = hrMatch[2].toUpperCase();
+                if (ap === 'PM' && h !== 12) h += 12;
+                if (ap === 'AM' && h === 12) h = 0;
+                const slot = h < 12 ? 'Morning (8–12)' : h < 15 ? 'Afternoon (12–3)' : 'Late Afternoon (3–6)';
+                hourCounts[slot] = (hourCounts[slot] || 0) + 1;
+            }
+        }
+    });
+
+    const topLab     = Object.entries(labCounts).sort((a,b) => b[1]-a[1])[0];
+    const topPurpose = Object.entries(purposeCounts).sort((a,b) => b[1]-a[1])[0];
+    const peakSlot   = Object.entries(hourCounts).sort((a,b) => b[1]-a[1])[0];
+    const lowRemain  = studentRows.filter(r => {
+        const rem = parseInt(r.querySelector('.sitin-remaining')?.textContent || '30');
+        return rem <= 5;
+    }).length;
+
+    const labUtilPct = topLab ? Math.round((topLab[1] / total) * 100) : 0;
+    const topPurposePct = topPurpose ? Math.round((topPurpose[1] / total) * 100) : 0;
+
+    return { total, topLab, topPurpose, peakSlot, lowRemain, labUtilPct, topPurposePct, activeSessions, labCounts, purposeCounts };
+}
+
+function renderAIInsights(d) {
+    const cards = [
+        { icon: '🏫', label: 'Most Utilized Lab', value: d.topLab ? `Lab ${d.topLab[0]}` : '—', sub: d.topLab ? `${d.topLab[1]} visits (${d.labUtilPct}% of total)` : '', color: '#0F3E7D', bg: '#E6F1FB' },
+        { icon: '💻', label: 'Top Purpose', value: d.topPurpose ? d.topPurpose[0].split(' ')[0] : '—', sub: d.topPurpose ? `${d.topPurpose[1]} sessions (${d.topPurposePct}%)` : '', color: '#1e7e34', bg: '#eafaf1' },
+        { icon: '⏰', label: 'Peak Time Slot', value: d.peakSlot ? d.peakSlot[0].split(' ')[0] : '—', sub: d.peakSlot ? d.peakSlot[0] + ' — ' + d.peakSlot[1] + ' sessions' : 'No data', color: '#856404', bg: '#fff3cd' },
+        { icon: '⚠️', label: 'Low Session Alert', value: d.lowRemain, sub: 'students with ≤5 sessions left', color: '#c0392b', bg: '#fdecea' },
+    ];
+
+    document.getElementById('aiInsightCards').innerHTML = cards.map((c, idx) => `
+        <div class="ai-insight-card" style="background:${c.bg};border-radius:16px;padding:1rem 1.25rem;display:flex;align-items:flex-start;gap:0.75rem;animation-delay:${idx*0.1}s;">
+            <div style="font-size:1.5rem;flex-shrink:0;">${c.icon}</div>
+            <div>
+                <div style="font-size:0.72rem;font-weight:700;color:${c.color};opacity:0.75;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem;">${c.label}</div>
+                <div style="font-size:1.25rem;font-weight:800;color:${c.color};line-height:1.2;">${c.value}</div>
+                <div style="font-size:0.78rem;color:${c.color};opacity:0.7;margin-top:0.2rem;">${c.sub}</div>
+            </div>
+        </div>`).join('');
+
+    const recs = [];
+    if (d.topLab && d.labUtilPct > 40) recs.push({ type: 'warn', icon: '🔴', title: 'Lab Congestion Risk', body: `Lab ${d.topLab[0]} accounts for ${d.labUtilPct}% of all sessions. Consider redistributing students to underutilized labs to reduce overcrowding.` });
+    else if (d.topLab) recs.push({ type: 'ok', icon: '🟢', title: 'Balanced Lab Usage', body: `Lab distribution appears healthy. Lab ${d.topLab[0]} leads with ${d.labUtilPct}% utilization — no immediate action needed.` });
+    if (d.lowRemain > 5) recs.push({ type: 'warn', icon: '⚠️', title: 'Session Depletion Warning', body: `${d.lowRemain} students have 5 or fewer sessions remaining. Consider notifying them or scheduling a session reset.` });
+    if (d.peakSlot && d.peakSlot[1] > d.total * 0.5) recs.push({ type: 'info', icon: '📅', title: 'Peak Hour Scheduling', body: `Over half of all sit-ins occur during ${d.peakSlot[0]}. Recommend ensuring all labs are fully staffed and operational during this window.` });
+    if (d.topPurpose && d.topPurposePct > 35) recs.push({ type: 'info', icon: '💡', title: 'Curriculum Insight', body: `${d.topPurpose[0]} dominates usage at ${d.topPurposePct}%. CCS may benefit from adding more PCs pre-configured for ${d.topPurpose[0]} tasks.` });
+    if (recs.length === 0) recs.push({ type: 'ok', icon: '✅', title: 'System Looks Healthy', body: 'No major anomalies detected in the current sit-in data. Continue monitoring trends weekly.' });
+
+    const typeStyles = {
+        warn:  { bg: '#fdecea', border: '#e74c3c', color: '#c0392b' },
+        ok:    { bg: '#eafaf1', border: '#27ae60', color: '#1e7e34' },
+        info:  { bg: '#E6F1FB', border: '#185FA5', color: '#0F3E7D' },
+    };
+
+    document.getElementById('aiRecommendations').innerHTML = `
+        <div style="font-size:0.82rem;font-weight:800;color:#4a0F9D;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem;">📋 Recommendations</div>
+        <div style="display:flex;flex-direction:column;gap:0.65rem;">
+        ${recs.map((r, i) => {
+            const s = typeStyles[r.type];
+            return `<div class="ai-insight-card" style="background:${s.bg};border-left:4px solid ${s.border};border-radius:0 12px 12px 0;padding:0.8rem 1rem;display:flex;gap:0.75rem;align-items:flex-start;animation-delay:${(i+4)*0.1}s;">
+                <span style="font-size:1.1rem;flex-shrink:0;">${r.icon}</span>
+                <div>
+                    <div style="font-size:0.85rem;font-weight:800;color:${s.color};margin-bottom:0.2rem;">${r.title}</div>
+                    <div style="font-size:0.82rem;color:${s.color};opacity:0.85;line-height:1.5;">${r.body}</div>
+                </div>
+            </div>`;
+        }).join('')}
+        </div>`;
+}
+
+// ══════════════════════════════════════
+// LAB RANKING GRID + SCORE TABLE
+// ══════════════════════════════════════
+function buildLabRankings() {
+    const sessionRows = [...document.querySelectorAll('#recordsTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
+    const feedbackRows = [...document.querySelectorAll('#feedbackTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
+    const labs = ['524','526','528','530','542','544'];
+    const totalSessions = sessionRows.length || 1;
+
+    const labData = {};
+    labs.forEach(l => { labData[l] = { visits:0, uniqueUsers:new Set(), ratings:[], lastVisit:'' }; });
+
+    sessionRows.forEach(r => {
+        const cells = r.querySelectorAll('td');
+        const lab  = cells[4]?.innerText.trim();
+        const user = cells[1]?.innerText.trim();
+        const date = cells[8]?.innerText.trim();
+        if (labData[lab]) {
+            labData[lab].visits++;
+            if (user) labData[lab].uniqueUsers.add(user);
+            if (date && date > labData[lab].lastVisit) labData[lab].lastVisit = date;
+        }
+    });
+
+    feedbackRows.forEach(r => {
+        const cells = r.querySelectorAll('td');
+        const lab = cells[2]?.innerText.trim();
+        let rating = 0;
+        cells[4]?.querySelectorAll('span').forEach(s => { if (s.style.color === 'rgb(244, 185, 66)') rating++; });
+        if (labData[lab]) labData[lab].ratings.push(rating);
+    });
+
+    const today = new Date().toISOString().slice(0,10);
+    const scored = labs.map(lab => {
+        const d = labData[lab];
+        const visits = d.visits;
+        const avgRating = d.ratings.length ? d.ratings.reduce((a,b)=>a+b,0)/d.ratings.length : 0;
+        const uniqueUsers = d.uniqueUsers.size;
+        const daysSince = d.lastVisit ? Math.max(0, Math.round((new Date(today)-new Date(d.lastVisit))/(1000*60*60*24))) : 999;
+        const recency = daysSince === 999 ? 0 : Math.max(0, 100 - daysSince * 5);
+        const score = (visits * 0.4) + (avgRating * 20 * 0.3) + (uniqueUsers * 0.2) + (recency * 0.1);
+        return { lab, visits, avgRating, uniqueUsers, recency, score };
+    }).sort((a,b) => b.score - a.score);
+
+    const maxScore = scored[0]?.score || 1;
+    const rankColors = ['#F4B942','#aaa','#cd7f32','#0F3E7D','#27ae60','#e74c3c'];
+    const rankMedals = ['🥇','🥈','🥉','4th','5th','6th'];
+
+    // Ranking bars
+    const grid = document.getElementById('labRankingGrid');
+    if (grid) {
+        grid.innerHTML = scored.map((d, i) => `
+            <div style="display:flex;align-items:center;gap:1rem;padding:0.7rem 1rem;background:rgba(255,255,255,0.6);border-radius:14px;border:1.5px solid rgba(255,255,255,0.9);">
+                <div style="width:36px;height:36px;border-radius:50%;background:${rankColors[i]}22;display:flex;align-items:center;justify-content:center;font-size:${i<3?'1.1':'0.82'}rem;font-weight:800;color:${rankColors[i]};flex-shrink:0;">${rankMedals[i]}</div>
+                <div style="flex-shrink:0;min-width:60px;"><div style="font-weight:800;color:#0F3E7D;font-size:0.92rem;">Lab ${d.lab}</div><div style="font-size:0.75rem;color:#888;">${d.visits} visits</div></div>
+                <div style="flex:1;"><div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:${Math.round((d.score/maxScore)*100)}%;background:linear-gradient(90deg,${rankColors[i]},${rankColors[i]}99);"></div></div></div>
+                <div style="font-size:0.88rem;font-weight:800;color:${rankColors[i]};min-width:48px;text-align:right;">${d.score.toFixed(1)}</div>
+            </div>`).join('');
+    }
+
+    // Score table
+    const tbody = document.getElementById('labScoreBody');
+    if (tbody) {
+        const maxVisits = Math.max(...scored.map(d=>d.visits),1);
+        tbody.innerHTML = scored.map((d, i) => `
+            <tr style="${i===0?'background:rgba(244,185,66,0.1);font-weight:700;':''}">
+                <td><span style="font-weight:800;color:#0F3E7D;">Lab ${d.lab}</span></td>
+                <td>${d.visits}</td>
+                <td style="color:#185FA5;font-weight:700;">${(d.visits*0.4).toFixed(2)}</td>
+                <td>${d.avgRating.toFixed(1)} ★</td>
+                <td style="color:#185FA5;font-weight:700;">${(d.avgRating*20*0.3).toFixed(2)}</td>
+                <td>${d.uniqueUsers}</td>
+                <td style="color:#185FA5;font-weight:700;">${(d.uniqueUsers*0.2).toFixed(2)}</td>
+                <td>${d.recency.toFixed(0)}</td>
+                <td style="color:#185FA5;font-weight:700;">${(d.recency*0.1).toFixed(2)}</td>
+                <td style="background:rgba(244,185,66,0.15);font-weight:800;color:#0F3E7D;font-size:1rem;">${d.score.toFixed(2)}</td>
+            </tr>`).join('');
+    }
+
+    // Quick stats
+    const allSessions = [...document.querySelectorAll('#recordsTableBody tr')].filter(r=>!r.querySelector('td[colspan]'));
+    const activeToday = [...document.querySelectorAll('#sitinTableBody tr')].filter(r=>!r.querySelector('td[colspan]')).length;
+    document.getElementById('statTotalSessions').textContent = allSessions.length;
+    document.getElementById('statBusiestLab').textContent = scored[0] ? scored[0].lab : '—';
+    document.getElementById('statTopPurpose').textContent = Object.entries(
+        allSessions.reduce((acc, r) => {
+            const p = r.querySelectorAll('td')[3]?.innerText.trim();
+            if (p) acc[p] = (acc[p]||0)+1;
+            return acc;
+        }, {})
+    ).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
+    document.getElementById('statActiveToday').textContent = activeToday;
 }
     </script>
 <div class="modal-overlay" id="deleteFeedbackModal" style="display:none;">
@@ -4498,6 +5593,30 @@ function openSitinFormForStudent(id, name, remaining) {
             <div class="sitin-form-btns">
                 <button type="button" class="btn-modal-close" onclick="closeModal('editResDateModal')">Cancel</button>
                 <button type="button" class="btn-modal-submit" onclick="saveEditedResDate()">Save &amp; Sit-in</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="extendModal" style="display:none; z-index:9999;">
+    <div class="modal-box modal-sm">
+        <div class="modal-header" style="background:#e67e22;">
+            <h3>Extend Session</h3>
+            <button class="modal-close" onclick="closeModal('extendModal')">&#10005;</button>
+        </div>
+        <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem;">⏱️</div>
+            <p style="color:#333;font-size:0.95rem;margin-bottom:1.5rem;">
+                Extend this session to the next time slot?
+            </p>
+            <div id="extendModalMsg" style="display:none;background:#fdecea;border-left:4px solid #c0392b;
+                color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;margin-bottom:1rem;"></div>
+            <div style="display:flex;gap:0.8rem;justify-content:center;">
+                <button type="button" class="btn-modal-close" onclick="closeModal('extendModal')">Cancel</button>
+                <button type="button" id="extendConfirmBtn"
+                    style="background:#e67e22;color:white;border:none;padding:0.55rem 1.4rem;
+                    border-radius:6px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;">
+                    Yes, Extend
+                </button>
             </div>
         </div>
     </div>
