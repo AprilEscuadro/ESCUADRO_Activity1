@@ -22,7 +22,9 @@ from dbhelper import (
     set_pc_blocked,
     update_reservation_message, get_occupied_pcs,
     get_reserved_pcs_today, mark_announcement_read,
-    get_read_announcement_ids,
+    get_read_announcement_ids, save_evaluation,
+    get_leaderboard_scores,
+    init_evaluations_table,
 )
 
 import sqlite3 as _sqlite3
@@ -33,7 +35,7 @@ def get_sitin_count(course):
     return 30 if course in CCS_COURSES else 15
 
 def reset_all_sessions():
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     students = conn.execute("SELECT idNumber, course FROM students").fetchall()
     for s in students:
         count = get_sitin_count(s[1] or '')
@@ -103,6 +105,42 @@ ERROR_PAGE = """
 </html>
 """
 
+@app.route('/admin/get-leaderboard-scores', methods=['GET'])
+def admin_get_leaderboard_scores():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+
+    rows = get_leaderboard_scores()
+    scores = []
+    for r in rows:
+        raw_tidy    = r['raw_tidy_points'] or 0
+        total_mins  = r['total_minutes'] or 0
+        tasks_done  = r['tasks_completed'] or 0
+        total_sess  = r['total_sessions'] or 1
+
+        lb_tidy_pts  = (raw_tidy / 3) * 0.5
+        hrs_weighted = (total_mins / 60) * 0.3
+        task_pct     = (tasks_done / total_sess)
+        task_weighted = task_pct * 0.2
+        final_score  = lb_tidy_pts + hrs_weighted + task_weighted
+
+        scores.append({
+            'idNumber':       r['idNumber'],
+            'firstName':      r['firstName'],
+            'lastName':       r['lastName'],
+            'course':         r['course'],
+            'yearLevel':      r['yearLevel'],
+            'raw_tidy_points': raw_tidy,
+            'lb_tidy_pts':    lb_tidy_pts,
+            'total_minutes':  total_mins,
+            'hrs_weighted':   hrs_weighted,
+            'tasks_completed': tasks_done,
+            'total_sessions': total_sess,
+            'task_weighted':  task_weighted,
+            'final_score':    final_score,
+        })
+
+    return jsonify({'scores': scores})
 
 # ══════════════════════════════════════════
 # ROUTES — PAGES
@@ -128,7 +166,7 @@ def admin_delete_feedback():
     if not session.get('admin'):
         return jsonify({'success': False}), 401
     feedback_id = request.form.get('id', '').strip()
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     conn.execute("DELETE FROM feedback WHERE id = ?", (feedback_id,))
     conn.commit()
     conn.close()
@@ -525,6 +563,10 @@ def admin_add_sitin_ajax():
     lab       = request.form.get('lab', '').strip()
     if not id_number or not purpose or not lab:
         return jsonify({'success': False, 'message': 'All fields are required.'})
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+    if datetime.now(PH_TZ).strftime('%H:%M') >= '20:00':
+        return jsonify({'success': False, 'message': 'Cannot start a sit-in after 8:00 PM.'})
     student = get_student_by_id(id_number)
     if not student:
         return jsonify({'success': False, 'message': f"Student ID '{id_number}' not found."})
@@ -533,7 +575,7 @@ def admin_add_sitin_ajax():
 
     from datetime import date as _date
     today = _date.today().isoformat()
-    conn_check = _sqlite3.connect('database.db')
+    conn_check = _sqlite3.connect('database.db', timeout=10)
 
     # Check pending reservation
     existing_res = conn_check.execute("""
@@ -571,7 +613,7 @@ def admin_add_sitin_ajax():
     res_time_end = None
     reservation_id = request.form.get('reservation_id', '').strip()
     if reservation_id:
-        conn3 = _sqlite3.connect('database.db')
+        conn3 = _sqlite3.connect('database.db', timeout=10)
         res_row = conn3.execute(
             "SELECT time_end FROM reservations WHERE id=?", (reservation_id,)
         ).fetchone()
@@ -584,7 +626,7 @@ def admin_add_sitin_ajax():
         return jsonify({'success': False, 'message': error})
     if reservation_id:
         update_reservation_status(int(reservation_id), 'sitting_in')
-        conn2 = _sqlite3.connect('database.db')
+        conn2 = _sqlite3.connect('database.db', timeout=10)
         conn2.execute("UPDATE reservations SET session_id=? WHERE id=?", (session_id, int(reservation_id)))
         conn2.commit()
         conn2.close()
@@ -595,7 +637,7 @@ def admin_get_active_session():
     if not session.get('admin'):
         return jsonify({'success': False}), 401
     id_number = request.args.get('idNumber', '').strip()
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     row = conn.execute(
         "SELECT id FROM sitin_sessions WHERE idNumber=? AND status='active' ORDER BY id DESC LIMIT 1",
         (id_number,)
@@ -618,7 +660,7 @@ def admin_end_sitin(session_id):
     
     end_sitin(session_id)
     
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     res = conn.execute(
         "SELECT id FROM reservations WHERE session_id=? AND status='sitting_in'",
         (session_id,)
@@ -703,7 +745,7 @@ def admin_end_sitin_from_res(session_id, res_id):
     update_reservation_status(res_id, 'done')
     
     # Save actual logout time to reservation
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     conn.execute("UPDATE reservations SET time_out=? WHERE id=?", (now_str, res_id))
     conn.commit()
     conn.close()
@@ -779,15 +821,36 @@ def admin_edit_student():
         if old_is_ccs != new_is_ccs:
             sitin_count = get_sitin_count(course)
 
-    conn = _sqlite3.connect('database.db')
-    conn.execute(
-        '''UPDATE students
-        SET idNumber=?, firstName=?, lastName=?, middleName=?,
-            email=?, course=?, yearLevel=?, address=?, sitin_count=?
-        WHERE idNumber=?''',
-        (new_id_number, first_name, last_name, middle_name, email,
-        course, course_level, address, sitin_count, id_number)
-    )
+    new_password = request.form.get('newPassword', '').strip()
+    confirm_password = request.form.get('confirmPassword', '').strip()
+
+    if new_password:
+        if len(new_password) < 6:
+            return jsonify({'success': False, 'message': 'Password must be at least 6 characters.'})
+        if new_password != confirm_password:
+            return jsonify({'success': False, 'message': 'Passwords do not match.'})
+
+    import hashlib as _hl
+    conn = _sqlite3.connect('database.db', timeout=10)
+    if new_password:
+        hashed_pw = _hl.sha256(new_password.encode()).hexdigest()
+        conn.execute(
+            '''UPDATE students
+            SET idNumber=?, firstName=?, lastName=?, middleName=?,
+                email=?, course=?, yearLevel=?, address=?, sitin_count=?, password=?
+            WHERE idNumber=?''',
+            (new_id_number, first_name, last_name, middle_name, email,
+            course, course_level, address, sitin_count, hashed_pw, id_number)
+        )
+    else:
+        conn.execute(
+            '''UPDATE students
+            SET idNumber=?, firstName=?, lastName=?, middleName=?,
+                email=?, course=?, yearLevel=?, address=?, sitin_count=?
+            WHERE idNumber=?''',
+            (new_id_number, first_name, last_name, middle_name, email,
+            course, course_level, address, sitin_count, id_number)
+        )
     conn.commit()
     conn.close()
 
@@ -807,7 +870,7 @@ def admin_edit_student():
 # ══════════════════════════════════════════
 @app.route('/admin/reservations/auto-expire', methods=['POST'])
 def admin_auto_expire():
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     rows = conn.execute("""
         SELECT id FROM reservations
         WHERE status IN ('pending', 'approved')
@@ -847,7 +910,7 @@ def admin_get_blocked_pcs():
     else:
         occupied = []
     
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     if date and time_start and time_end:
         rows = conn.execute("""
             SELECT pc_number FROM reservations
@@ -898,7 +961,7 @@ def admin_delete_reservation():
     if not session.get('admin'):
         return jsonify({'success': False}), 401
     res_id = request.form.get('id', '').strip()
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     conn.execute("DELETE FROM reservations WHERE id = ?", (res_id,))
     conn.commit()
     conn.close()
@@ -911,7 +974,7 @@ def admin_delete_student():
     if not session.get('admin'):
         return redirect('/login')
     id_number = request.form.get('idNumber', '').strip()
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     conn.execute("DELETE FROM students WHERE idNumber = ?", (id_number,))
     conn.commit()
     conn.close()
@@ -956,7 +1019,7 @@ def student_reserve():
     # Block Sundays (weekday 6 = Sunday)
     from datetime import date as _d
     booking_date = _d.fromisoformat(date)
-    if booking_date.weekday() == 6:
+    if booking_date.weekday() == 6 and False:
         return jsonify({'success': False, 'message': 'Reservations are not allowed on Sundays.'})
 
     # Block past time if booking for today
@@ -991,7 +1054,7 @@ def student_cancel_reservation():
         return jsonify({'success': False, 'message': 'Not logged in.'}), 401
     res_id = request.form.get('id', '').strip()
     id_number = session['student_id']
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     row = conn.execute(
         "SELECT status FROM reservations WHERE id=? AND idNumber=?",
         (res_id, id_number)
@@ -1022,7 +1085,7 @@ def admin_update_reservation_pc_time():
     if not res_id:
         return jsonify({'success': False, 'message': 'Missing reservation ID.'})
 
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     updates = []
     params  = []
     if pc_number:
@@ -1069,7 +1132,7 @@ def admin_update_reservation():
 
     # ── NEW: if approved, shorten current sitter's time_end on that PC ──
     if status == 'approved':
-        conn = _sqlite3.connect('database.db')
+        conn = _sqlite3.connect('database.db', timeout=10)
         res = conn.execute(
             "SELECT lab, pc_number, time_in, date FROM reservations WHERE id=?",
             (int(res_id),)
@@ -1167,7 +1230,7 @@ def admin_get_available_pcs():
     blocked  = get_blocked_pcs(lab)
     occupied = get_occupied_pcs(lab)
 
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     # Only block PCs where reservation starts within 30 minutes or already started
     reserved_rows = conn.execute("""
         SELECT pc_number FROM reservations
@@ -1192,7 +1255,7 @@ def admin_update_reservation_pc():
     pc_number = request.form.get('pc_number', '').strip()
     if not res_id or not pc_number:
         return jsonify({'success': False, 'message': 'Missing fields.'})
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
 
     # Update reservations table
     conn.execute("UPDATE reservations SET pc_number=? WHERE id=?", (int(pc_number), int(res_id)))
@@ -1220,7 +1283,7 @@ def admin_edit_reservation_details():
     pc     = request.form.get('pc_number', '').strip()
     if not res_id or not date or not lab or not pc:
         return jsonify({'success': False, 'message': 'All fields are required.'})
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     conn.execute("""
         UPDATE reservations SET date=?, lab=?, pc_number=? WHERE id=?
     """, (date, lab, int(pc), int(res_id)))
@@ -1266,7 +1329,7 @@ def admin_check_overdue():
         return jsonify({'success': False}), 401
     from datetime import datetime
     now = datetime.now().strftime('%H:%M')
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     # Mark sessions as overdue where time_end has passed but still active
     overdue = conn.execute("""
         SELECT id FROM sitin_sessions
@@ -1297,7 +1360,7 @@ def admin_extend_sitin(session_id):
         ('14:00','16:00'),('16:00','18:00'),('18:00','20:00'),
     ]
 
-    conn = _sqlite3.connect('database.db')
+    conn = _sqlite3.connect('database.db', timeout=10)
     row = conn.execute(
         "SELECT lab, pc_number, time_end FROM sitin_sessions WHERE id=?",
         (session_id,)
@@ -1374,10 +1437,11 @@ def admin_auto_logout_overdue():
     now = datetime.now(PH_TZ)
     now_str = now.strftime('%H:%M')
 
-    conn = _sqlite3.connect('database.db')
-    # Find sessions overdue by 15+ minutes
+    conn = _sqlite3.connect('database.db', timeout=30)
+    conn.execute("PRAGMA journal_mode=WAL")
+
     overdue_rows = conn.execute("""
-        SELECT id, idNumber, lab, pc_number FROM sitin_sessions
+        SELECT id, idNumber FROM sitin_sessions
         WHERE status = 'active'
         AND time_end IS NOT NULL
         AND time_end <= ?
@@ -1387,29 +1451,20 @@ def admin_auto_logout_overdue():
     for row in overdue_rows:
         session_id = row[0]
         id_number  = row[1]
-
-        # End the session
         now_ph = now.strftime('%Y-%m-%d %H:%M:%S')
-        conn.execute("""
-            UPDATE sitin_sessions
-            SET time_out=?, status='done'
-            WHERE id=?
-        """, (now_ph, session_id))
-        conn.execute("""
-            UPDATE students SET sitin_count = sitin_count - 1
-            WHERE idNumber = ? AND sitin_count > 0
-        """, (id_number,))
 
-        # Update reservation if linked
-        res = conn.execute("""
-            SELECT id FROM reservations
-            WHERE session_id=? AND status='sitting_in'
-        """, (session_id,)).fetchone()
+        conn.execute("UPDATE sitin_sessions SET time_out=?, status='done' WHERE id=?", (now_ph, session_id))
+        conn.execute("UPDATE students SET sitin_count = sitin_count - 1 WHERE idNumber = ? AND sitin_count > 0", (id_number,))
+
+        res = conn.execute("SELECT id FROM reservations WHERE session_id=? AND status='sitting_in'", (session_id,)).fetchone()
         if res:
-            conn.execute("""
-                UPDATE reservations SET status='done', time_out=?
-                WHERE id=?
-            """, (now_str, res[0]))
+            conn.execute("UPDATE reservations SET status='done', time_out=? WHERE id=?", (now_str, res[0]))
+
+        conn.execute("""
+            INSERT OR REPLACE INTO sit_evaluations
+            (session_id, idNumber, tidy_point, task_completed, duration_minutes)
+            VALUES (?, ?, 0, 0, 15)
+        """, (session_id, id_number))
 
         auto_logged.append(session_id)
 
@@ -1417,7 +1472,289 @@ def admin_auto_logout_overdue():
     conn.close()
     return jsonify({'success': True, 'auto_logged': auto_logged})
 
+@app.route('/student/get-ai-tip', methods=['GET'])
+def student_get_ai_tip():
+    from datetime import date, timedelta
+    from collections import Counter
+    import sqlite3 as _sq
 
+    conn = _sq.connect('database.db')
+
+    # ── Week analysis (system-wide) ──
+    rows = conn.execute("""
+    SELECT time_in AS date FROM sitin_sessions
+    WHERE time_in IS NOT NULL AND time_in != ''
+    ORDER BY time_in DESC LIMIT 500
+    """).fetchall()
+
+    # ── Lab counts (system-wide) ──
+    lab_rows = conn.execute("""
+        SELECT lab, COUNT(*) as cnt FROM sitin_sessions
+        GROUP BY lab ORDER BY cnt ASC
+    """).fetchall()
+
+    # ── Day counts (system-wide) ──
+    day_rows = conn.execute("""
+    SELECT time_in AS date FROM sitin_sessions
+    WHERE time_in IS NOT NULL AND time_in != ''
+    ORDER BY time_in DESC LIMIT 500
+    """).fetchall()
+
+    # ── Purpose counts ──
+    purpose_rows = conn.execute("""
+        SELECT purpose, COUNT(*) as cnt FROM sitin_sessions
+        GROUP BY purpose ORDER BY cnt DESC LIMIT 1
+    """).fetchone()
+
+    # ── Peak hour ──
+    hour_rows = conn.execute("""
+        SELECT time_in FROM sitin_sessions
+        WHERE time_in IS NOT NULL
+        ORDER BY id DESC LIMIT 500
+    """).fetchall()
+
+    conn.close()
+
+    # ── Compute quietest week ──
+    week_counts = Counter()
+    for r in rows:
+        try:
+            d = date.fromisoformat(r[0].split(' ')[0])
+            monday = d - timedelta(days=d.weekday())
+            week_counts[monday.isoformat()] += 1
+        except:
+            pass
+
+    # ── Compute busiest & quietest day ──
+    day_counts = Counter()
+    for r in day_rows:
+        try:
+            d = date.fromisoformat(r[0].split(' ')[0])
+            day_counts[d.strftime('%a')] += 1
+        except:
+            pass
+
+    # ── Compute peak hour slot ──
+    slot_counts = Counter()
+    for r in hour_rows:
+        try:
+            t = r[0]
+            if ' ' in t:
+                t = t.split(' ')[1]
+            h = int(t.split(':')[0])
+            if 8 <= h < 12:
+                slot_counts['Morning (8–12 AM)'] += 1
+            elif 12 <= h < 15:
+                slot_counts['Afternoon (12–3 PM)'] += 1
+            elif 15 <= h < 18:
+                slot_counts['Late Afternoon (3–6 PM)'] += 1
+            elif 18 <= h < 20:
+                slot_counts['Evening (6–8 PM)'] += 1
+        except:
+            pass
+
+    today = date.today()
+    fmt = lambda d: d.strftime('%b %d')
+
+    # ── Best week recommendation ──
+    if week_counts:
+        avg = sum(week_counts.values()) / len(week_counts)
+        quietest = min(week_counts.items(), key=lambda x: x[1])
+        w_start = date.fromisoformat(quietest[0])
+        w_end = w_start + timedelta(days=4)
+        month = w_start.strftime('%B %Y')
+        week_badge = f'{fmt(w_start)}–{fmt(w_end)}'
+        week_title = f'Best week to sit-in — {month}'
+        week_body = (
+            f'Week of {fmt(w_start)}–{fmt(w_end)} has the lowest lab traffic '
+            f'({quietest[1]} sessions vs avg {round(avg)}/week). '
+            f'Less competition for PCs — ideal for focused study!'
+        )
+        week_reason = (
+            f'Only {quietest[1]} sessions that week · '
+            f'avg is {round(avg)}/week · more PCs available'
+        )
+    else:
+        mon = today - timedelta(days=today.weekday())
+        fri = mon + timedelta(days=4)
+        week_badge = f'{fmt(mon)}–{fmt(fri)}'
+        week_title = f'Good time to sit-in — {today.strftime("%B %Y")}'
+        week_body = 'Lab traffic looks quiet this week! Great chance to grab a PC.'
+        week_reason = 'Low reservation activity · More PCs available'
+
+    # ── Best day (least crowded) ──
+    best_day = None
+    worst_day = None
+    if day_counts:
+        sorted_days = sorted(day_counts.items(), key=lambda x: x[1])
+        best_day = sorted_days[0][0]
+        if len(sorted_days) > 1:
+            worst_day = sorted_days[-1][0]
+
+    # ── Most available lab ──
+    least_busy_lab = None
+    if lab_rows:
+        least_busy_lab = lab_rows[0]['lab'] if hasattr(lab_rows[0], 'keys') else lab_rows[0][0]
+
+    # ── Best time slot ──
+    best_time = None
+    if slot_counts:
+        best_time = min(slot_counts.items(), key=lambda x: x[1])[0]
+
+    # ── Top purpose ──
+    top_purpose = purpose_rows[0] if purpose_rows else None
+
+    tip = {
+        'title': week_title,
+        'body': week_body,
+        'reason': week_reason,
+        'badge': week_badge,
+        'best_day': best_day,
+        'worst_day': worst_day,
+        'least_busy_lab': least_busy_lab,
+        'best_time': best_time,
+        'top_purpose': top_purpose,
+    }
+    return jsonify({'tip': tip})
+
+@app.route('/admin/sitin/evaluate', methods=['POST'])
+def admin_evaluate_sitin():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+
+    session_id     = request.form.get('session_id', '').strip()
+    tidy_point     = int(request.form.get('tidy_point', 0))
+    task_completed = int(request.form.get('task_completed', 0))
+
+    from datetime import datetime
+    conn = _sqlite3.connect('database.db', timeout=10)
+    row = conn.execute("""
+        SELECT idNumber, time_in FROM sitin_sessions WHERE id=?
+    """, (session_id,)).fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({'success': False, 'message': 'Session not found.'})
+
+    id_number = row[0]
+    time_in   = row[1]
+
+    # Calculate duration in minutes
+    duration_minutes = 0
+    try:
+        from datetime import datetime, timezone, timedelta
+        PH_TZ = timezone(timedelta(hours=8))
+        now_ph = datetime.now(PH_TZ)
+        for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+            try:
+                t_in = datetime.strptime(time_in.strip(), fmt)
+                t_in = t_in.replace(tzinfo=PH_TZ)
+                diff = now_ph - t_in
+                duration_minutes = max(0, int(diff.total_seconds() / 60))
+                break
+            except:
+                continue
+    except:
+        duration_minutes = 0
+
+    # End the session
+    end_sitin(int(session_id))
+    save_evaluation(int(session_id), id_number, tidy_point, task_completed, duration_minutes)
+
+    # PERMANENT FIX: Always update linked reservation to done after logout
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+    now_str = datetime.now(PH_TZ).strftime('%H:%M')
+    conn_fix = _sqlite3.connect('database.db', timeout=10)
+    res_fix = conn_fix.execute(
+        "SELECT id FROM reservations WHERE session_id=? AND status='sitting_in'",
+        (int(session_id),)
+    ).fetchone()
+    if res_fix:
+        conn_fix.execute(
+            "UPDATE reservations SET status='done', time_out=? WHERE id=?",
+            (now_str, res_fix[0])
+        )
+        conn_fix.commit()
+    conn_fix.close()
+
+    return jsonify({'success': True, 'duration_minutes': duration_minutes})
+
+@app.route('/admin/get-session-time', methods=['GET'])
+def admin_get_session_time():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    session_id = request.args.get('session_id', '').strip()
+    conn = _sqlite3.connect('database.db', timeout=10)
+    row = conn.execute("SELECT time_in FROM sitin_sessions WHERE id=?", (session_id,)).fetchone()
+    conn.close()
+    if not row:
+        return jsonify({'duration_minutes': 0})
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+    now_ph = datetime.now(PH_TZ)
+    duration_minutes = 0
+    try:
+        for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+            try:
+                t_in = datetime.strptime(row[0].strip(), fmt)
+                t_in = t_in.replace(tzinfo=PH_TZ)
+                duration_minutes = max(0, int((now_ph - t_in).total_seconds() / 60))
+                break
+            except: continue
+    except: pass
+    return jsonify({'duration_minutes': duration_minutes})
+
+@app.route('/public/leaderboard-scores', methods=['GET'])
+def public_leaderboard_scores():
+    import sqlite3 as _sq
+    conn = _sq.connect('database.db')
+    conn.row_factory = _sq.Row
+    
+    # Get ALL students, LEFT JOIN evaluations so 0-score students still appear
+    rows = conn.execute("""
+        SELECT 
+            s.idNumber,
+            s.firstName,
+            s.lastName,
+            s.course,
+            s.yearLevel,
+            s.sitin_count,
+            COALESCE(SUM(e.tidy_point), 0) AS raw_tidy_points,
+            COALESCE(SUM(e.duration_minutes), 0) AS total_minutes,
+            COALESCE(SUM(e.task_completed), 0) AS tasks_completed,
+            COALESCE(COUNT(e.session_id), 0) AS total_sessions
+        FROM students s
+        LEFT JOIN sit_evaluations e ON s.idNumber = e.idNumber
+        GROUP BY s.idNumber
+        ORDER BY s.idNumber
+    """).fetchall()
+    conn.close()
+
+    scores = []
+    for r in rows:
+        raw_tidy   = r['raw_tidy_points'] or 0
+        total_mins = r['total_minutes'] or 0
+        tasks_done = r['tasks_completed'] or 0
+        total_sess = r['total_sessions'] or 1
+
+        lb_tidy_pts   = (raw_tidy / 3) * 0.5
+        hrs_weighted  = (total_mins / 60) * 0.3
+        task_weighted = (tasks_done / total_sess) * 0.2
+        final_score   = lb_tidy_pts + hrs_weighted + task_weighted
+
+        scores.append({
+            'idNumber':   r['idNumber'],
+            'firstName':  r['firstName'],
+            'lastName':   r['lastName'],
+            'course':     r['course'],
+            'yearLevel':  r['yearLevel'],
+            'remaining':  r['sitin_count'],
+            'final_score': round(final_score, 2),
+        })
+
+    scores.sort(key=lambda x: x['final_score'], reverse=True)
+    return jsonify({'scores': scores[:10]})
 # ══════════════════════════════════════════
 # ROUTE — ADMIN LOGOUT
 # ══════════════════════════════════════════
@@ -1439,6 +1776,7 @@ if __name__ == '__main__':
     init_db()
     init_reservations_table()
     init_reservation_settings()
+    init_evaluations_table()
     print("=================================")
     print("CCS Sit-in System Server Running!")
     print("Open: http://localhost:5000")

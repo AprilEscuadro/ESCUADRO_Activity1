@@ -91,7 +91,7 @@
         .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
         .donut-center-val { font-size: 26px; font-weight: 700; color: #0F3E7D; transition: color 0.2s; line-height: 1; }
         .donut-center-lbl { font-size: 10px; color: #999; text-align: center; margin-top: 2px; }
-        .donut-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; padding: 0; overflow: visible; max-height: none; }
+        .donut-legend { display: flex; flex-direction: column; gap: 6px; gap: 6px 12px; padding: 0; overflow: visible; max-height: none; }
         .donut-legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; background: rgba(255,255,255,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.9); border-radius: 10px; padding: 6px 10px; box-shadow: 3px 3px 0px rgba(192,132,252,0.18), 0 2px 8px rgba(150,120,220,0.08); transition: transform 0.15s ease, box-shadow 0.15s ease; }
         .donut-legend-item:hover { transform: translateY(-2px) translateX(-1px); box-shadow: 5px 5px 0px rgba(192,132,252,0.25), 0 4px 12px rgba(150,120,220,0.12); }
         .donut-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
@@ -825,6 +825,10 @@ body { visibility: hidden; }
 .lb-rank-medal { display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;font-size:0.9rem;font-weight:800; }
 .lb-bar-wrap { background:#f0f0f0;border-radius:20px;height:8px;overflow:hidden;flex:1; }
 .lb-bar-fill { height:100%;border-radius:20px;transition:width 0.8s cubic-bezier(0.4,0,0.2,1); }
+#labScoreTable th,
+#labScoreTable td {
+    text-align: center !important;
+}
 </style>
 </head>
 <body>
@@ -993,126 +997,168 @@ body { visibility: hidden; }
     </div>
 
     <!-- PANEL 1: Students Information -->
-    <div id="stud-panel-info" class="res-tab-panel">
-        <div class="admin-card">
-            <div class="table-top-bar">
-                <div class="table-top-left">
-                    <button onclick="showModal('addStudentModal')" style="background:linear-gradient(135deg,#2ecc71,#1e7e34);color:white;border:none;padding:0.5rem 1.2rem;border-radius:14px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;box-shadow:0 4px 14px rgba(30,126,52,0.35),0 1px 0 rgba(255,255,255,0.2) inset;transition:all 0.18s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-                        ➕ Add Student
-                    </button>
-                    <button onclick="confirmResetAll()" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:white;border:none;padding:0.5rem 1.2rem;border-radius:14px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;box-shadow:0 4px 14px rgba(230,126,34,0.35),0 1px 0 rgba(255,255,255,0.2) inset;transition:all 0.18s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-                        🔄 Reset All Sessions
-                    </button>
-                </div>
-                <div class="table-top-right">
-                    <input type="text" id="studentSearch" placeholder="Search..." onkeyup="filterStudentTable()" class="table-search-input">
-                </div>
+<div id="stud-panel-info" class="res-tab-panel">
+    <div class="admin-card">
+        <div class="table-top-bar">
+            <div class="table-top-left">
+                <button onclick="showModal('addStudentModal')" style="background:linear-gradient(135deg,#2ecc71,#1e7e34);color:white;border:none;padding:0.5rem 1.2rem;border-radius:14px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;box-shadow:0 4px 14px rgba(30,126,52,0.35),0 1px 0 rgba(255,255,255,0.2) inset;transition:all 0.18s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+                    ➕ Add Student
+                </button>
+                <button onclick="confirmResetAll()" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:white;border:none;padding:0.5rem 1.2rem;border-radius:14px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;box-shadow:0 4px 14px rgba(230,126,34,0.35),0 1px 0 rgba(255,255,255,0.2) inset;transition:all 0.18s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+                    🔄 Reset All Sessions
+                </button>
             </div>
-            <div class="table-scroll">
-                <table class="dashboard-table" id="studentTable">
-                    <thead><tr><th>ID Number</th><th>Name</th><th>Year Level</th><th>Course</th><th>Remaining Session</th><th>Actions</th></tr></thead>
-                    <tbody>
-                        {% for s in students %}
-                        <tr>
-                            <td>{{ s.idNumber }}</td>
-                            <td>{{ s.lastName }}, {{ s.firstName }}{% if s.middleName %} {{ s.middleName }}{% endif %}</td>
-                            <td>{{ s.yearLevel }}{% if s.yearLevel == '1' %}st{% elif s.yearLevel == '2' %}nd{% elif s.yearLevel == '3' %}rd{% else %}th{% endif %}</td>
-                            <td>{{ s.course }}</td>
-                            <td><span class="sitin-remaining {% if s.sitin_count <= 5 %}remaining-low{% elif s.sitin_count <= 10 %}remaining-mid{% else %}remaining-ok{% endif %}">{{ s.sitin_count }}</span></td>
-                            <td>
-                                <button class="btn-action btn-edit" data-id="{{ s.idNumber }}" data-firstname="{{ s.firstName }}" data-lastname="{{ s.lastName }}" data-middlename="{{ s.middleName or '' }}" data-email="{{ s.email }}" data-course="{{ s.course }}" data-yearlevel="{{ s.yearLevel }}" data-address="{{ s.address or '' }}" data-sitin="{{ s.sitin_count }}" onclick="openEditModal(this.dataset)">Edit</button>
-                                <button class="btn-action btn-del" onclick="confirmDelete('{{ s.idNumber }}')">Delete</button>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="6" class="no-data">No students registered yet.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <div class="pagination-wrap">
-                <div class="pagination-info" id="studentsInfo"></div>
-                <div class="pagination-btns" id="studentsPgBtns"></div>
+            <div class="table-top-right">
+                <input type="text" id="studentSearch" placeholder="Search..." onkeyup="filterStudentTable()" class="table-search-input">
             </div>
         </div>
-    </div>
-
-    <!-- PANEL 2: Leaderboard -->
-    <div id="stud-panel-leaderboard" class="res-tab-panel" style="display:none;">
-        <!-- Summary Cards -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">
-            <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);padding:1.25rem;text-align:center;">
-                <div style="font-size:2rem;margin-bottom:0.4rem;">👑</div>
-                <div style="font-size:0.78rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem;">Top Sit-in Student</div>
-                <div id="lbTopName" style="font-size:1rem;font-weight:800;color:#0F3E7D;">—</div>
-                <div id="lbTopSessions" style="font-size:0.82rem;color:#888;margin-top:0.2rem;">— sessions used</div>
-            </div>
-            <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);padding:1.25rem;text-align:center;">
-                <div style="font-size:2rem;margin-bottom:0.4rem;">📊</div>
-                <div style="font-size:0.78rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem;">Average Sessions Used</div>
-                <div id="lbAvgSessions" style="font-size:1rem;font-weight:800;color:#0F3E7D;">—</div>
-                <div style="font-size:0.82rem;color:#888;margin-top:0.2rem;">per student</div>
-            </div>
-            <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);padding:1.25rem;text-align:center;">
-                <div style="font-size:2rem;margin-bottom:0.4rem;">🎯</div>
-                <div style="font-size:0.78rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem;">Most Active Course</div>
-                <div id="lbTopCourse" style="font-size:1rem;font-weight:800;color:#0F3E7D;">—</div>
-                <div id="lbTopCourseCount" style="font-size:0.82rem;color:#888;margin-top:0.2rem;">— students</div>
-            </div>
+        <div class="table-scroll">
+            <table class="dashboard-table" id="studentTable">
+                <thead><tr><th>ID Number</th><th>Name</th><th>Year Level</th><th>Course</th><th>Remaining Session</th><th>Actions</th></tr></thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td>{{ s.idNumber }}</td>
+                        <td>{{ s.lastName }}, {{ s.firstName }}{% if s.middleName %} {{ s.middleName }}{% endif %}</td>
+                        <td>{{ s.yearLevel }}{% if s.yearLevel == '1' %}st{% elif s.yearLevel == '2' %}nd{% elif s.yearLevel == '3' %}rd{% else %}th{% endif %}</td>
+                        <td>{{ s.course }}</td>
+                        <td><span class="sitin-remaining {% if s.sitin_count <= 5 %}remaining-low{% elif s.sitin_count <= 10 %}remaining-mid{% else %}remaining-ok{% endif %}">{{ s.sitin_count }}</span></td>
+                        <td>
+                            <button class="btn-action btn-edit" data-id="{{ s.idNumber }}" data-firstname="{{ s.firstName }}" data-lastname="{{ s.lastName }}" data-middlename="{{ s.middleName or '' }}" data-email="{{ s.email }}" data-course="{{ s.course }}" data-yearlevel="{{ s.yearLevel }}" data-address="{{ s.address or '' }}" data-sitin="{{ s.sitin_count }}" onclick="openEditModal(this.dataset)">Edit</button>
+                            <button class="btn-action btn-del" onclick="confirmDelete('{{ s.idNumber }}')">Delete</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="no-data">No students registered yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-
-        <!-- Leaderboard Table -->
-        <div class="admin-card">
-            <div class="table-top-bar" style="margin-bottom:1rem;">
-                <div style="font-size:0.95rem;font-weight:800;color:#0F3E7D;">🏆 Top Students by Sessions Used</div>
-                <div style="display:flex;gap:0.5rem;align-items:center;">
-                    <select id="lbFilterCourse" class="filter-select" onchange="renderLeaderboard()">
-                        <option value="">All Courses</option>
-                        <option value="BSIT">BSIT</option>
-                        <option value="BSCS">BSCS</option>
-                        <option value="BSCoE">BSCoE</option>
-                        <option value="CISCO">CISCO</option>
-                        <option value="BSCE">BSCE</option>
-                        <option value="BSME">BSME</option>
-                        <option value="BSEE">BSEE</option>
-                        <option value="BSIE">BSIE</option>
-                    </select>
-                    <select id="lbFilterYear" class="filter-select" onchange="renderLeaderboard()">
-                        <option value="">All Years</option>
-                        <option value="1">1st Year</option>
-                        <option value="2">2nd Year</option>
-                        <option value="3">3rd Year</option>
-                        <option value="4">4th Year</option>
-                    </select>
-                    <select id="lbLimit" class="filter-select" onchange="renderLeaderboard()">
-                        <option value="10">Top 10</option>
-                        <option value="20">Top 20</option>
-                        <option value="50">Top 50</option>
-                    </select>
-                </div>
-            </div>
-            <div class="table-scroll">
-                <table class="dashboard-table" id="leaderboardTable">
-                    <thead>
-                        <tr>
-                            <th style="width:60px;">Rank</th>
-                            <th>ID Number</th>
-                            <th>Name</th>
-                            <th>Course</th>
-                            <th>Year</th>
-                            <th>Sessions Used</th>
-                            <th>Remaining</th>
-                            <th>Activity Bar</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboardBody">
-                        <tr><td colspan="8" class="no-data">Loading...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+        <div class="pagination-wrap">
+            <div class="pagination-info" id="studentsInfo"></div>
+            <div class="pagination-btns" id="studentsPgBtns"></div>
         </div>
     </div>
 </div>
+
+<!-- PANEL 2: Leaderboard -->
+<div id="stud-panel-leaderboard" class="res-tab-panel" style="display:none;">
+
+    <!-- Summary Cards -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">
+        <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);padding:1.25rem;text-align:center;">
+            <div style="font-size:2rem;margin-bottom:0.4rem;">👑</div>
+            <div style="font-size:0.78rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem;">Top Sit-in Student</div>
+            <div id="lbTopName" style="font-size:1rem;font-weight:800;color:#0F3E7D;">—</div>
+            <div id="lbTopSessions" style="font-size:0.82rem;color:#888;margin-top:0.2rem;">— final score</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);padding:1.25rem;text-align:center;">
+            <div style="font-size:2rem;margin-bottom:0.4rem;">📊</div>
+            <div style="font-size:0.78rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem;">Average Sessions Used</div>
+            <div id="lbAvgSessions" style="font-size:1rem;font-weight:800;color:#0F3E7D;">—</div>
+            <div style="font-size:0.82rem;color:#888;margin-top:0.2rem;">per student</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);padding:1.25rem;text-align:center;">
+            <div style="font-size:2rem;margin-bottom:0.4rem;">🎯</div>
+            <div style="font-size:0.78rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.3rem;">Most Active Course</div>
+            <div id="lbTopCourse" style="font-size:1rem;font-weight:800;color:#0F3E7D;">—</div>
+            <div id="lbTopCourseCount" style="font-size:0.82rem;color:#888;margin-top:0.2rem;">— students</div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Table -->
+    <div class="admin-card">
+        <div class="table-top-bar" style="margin-bottom:1rem;">
+            <div style="font-size:0.95rem;font-weight:800;color:#0F3E7D;">🏆 Top 10 Leaderboard Rankings</div>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+                <select id="lbFilterCourse" class="filter-select" onchange="renderLeaderboard()">
+                    <option value="">All Courses</option>
+                    <option value="BSIT">BSIT</option>
+                    <option value="BSCS">BSCS</option>
+                    <option value="BSCoE">BSCoE</option>
+                    <option value="CISCO">CISCO</option>
+                    <option value="BSCE">BSCE</option>
+                    <option value="BSME">BSME</option>
+                    <option value="BSEE">BSEE</option>
+                    <option value="BSIE">BSIE</option>
+                </select>
+                <select id="lbFilterYear" class="filter-select" onchange="renderLeaderboard()">
+                    <option value="">All Years</option>
+                    <option value="1">1st Year</option>
+                    <option value="2">2nd Year</option>
+                    <option value="3">3rd Year</option>
+                    <option value="4">4th Year</option>
+                </select>
+                <select id="lbLimit" class="filter-select" onchange="renderLeaderboard()">
+                    <option value="10">Top 10</option>
+                    <option value="20">Top 20</option>
+                    <option value="50">Top 50</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-scroll">
+            <table class="dashboard-table" id="leaderboardTable">
+                <thead>
+                    <tr>
+                        <th style="width:60px;">Rank</th>
+                        <th>ID Number</th>
+                        <th>Name</th>
+                        <th>Course</th>
+                        <th>Year</th>
+                        <th>Final Score</th>
+                        <th>Remaining</th>
+                        <th>Activity Bar</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <tr><td colspan="8" class="no-data">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Score Computation Table -->
+    <div style="margin-top:1.5rem;">
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;">
+            <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,rgba(15,62,125,0.4),rgba(244,185,66,0.8),rgba(15,62,125,0.4),transparent);border-radius:10px;"></div>
+            <span style="font-size:0.9rem;color:#F4B942;font-weight:900;letter-spacing:0.1em;">✦</span>
+            <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,rgba(15,62,125,0.4),rgba(244,185,66,0.8),rgba(15,62,125,0.4),transparent);border-radius:10px;"></div>
+        </div>
+        <div class="admin-card">
+        <div style="font-size:0.95rem;font-weight:800;color:#0F3E7D;margin-bottom:1rem;padding:0.6rem 0 0;">📊 Leaderboard Score Computation</div>            <div class="table-scroll">
+                <table class="dashboard-table" id="lbScoreTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Student</th>
+                            <th>Course</th>
+                            <th>Tidy Pts (raw)</th>
+                            <th>LB Pts ×50%</th>
+                            <th>Total Time</th>
+                            <th>Hrs ×30%</th>
+                            <th>Tasks Done</th>
+                            <th>Task% ×20%</th>
+                            <th style="background:#F4B942;color:#0F3E7D;">FINAL SCORE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lbScoreBody">
+                        <tr><td colspan="10" class="no-data">No evaluation data yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:0.6rem;font-size:0.75rem;color:#888;padding:0.5rem 1rem;">
+                Formula: <code style="background:rgba(15,62,125,0.08);padding:0.1rem 0.4rem;border-radius:4px;">
+                    Score = (TidyPts×0.5) + (TotalHours×0.3) + (TaskCompletionRate×0.2)
+                </code>
+                <br>
+                <span style="font-size:0.72rem;color:#aaa;">* Tidy LB Points = raw tidy points ÷ 3 (every 3 raw points = 1 leaderboard point)</span>
+            </div>
+        </div>
+    </div>
+
+</div><!-- end stud-panel-leaderboard -->
+
+</div><!-- end section-students -->
 
             <!-- SIT-IN -->
             <div id="section-sitin" class="page-section">
@@ -1172,123 +1218,172 @@ body { visibility: hidden; }
 
     <!-- TAB BAR -->
     <div style="display:inline-flex;background:rgba(255,255,255,0.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;padding:5px;margin-bottom:1.5rem;box-shadow:0 4px 20px rgba(15,62,125,0.10),0 1px 0 rgba(255,255,255,0.9) inset,4px 4px 0px rgba(192,132,252,0.15);gap:4px;width:100%;">
-        <button class="res-tab-btn res-tab-active" onclick="switchRecordsTab('records-panel-charts', this)" style="flex:1;">📊 Usage Charts</button>
-        <button class="res-tab-btn" onclick="switchRecordsTab('records-panel-table', this)" style="flex:1;">📋 Sit-in Records Table</button>
+        <button class="res-tab-btn res-tab-active" onclick="switchRecordsTab('records-panel-table', this)" style="flex:1;">📋 Sit-in Records Table</button>
+        <button class="res-tab-btn" onclick="switchRecordsTab('records-panel-charts', this)" style="flex:1;">📊 Usage Charts</button>
     </div>
 
     <!-- PANEL 1: CHARTS (Analytics + Most Visited Lab + AI Recommendation) -->
-    <div id="records-panel-charts" class="res-tab-panel">
+    <div id="records-panel-charts" class="res-tab-panel" style="display:none;">
 
         <!-- ── SECTION 1: ANALYTICS ── -->
-        <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);overflow:hidden;margin-bottom:1.5rem;">
-            <div style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);padding:0.85rem 1.25rem;display:flex;align-items:center;gap:0.6rem;">
-                <span style="font-size:1rem;">📊</span>
-                <span style="color:white;font-weight:700;font-size:0.95rem;letter-spacing:0.03em;">ANALYTICS</span>
+        <div style="margin-bottom:1.5rem;">
+
+            <!-- Analytics Pill -->
+            <div style="margin-bottom:1rem;">
+                <span style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#0a1e50,#0F3E7D);color:#F4B942;font-size:0.82rem;font-weight:800;padding:0.35rem 1rem;border-radius:20px;letter-spacing:0.06em;box-shadow:0 4px 12px rgba(15,62,125,0.25);">
+                    ♦ ANALYTICS
+                </span>
             </div>
-            <div style="padding:1.25rem;">
-                <!-- Donut Charts Row -->
-                <div class="records-charts-row">
-                    <div class="records-chart-box">
-                        <div class="records-chart-header">Usage by Purpose</div>
-                        <div class="records-chart-body">
-                            <div class="donut-wrap" style="width:180px;height:180px;">
-                                <canvas id="recordsPurposeChart"></canvas>
-                                <div class="donut-center"><div class="donut-center-val" id="recPurposeVal">—</div><div class="donut-center-lbl" id="recPurposeLbl">total</div></div>
-                            </div>
-                            <div class="donut-legend" id="recPurposeLegend" style="width:100%;"></div>
-                        </div>
-                    </div>
-                    <div class="records-chart-box">
-                        <div class="records-chart-header">Usage by Lab</div>
-                        <div class="records-chart-body">
-                            <div class="donut-wrap" style="width:180px;height:180px;">
-                                <canvas id="recordsLabChart"></canvas>
-                                <div class="donut-center"><div class="donut-center-val" id="recLabVal">—</div><div class="donut-center-lbl" id="recLabLbl">total</div></div>
-                            </div>
-                            <div class="donut-legend" id="recLabLegend" style="width:100%;"></div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Peak Hours + Trend Bar Charts -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-top:1.5rem;">
-                    <div class="records-chart-box">
-                        <div class="records-chart-header">📈 Sit-in Trend (by Day)</div>
-                        <div class="records-chart-body" style="height:220px;padding:1rem;">
-                            <canvas id="trendBarChart" style="max-height:180px;"></canvas>
-                        </div>
-                    </div>
-                    <div class="records-chart-box">
-                        <div class="records-chart-header">⏰ Peak Hours</div>
-                        <div class="records-chart-body" style="height:220px;padding:1rem;">
-                            <canvas id="peakHoursChart" style="max-height:180px;"></canvas>
-                        </div>
-                    </div>
+            <!-- Quick Stats Row -->
+            <!-- ── Quick Stats Row (now at top) ── -->
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
+                <div style="background:#E6F1FB;border-radius:14px;padding:1rem;text-align:center;">
+                    <div style="font-size:0.72rem;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Total Sessions</div>
+                    <div id="statTotalSessions" style="font-size:1.8rem;font-weight:800;color:#0C447C;line-height:1;">—</div>
+                    <div style="font-size:0.7rem;color:#185FA5;margin-top:0.3rem;">all time</div>
                 </div>
+                <div style="background:#eafaf1;border-radius:14px;padding:1rem;text-align:center;">
+                    <div style="font-size:0.72rem;font-weight:700;color:#1e7e34;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Busiest Lab</div>
+                    <div id="statBusiestLab" style="font-size:1.8rem;font-weight:800;color:#1e7e34;line-height:1;">—</div>
+                    <div style="font-size:0.7rem;color:#1e7e34;margin-top:0.3rem;">most visits</div>
+                </div>
+                <div style="background:#fff3cd;border-radius:14px;padding:1rem;text-align:center;">
+                    <div style="font-size:0.72rem;font-weight:700;color:#856404;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Top Purpose</div>
+                    <div id="statTopPurpose" style="font-size:1rem;font-weight:800;color:#856404;line-height:1.2;margin-top:0.3rem;">—</div>
+                    <div style="font-size:0.7rem;color:#856404;margin-top:0.3rem;">most used</div>
+                </div>
+                <div style="background:#fdecea;border-radius:14px;padding:1rem;text-align:center;">
+                    <div style="font-size:0.72rem;font-weight:700;color:#c0392b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Active Today</div>
+                    <div id="statActiveToday" style="font-size:1.8rem;font-weight:800;color:#c0392b;line-height:1;">—</div>
+                    <div style="font-size:0.7rem;color:#c0392b;margin-top:0.3rem;">sitting in now</div>
+                </div>
+            </div>
 
-                <!-- Quick Stats Row -->
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:1.5rem;">
-                    <div style="background:#E6F1FB;border-radius:14px;padding:1rem;text-align:center;">
-                        <div style="font-size:0.72rem;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Total Sessions</div>
-                        <div id="statTotalSessions" style="font-size:1.8rem;font-weight:800;color:#0C447C;line-height:1;">—</div>
-                    </div>
-                    <div style="background:#eafaf1;border-radius:14px;padding:1rem;text-align:center;">
-                        <div style="font-size:0.72rem;font-weight:700;color:#1e7e34;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Busiest Lab</div>
-                        <div id="statBusiestLab" style="font-size:1.8rem;font-weight:800;color:#1e7e34;line-height:1;">—</div>
-                    </div>
-                    <div style="background:#fff3cd;border-radius:14px;padding:1rem;text-align:center;">
-                        <div style="font-size:0.72rem;font-weight:700;color:#856404;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Top Purpose</div>
-                        <div id="statTopPurpose" style="font-size:1rem;font-weight:800;color:#856404;line-height:1.2;margin-top:0.3rem;">—</div>
-                    </div>
-                    <div style="background:#fdecea;border-radius:14px;padding:1rem;text-align:center;">
-                        <div style="font-size:0.72rem;font-weight:700;color:#c0392b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Active Today</div>
-                        <div id="statActiveToday" style="font-size:1.8rem;font-weight:800;color:#c0392b;line-height:1;">—</div>
+
+                    <!-- Charts Card Wrapper -->
+<div style="background:transparent;border:none;box-shadow:none;padding:1.5rem;">
+    <!-- ROW 1: Donut Charts -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+
+        <!-- Usage by Purpose -->
+        <div style="background:rgba(255,255,255,0.6);border-radius:16px;border:1.5px solid rgba(255,255,255,0.9);padding:1.25rem;box-shadow:3px 3px 0px rgba(192,132,252,0.15);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#3B82F6;display:inline-block;"></span>
+                <span style="font-size:0.88rem;font-weight:700;color:#1a1a1a;">Usage by Purpose</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:1.5rem;">
+                <div class="donut-wrap" style="width:120px;height:120px;flex-shrink:0;">
+                    <canvas id="recordsPurposeChart"></canvas>
+                    <div class="donut-center">
+                        <div class="donut-center-val" id="recPurposeVal" style="font-size:18px;">—</div>
+                        <div class="donut-center-lbl" id="recPurposeLbl">total</div>
                     </div>
                 </div>
+                <div class="donut-legend" id="recPurposeLegend" style="display:flex;flex-direction:column;gap:6px;flex:1;"></div>
             </div>
         </div>
 
-        <!-- ── SECTION 2: MOST VISITED LABORATORY ── -->
-        <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);overflow:hidden;margin-bottom:1.5rem;">
-            <div style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);padding:0.85rem 1.25rem;display:flex;align-items:center;gap:0.6rem;">
-                <span style="font-size:1rem;">🏫</span>
-                <span style="color:white;font-weight:700;font-size:0.95rem;letter-spacing:0.03em;">MOST VISITED LABORATORY</span>
+        <!-- Usage by Lab -->
+        <div style="background:rgba(255,255,255,0.6);border-radius:16px;border:1.5px solid rgba(255,255,255,0.9);padding:1.25rem;box-shadow:3px 3px 0px rgba(192,132,252,0.15);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#10B981;display:inline-block;"></span>
+                <span style="font-size:0.88rem;font-weight:700;color:#1a1a1a;">Usage by Lab</span>
             </div>
-            <div style="padding:1.25rem;">
-                <div id="labRankingGrid" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
-
-                <!-- Lab Scoring Table (like grade computation) -->
-                <div style="margin-top:1.5rem;background:rgba(15,62,125,0.04);border-radius:14px;padding:1rem;">
-                    <div style="font-size:0.82rem;font-weight:800;color:#0F3E7D;margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">📋 Lab Score Computation</div>
-                    <div class="table-scroll">
-                        <table class="dashboard-table" id="labScoreTable" style="font-size:0.82rem;">
-                            <thead>
-                                <tr>
-                                    <th>Laboratory</th>
-                                    <th>Total Visits</th>
-                                    <th>Weight (40%)</th>
-                                    <th>Avg Rating</th>
-                                    <th>Weight (30%)</th>
-                                    <th>Unique Users</th>
-                                    <th>Weight (20%)</th>
-                                    <th>Recency Score</th>
-                                    <th>Weight (10%)</th>
-                                    <th style="background:#F4B942;color:#0F3E7D;">FINAL SCORE</th>
-                                </tr>
-                            </thead>
-                            <tbody id="labScoreBody">
-                                <tr><td colspan="10" class="no-data">Computing scores...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style="margin-top:0.6rem;font-size:0.75rem;color:#888;">
-                        Formula: <code style="background:rgba(15,62,125,0.08);padding:0.1rem 0.4rem;border-radius:4px;">Score = (Visits×0.4) + (Rating×20×0.3) + (UniqueUsers×0.2) + (Recency×0.1)</code>
+            <div style="display:flex;align-items:center;gap:1.5rem;">
+                <div class="donut-wrap" style="width:120px;height:120px;flex-shrink:0;">
+                    <canvas id="recordsLabChart"></canvas>
+                    <div class="donut-center">
+                        <div class="donut-center-val" id="recLabVal" style="font-size:18px;">—</div>
+                        <div class="donut-center-lbl" id="recLabLbl">total</div>
                     </div>
                 </div>
+                <div class="donut-legend" id="recLabLegend" style="display:flex;flex-direction:column;gap:6px;flex:1;"></div>
             </div>
         </div>
+    </div>
+
+    <!-- ROW 2: Sit-in Trend + Peak Hours (horizontal bar style) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+
+        <!-- Sit-in Trend by Day -->
+        <div style="background:rgba(255,255,255,0.6);border-radius:16px;border:1.5px solid rgba(255,255,255,0.9);padding:1.25rem;box-shadow:3px 3px 0px rgba(192,132,252,0.15);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#F59E0B;display:inline-block;"></span>
+                <span style="font-size:0.88rem;font-weight:700;color:#1a1a1a;">Sit-in Trend (by Day)</span>
+            </div>
+            <div id="trendBarsContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- Peak Hours -->
+        <div style="background:rgba(255,255,255,0.6);border-radius:16px;border:1.5px solid rgba(255,255,255,0.9);padding:1.25rem;box-shadow:3px 3px 0px rgba(192,132,252,0.15);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
+                <span style="width:10px;height:10px;border-radius:50%;background:#10B981;display:inline-block;"></span>
+                <span style="font-size:0.88rem;font-weight:700;color:#1a1a1a;">Peak Hours</span>
+            </div>
+            <div id="peakHoursBarsContainer" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+    </div>
+
+</div>
+<!-- END Charts Card Wrapper -->
+
+        </div>
+        <!-- END SECTION 1 ANALYTICS -->
+      
+<!-- ── MOST VISITED LABORATORY PANEL ── -->
+
+
+<!-- ── LAB SCORE COMPUTATION PANEL ── -->
+<div style="display:flex;align-items:center;gap:1rem;margin:1.5rem 0;">
+    <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,rgba(15,62,125,0.4),rgba(244,185,66,0.8),rgba(15,62,125,0.4),transparent);border-radius:10px;"></div>
+    <span style="font-size:0.9rem;color:#F4B942;font-weight:900;letter-spacing:0.1em;text-shadow:0 0 8px rgba(244,185,66,0.5);">✦</span>
+    <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,rgba(15,62,125,0.4),rgba(244,185,66,0.8),rgba(15,62,125,0.4),transparent);border-radius:10px;"></div>
+</div>
+ <div style="margin-bottom:1rem;">
+                <span style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#0a1e50,#0F3E7D);color:#F4B942;font-size:0.82rem;font-weight:800;padding:0.35rem 1rem;border-radius:20px;letter-spacing:0.06em;box-shadow:0 4px 12px rgba(15,62,125,0.25);">
+                    ♦ MOST VISITED LABORATORY
+                </span>
+            </div>
+<div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);overflow:hidden;margin-bottom:1.5rem;">
+    <div style="padding:1.25rem;">
+        <div class="table-scroll">
+            <table class="dashboard-table" id="labScoreTable" style="font-size:0.82rem;">
+                <thead>
+                    <tr>
+                        <th>Laboratory</th>
+                        <th>Total Sit-ins</th>
+                        <th>×25%</th>
+                        <th>Total Hours</th>
+                        <th>×25%</th>
+                        <th>Rating</th>
+                        <th>×25%</th>
+                        <th>Unique Users</th>
+                        <th>×25%</th>
+                        <th style="background:#F4B942;color:#0F3E7D;">FINAL SCORE</th>
+                    </tr>
+                </thead>
+                <tbody id="labScoreBody">
+                    <tr><td colspan="10" class="no-data">Computing scores...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top:0.6rem;font-size:0.75rem;color:#888;">
+            Formula: <code style="background:rgba(15,62,125,0.08);padding:0.1rem 0.4rem;border-radius:4px;">Score = (Sit-ins×0.25) + (Hours×0.25) + (Rating×5×0.25) + (UniqueUsers×0.25)</code></div>
+    </div>
+</div>
 
         <!-- ── SECTION 3: AI RECOMMENDATION SYSTEM ── -->
+        <div style="display:flex;align-items:center;gap:1rem;margin:1.5rem 0;">
+            <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,rgba(15,62,125,0.4),rgba(244,185,66,0.8),rgba(15,62,125,0.4),transparent);border-radius:10px;"></div>
+            <span style="font-size:0.9rem;color:#F4B942;font-weight:900;letter-spacing:0.1em;text-shadow:0 0 8px rgba(244,185,66,0.5);">✦</span>
+            <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,rgba(15,62,125,0.4),rgba(244,185,66,0.8),rgba(15,62,125,0.4),transparent);border-radius:10px;"></div>
+        </div>
+        <div style="margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;">
+            <span style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#1a0050,#4a0F9D);color:#F4B942;font-size:0.82rem;font-weight:800;padding:0.35rem 1rem;border-radius:20px;letter-spacing:0.06em;box-shadow:0 4px 12px rgba(74,15,157,0.25);">
+                ♦ AI RECOMMENDATION SYSTEM
+            </span>
+        </div>
         <div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;box-shadow:5px 5px 0px rgba(192,132,252,0.22),0 8px 24px rgba(150,120,220,0.10);overflow:hidden;margin-bottom:1.5rem;">
             <div style="background:linear-gradient(135deg,#1a0050,#4a0F9D);padding:0.85rem 1.25rem;display:flex;align-items:center;justify-content:space-between;">
                 <div style="display:flex;align-items:center;gap:0.6rem;">
@@ -1335,7 +1430,7 @@ body { visibility: hidden; }
     </div><!-- end records-panel-charts -->
 
     <!-- PANEL 2: TABLE -->
-    <div id="records-panel-table" class="res-tab-panel" style="display:none;">
+    <div id="records-panel-table" class="res-tab-panel">
         <div class="admin-card">
             <div class="table-top-bar">
                 <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; margin-left:auto;">
@@ -1951,35 +2046,280 @@ body { visibility: hidden; }
 </div>
 
     <div class="modal-overlay" id="editStudentModal" style="display:none;">
-        <div class="modal-box" style="max-width:500px;">
-            <div class="modal-header"><h3>Edit Student</h3><button class="modal-close" onclick="closeModal('editStudentModal')">&#10005;</button></div>
-            <div class="modal-body">
-                <form id="editStudentForm" onsubmit="event.preventDefault(); submitEditStudent();">
-                    <input type="hidden" name="idNumber" id="edit_id">
-                    <table class="sitin-form-table">
-                        <tr><td class="sitin-form-label">ID Number</td><td><input type="text" name="newIdNumber" id="edit_id_display" class="sitin-form-input" maxlength="8" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></td></tr>
-                        <tr><td class="sitin-form-label">First Name</td><td><input type="text" name="firstName" id="edit_firstname" required class="sitin-form-input"></td></tr>
-                        <tr><td class="sitin-form-label">Last Name</td><td><input type="text" name="lastName" id="edit_lastname" required class="sitin-form-input"></td></tr>
-                        <tr><td class="sitin-form-label">Middle Name</td><td><input type="text" name="middleName" id="edit_middlename" class="sitin-form-input"></td></tr>
-                        <tr><td class="sitin-form-label">Email</td><td><input type="email" name="email" id="edit_email" required class="sitin-form-input"></td></tr>
-                        <tr><td class="sitin-form-label">Course</td><td>
-                            <select name="course" id="edit_course" class="sitin-form-input">
-                                <optgroup label="CCS"><option value="BSIT">BSIT</option><option value="BSCS">BSCS</option><option value="BSCoE">BSCoE</option><option value="CISCO">CISCO</option></optgroup>
-                                <optgroup label="Engineering"><option value="BSCE">BSCE</option><option value="BSME">BSME</option><option value="BSEE">BSEE</option><option value="BSIE">BSIE</option></optgroup>
-                                <optgroup label="Education"><option value="BEED">BEED</option><option value="BSED">BSED</option></optgroup>
-                                <optgroup label="Business"><option value="BSCOM">BSCOM</option><option value="BSA">BSA</option><option value="BSHRM">BSHRM</option></optgroup>
-                                <optgroup label="Others"><option value="BSCRIM">BSCRIM</option><option value="ABPOLSCI">ABPOLSCI</option><option value="ABENG">ABENG</option></optgroup>
-                            </select>
-                        </td></tr>
-                        <tr><td class="sitin-form-label">Year Level</td><td><select name="yearLevel" id="edit_yearlevel" class="sitin-form-input"><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option></select></td></tr>
-                        <tr><td class="sitin-form-label">Address</td><td><input type="text" name="address" id="edit_address" class="sitin-form-input"></td></tr>
-                        <tr><td class="sitin-form-label">Remaining Sessions</td><td><input type="text" name="sitin_count" id="edit_sitin" readonly class="sitin-form-input sitin-readonly"></td></tr>
-                    </table>
-                    <div class="sitin-form-btns" style="margin-top:1.2rem;"><button type="button" class="btn-modal-close" onclick="closeModal('editStudentModal')">Cancel</button><button type="submit" class="btn-modal-submit">Save Changes</button></div>
-                </form>
+    <div style="
+        background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,240,255,0.88));
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border-radius: 36px;
+        width: 92%;
+        max-width: 620px;
+        border: 2px solid rgba(255,255,255,0.95);
+        box-shadow:
+            0 30px 60px rgba(15,62,125,0.18),
+            0 8px 20px rgba(15,62,125,0.10),
+            0 2px 0 rgba(255,255,255,1) inset,
+            6px 6px 0px rgba(192,132,252,0.15);
+        overflow: hidden;
+    ">
+        <!-- Header -->
+        <div style="
+            background: linear-gradient(135deg, #0a1e50, #0F3E7D);
+            padding: 1.1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(10,30,80,0.25);
+            border-radius: 34px 34px 0 0;
+        ">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="
+                    width:36px; height:36px;
+                    background: rgba(255,255,255,0.15);
+                    border-radius: 12px;
+                    display:flex; align-items:center; justify-content:center;
+                    font-size:16px;
+                    border: 1.5px solid rgba(255,255,255,0.25);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                ">✏️</div>
+                <span style="color:white; font-size:1.05rem; font-weight:800; letter-spacing:0.02em; text-shadow:0 1px 4px rgba(0,0,0,0.2);">Edit Student</span>
             </div>
+            <button class="modal-close" onclick="closeModal('editStudentModal')" style="
+                background: rgba(255,255,255,0.15);
+                border: 1.5px solid rgba(255,255,255,0.3);
+                color: white;
+                font-size: 1rem;
+                cursor: pointer;
+                width: 32px; height: 32px;
+                border-radius: 10px;
+                display:flex; align-items:center; justify-content:center;
+                backdrop-filter: blur(8px);
+                transition: all 0.18s ease;
+            " onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">✕</button>
         </div>
+
+        <!-- Scrollable Body -->
+        <div style="
+            max-height: 72vh;
+            overflow-y: auto;
+            padding: 1.4rem 1.6rem 0.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: #F4B942 transparent;
+        ">
+            <form id="editStudentForm" onsubmit="event.preventDefault(); submitEditStudent();">
+                <input type="hidden" name="idNumber" id="edit_id">
+
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+
+                    <!-- ID Number -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">ID Number</label>
+                        <input type="text" name="newIdNumber" id="edit_id_display" maxlength="8" inputmode="numeric"
+                            oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.15); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(255,255,255,0.7); backdrop-filter:blur(8px);
+                            box-shadow:0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+                            transition:all 0.2s ease; outline:none;"
+                            onfocus="this.style.borderColor='#0F3E7D'; this.style.boxShadow='0 0 0 4px rgba(15,62,125,0.12), 0 1px 0 rgba(255,255,255,0.9) inset'"
+                            onblur="this.style.borderColor='rgba(15,62,125,0.15)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset'">
+                    </div>
+
+                    <!-- First Name -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">First Name</label>
+                        <input type="text" name="firstName" id="edit_firstname" required
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.15); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(255,255,255,0.7); backdrop-filter:blur(8px);
+                            box-shadow:0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+                            transition:all 0.2s ease; outline:none;"
+                            onfocus="this.style.borderColor='#0F3E7D'; this.style.boxShadow='0 0 0 4px rgba(15,62,125,0.12), 0 1px 0 rgba(255,255,255,0.9) inset'"
+                            onblur="this.style.borderColor='rgba(15,62,125,0.15)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset'">
+                    </div>
+
+                    <!-- Last Name -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">Last Name</label>
+                        <input type="text" name="lastName" id="edit_lastname" required
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.15); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(255,255,255,0.7); backdrop-filter:blur(8px);
+                            box-shadow:0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+                            transition:all 0.2s ease; outline:none;"
+                            onfocus="this.style.borderColor='#0F3E7D'; this.style.boxShadow='0 0 0 4px rgba(15,62,125,0.12), 0 1px 0 rgba(255,255,255,0.9) inset'"
+                            onblur="this.style.borderColor='rgba(15,62,125,0.15)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset'">
+                    </div>
+
+                    <!-- Middle Name -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">Middle Name</label>
+                        <input type="text" name="middleName" id="edit_middlename"
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.15); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(255,255,255,0.7); backdrop-filter:blur(8px);
+                            box-shadow:0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+                            transition:all 0.2s ease; outline:none;"
+                            onfocus="this.style.borderColor='#0F3E7D'; this.style.boxShadow='0 0 0 4px rgba(15,62,125,0.12), 0 1px 0 rgba(255,255,255,0.9) inset'"
+                            onblur="this.style.borderColor='rgba(15,62,125,0.15)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset'">
+                    </div>
+
+                    <!-- Email -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">Email</label>
+                        <input type="email" name="email" id="edit_email" required
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.15); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(255,255,255,0.7); backdrop-filter:blur(8px);
+                            box-shadow:0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+                            transition:all 0.2s ease; outline:none;"
+                            onfocus="this.style.borderColor='#0F3E7D'; this.style.boxShadow='0 0 0 4px rgba(15,62,125,0.12), 0 1px 0 rgba(255,255,255,0.9) inset'"
+                            onblur="this.style.borderColor='rgba(15,62,125,0.15)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset'">
+                    </div>
+
+                    <!-- Course -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">Course</label>
+                        <select name="course" id="edit_course"
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.15); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(255,255,255,0.7); backdrop-filter:blur(8px);
+                            box-shadow:0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+                            transition:all 0.2s ease; outline:none; cursor:pointer;"
+                            onfocus="this.style.borderColor='#0F3E7D'; this.style.boxShadow='0 0 0 4px rgba(15,62,125,0.12), 0 1px 0 rgba(255,255,255,0.9) inset'"
+                            onblur="this.style.borderColor='rgba(15,62,125,0.15)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset'">
+                            <optgroup label="CCS"><option value="BSIT">BSIT</option><option value="BSCS">BSCS</option><option value="BSCoE">BSCoE</option><option value="CISCO">CISCO</option></optgroup>
+                            <optgroup label="Engineering"><option value="BSCE">BSCE</option><option value="BSME">BSME</option><option value="BSEE">BSEE</option><option value="BSIE">BSIE</option></optgroup>
+                            <optgroup label="Education"><option value="BEED">BEED</option><option value="BSED">BSED</option></optgroup>
+                            <optgroup label="Business"><option value="BSCOM">BSCOM</option><option value="BSA">BSA</option><option value="BSHRM">BSHRM</option></optgroup>
+                            <optgroup label="Others"><option value="BSCRIM">BSCRIM</option><option value="ABPOLSCI">ABPOLSCI</option><option value="ABENG">ABENG</option></optgroup>
+                        </select>
+                    </div>
+
+                    <!-- Year Level -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">Year Level</label>
+                        <select name="yearLevel" id="edit_yearlevel"
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.15); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(255,255,255,0.7); backdrop-filter:blur(8px);
+                            box-shadow:0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+                            transition:all 0.2s ease; outline:none; cursor:pointer;"
+                            onfocus="this.style.borderColor='#0F3E7D'; this.style.boxShadow='0 0 0 4px rgba(15,62,125,0.12), 0 1px 0 rgba(255,255,255,0.9) inset'"
+                            onblur="this.style.borderColor='rgba(15,62,125,0.15)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset'">
+                            <option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option>
+                        </select>
+                    </div>
+
+                    <!-- Address -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">Address</label>
+                        <input type="text" name="address" id="edit_address"
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.15); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(255,255,255,0.7); backdrop-filter:blur(8px);
+                            box-shadow:0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+                            transition:all 0.2s ease; outline:none;"
+                            onfocus="this.style.borderColor='#0F3E7D'; this.style.boxShadow='0 0 0 4px rgba(15,62,125,0.12), 0 1px 0 rgba(255,255,255,0.9) inset'"
+                            onblur="this.style.borderColor='rgba(15,62,125,0.15)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset'">
+                    </div>
+
+                    <!-- Remaining Sessions -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">Remaining Sessions</label>
+                        <input type="text" name="sitin_count" id="edit_sitin" readonly
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.08); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(245,245,250,0.8); color:#999; cursor:not-allowed;
+                            box-shadow:0 1px 4px rgba(0,0,0,0.04) inset; outline:none;">
+                    </div>
+
+                    <!-- Divider -->
+                    <div style="display:flex; align-items:center; gap:0.75rem; margin:0.25rem 0;">
+                        <div style="flex:1; height:1.5px; background:linear-gradient(90deg,transparent,rgba(15,62,125,0.15),transparent); border-radius:10px;"></div>
+                        <span style="font-size:0.72rem; font-weight:800; color:#0F3E7D; opacity:0.5; letter-spacing:0.08em; text-transform:uppercase;">Password</span>
+                        <div style="flex:1; height:1.5px; background:linear-gradient(90deg,transparent,rgba(15,62,125,0.15),transparent); border-radius:10px;"></div>
+                    </div>
+
+                    <!-- New Password -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">New Password</label>
+                        <input type="password" name="newPassword" id="edit_newpassword"
+                            placeholder="Leave blank to keep current"
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.15); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(255,255,255,0.7); backdrop-filter:blur(8px);
+                            box-shadow:0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+                            transition:all 0.2s ease; outline:none;"
+                            onfocus="this.style.borderColor='#0F3E7D'; this.style.boxShadow='0 0 0 4px rgba(15,62,125,0.12), 0 1px 0 rgba(255,255,255,0.9) inset'"
+                            onblur="this.style.borderColor='rgba(15,62,125,0.15)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset'">
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div style="display:flex; align-items:center; gap:1rem;">
+                        <label style="min-width:160px; font-size:0.82rem; font-weight:700; color:#555; letter-spacing:0.03em; text-transform:uppercase;">Confirm Password</label>
+                        <input type="password" name="confirmPassword" id="edit_confirmpassword"
+                            placeholder="Re-enter new password"
+                            style="flex:1; padding:0.65rem 1rem; border:1.5px solid rgba(15,62,125,0.15); border-radius:14px;
+                            font-size:0.9rem; font-family:Arial,sans-serif;
+                            background:rgba(255,255,255,0.7); backdrop-filter:blur(8px);
+                            box-shadow:0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset;
+                            transition:all 0.2s ease; outline:none;"
+                            onfocus="this.style.borderColor='#0F3E7D'; this.style.boxShadow='0 0 0 4px rgba(15,62,125,0.12), 0 1px 0 rgba(255,255,255,0.9) inset'"
+                            onblur="this.style.borderColor='rgba(15,62,125,0.15)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.9) inset'">
+                    </div>
+
+                    <!-- Password Error -->
+                    <div id="editPasswordError" style="display:none; background:linear-gradient(135deg,rgba(253,236,234,0.95),rgba(250,220,218,0.9));
+                        border-left:4px solid #c0392b; border-radius:0 12px 12px 0;
+                        color:#c0392b; padding:0.65rem 1rem; font-size:0.85rem; font-weight:600;
+                        backdrop-filter:blur(8px); box-shadow:0 2px 8px rgba(192,57,43,0.12);"></div>
+
+                </div><!-- end flex col -->
+
+                <!-- Action Buttons -->
+                <div style="
+                    display:flex; gap:0.75rem; justify-content:flex-end;
+                    padding:1.1rem 0 1.25rem;
+                    position:sticky; bottom:0;
+                    background:linear-gradient(to top, rgba(240,240,255,0.98) 80%, transparent);
+                    margin-top:0.5rem;
+                ">
+                    <button type="button" onclick="closeModal('editStudentModal')" style="
+                        background: linear-gradient(145deg, #f2f2f7, #e5e5ea);
+                        color: #3a3a3c;
+                        border: 2px solid rgba(255,255,255,0.9);
+                        padding: 0.65rem 1.5rem;
+                        border-radius: 16px;
+                        font-size: 0.9rem; font-weight: 700; cursor: pointer;
+                        font-family: Arial, sans-serif;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.95) inset;
+                        transition: all 0.18s ease;"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 18px rgba(0,0,0,0.12)'"
+                        onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.95) inset'"
+                        onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='translateY(-2px)'">
+                        Cancel
+                    </button>
+                    <button type="submit" style="
+                        background: linear-gradient(135deg, #1a5db5, #0F3E7D);
+                        color: white;
+                        border: 2px solid rgba(255,255,255,0.2);
+                        padding: 0.65rem 1.8rem;
+                        border-radius: 16px;
+                        font-size: 0.9rem; font-weight: 700; cursor: pointer;
+                        font-family: Arial, sans-serif;
+                        box-shadow: 0 4px 15px rgba(15,62,125,0.35), 0 1px 0 rgba(255,255,255,0.2) inset;
+                        transition: all 0.18s ease; letter-spacing:0.02em;"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(15,62,125,0.45)'"
+                        onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 15px rgba(15,62,125,0.35), 0 1px 0 rgba(255,255,255,0.2) inset'"
+                        onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='translateY(-2px)'">
+                        Save Changes
+                    </button>
+                </div>
+
+            </form>
+        </div><!-- end scrollable body -->
     </div>
+</div>
 
     <div class="modal-overlay" id="deleteModal" style="display:none;">
         <div class="modal-box modal-sm">
@@ -2170,6 +2510,105 @@ body { visibility: hidden; }
                 onmouseover="this.style.transform='translateY(-2px)'"
                 onmouseout="this.style.transform=''">Yes, Logout</a>
             </div>
+        </div>
+    </div>
+</div>
+<!-- ANN ERROR MODAL -->
+<div class="modal-overlay" id="annErrorModal" style="display:none; z-index:9999;">
+    <div style="
+        background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(255,240,240,0.88));
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border-radius: 36px;
+        width: 90%;
+        max-width: 400px;
+        border: 2px solid rgba(255,255,255,0.95);
+        box-shadow:
+            0 30px 60px rgba(192,57,43,0.18),
+            0 8px 20px rgba(192,57,43,0.10),
+            0 2px 0 rgba(255,255,255,1) inset,
+            6px 6px 0px rgba(255,150,150,0.2);
+        overflow: hidden;
+    ">
+        <div style="
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+            padding: 1.1rem 1.4rem;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(192,57,43,0.35);
+        ">
+            <span style="color:white;font-size:1rem;font-weight:800;letter-spacing:0.02em;text-shadow:0 1px 4px rgba(0,0,0,0.2);">⚠️ Missing Fields</span>
+            <button onclick="closeModal('annErrorModal')" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);color:white;font-size:1rem;cursor:pointer;width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">✕</button>
+        </div>
+        <div style="padding:1.75rem 2rem;text-align:center;">
+            <div style="
+                width:80px;height:80px;
+                background:linear-gradient(145deg,#fdecea,#f9b9b4);
+                border-radius:28px;margin:0 auto 1.25rem;
+                display:flex;align-items:center;justify-content:center;
+                font-size:2.2rem;
+                box-shadow:0 8px 24px rgba(192,57,43,0.2),0 2px 0 rgba(255,255,255,0.9) inset;
+                border:2px solid rgba(255,255,255,0.9);
+                transform:rotate(-4deg);
+                animation:clayWobble 3s ease-in-out infinite;
+            ">📝</div>
+            <p style="color:#2c2c2e;font-size:0.95rem;font-weight:600;margin:0 0 1.5rem;line-height:1.6;">
+                Please fill in <strong style="color:#c0392b;">both</strong> the title and content fields before submitting.
+            </p>
+            <button onclick="closeModal('annErrorModal')" style="
+                background:linear-gradient(135deg,#e74c3c,#c0392b);
+                color:white;border:2px solid rgba(255,255,255,0.25);
+                padding:0.75rem 2.5rem;border-radius:18px;
+                font-size:0.95rem;font-weight:700;cursor:pointer;
+                font-family:Arial,sans-serif;
+                box-shadow:0 6px 20px rgba(192,57,43,0.35),0 2px 0 rgba(255,255,255,0.2) inset;
+                transition:all 0.18s ease;
+            "
+            onmouseover="this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.transform=''">Got it!</button>
+        </div>
+    </div>
+</div>
+
+<!-- ANN SUCCESS MODAL -->
+<div class="modal-overlay" id="annSuccessModal" style="display:none; z-index:9999;">
+    <div style="
+        background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(240,255,245,0.88));
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border-radius: 36px;
+        width: 90%;
+        max-width: 400px;
+        border: 2px solid rgba(255,255,255,0.95);
+        box-shadow:
+            0 30px 60px rgba(30,126,52,0.15),
+            0 8px 20px rgba(30,126,52,0.10),
+            0 2px 0 rgba(255,255,255,1) inset,
+            6px 6px 0px rgba(150,255,180,0.25);
+        overflow: hidden;
+    ">
+        <div style="
+            background: linear-gradient(135deg, #1a7a34, #2ecc71);
+            padding: 1.1rem 1.4rem;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(30,126,52,0.35);
+        ">
+            <span style="color:white;font-size:1rem;font-weight:800;letter-spacing:0.02em;text-shadow:0 1px 4px rgba(0,0,0,0.2);">✅ Announcement Posted!</span>
+        </div>
+        <div style="padding:1.75rem 2rem;text-align:center;">
+            <div style="
+                width:80px;height:80px;
+                background:linear-gradient(145deg,#eafaf1,#a9dfbf);
+                border-radius:28px;margin:0 auto 1.25rem;
+                display:flex;align-items:center;justify-content:center;
+                font-size:2.2rem;
+                box-shadow:0 8px 24px rgba(30,126,52,0.2),0 2px 0 rgba(255,255,255,0.9) inset;
+                border:2px solid rgba(255,255,255,0.9);
+                transform:rotate(4deg);
+                animation:clayWobble 3s ease-in-out infinite;
+            ">📢</div>
+            <p style="color:#2c2c2e;font-size:0.95rem;font-weight:600;margin:0;line-height:1.6;">
+                Your announcement has been <strong style="color:#1e7e34;">successfully posted</strong> and is now visible to all students!
+            </p>
         </div>
     </div>
 </div>
@@ -2613,12 +3052,11 @@ function showSection(sectionId, clickedLink) {
     if (sectionId === 'section-records') {
     const chartsPanel = document.getElementById('records-panel-charts');
     const tablePanel  = document.getElementById('records-panel-table');
-    if (chartsPanel) chartsPanel.style.display = 'block';
-    if (tablePanel)  tablePanel.style.display  = 'none';
+    if (chartsPanel) chartsPanel.style.display = 'none';
+    if (tablePanel)  tablePanel.style.display  = 'block';
     document.querySelectorAll('#section-records .res-tab-btn').forEach(b => b.classList.remove('res-tab-active'));
     const firstBtn = document.querySelector('#section-records .res-tab-btn');
     if (firstBtn) firstBtn.classList.add('res-tab-active');
-    setTimeout(() => buildLabRankings(), 200);
 }
 }
 
@@ -2731,7 +3169,7 @@ function showSection(sectionId, clickedLink) {
             const title = document.getElementById('newAnnTitle').value.trim();
             const content = document.getElementById('newAnnContent').value.trim();
             if (!title || !content) {
-                alert('Please fill in both title and content.');
+                showModal('annErrorModal');
                 return;
             }
             pendingAnnouncement = { title, content };
@@ -2744,7 +3182,11 @@ function showSection(sectionId, clickedLink) {
             document.getElementById('annContentHidden').value = pendingAnnouncement.content;
             pendingAnnouncement = null;
             closeModal('confirmAnnModal');
-            document.getElementById('annForm').submit();
+            showModal('annSuccessModal');
+            setTimeout(() => {
+                closeModal('annSuccessModal');
+                document.getElementById('annForm').submit();
+            }, 1800);
         }
 
     function submitSitinQuick() {
@@ -2776,8 +3218,100 @@ function showSection(sectionId, clickedLink) {
         function openEditModal(data) { document.getElementById('edit_id').value = data.id; document.getElementById('edit_id_display').value = data.id; document.getElementById('edit_firstname').value = data.firstname; document.getElementById('edit_lastname').value = data.lastname; document.getElementById('edit_middlename').value = data.middlename; document.getElementById('edit_email').value = data.email; document.getElementById('edit_course').value = data.course; document.getElementById('edit_yearlevel').value = data.yearlevel; document.getElementById('edit_address').value = data.address; document.getElementById('edit_sitin').value = data.sitin; showModal('editStudentModal'); }
         function confirmDelete(idNumber) { document.getElementById('deleteStudentId').textContent = idNumber; document.getElementById('deleteIdInput').value = idNumber; showModal('deleteModal'); }
         function submitDelete() { sessionStorage.setItem('adminGoTo', 'section-students'); document.getElementById('deleteForm').submit(); }
-        function confirmLogout(sessionId) { document.getElementById('logoutForm').action = '/admin/sitin/end/' + sessionId; showModal('logoutModal'); }
-        function submitLogout() { sessionStorage.setItem('adminGoTo', 'section-sitin'); document.getElementById('logoutForm').submit(); }
+        function confirmLogout(sessionId) {
+            _pendingEvalSessionId = sessionId;
+            document.getElementById('logoutForm').action = '/admin/sitin/end/' + sessionId;
+            showModal('logoutModal');
+        }
+        let _pendingEvalSessionId = null;
+
+function submitLogout() {
+    closeModal('logoutModal');
+    setTimeout(() => {
+        openEvalModal(_pendingEvalSessionId);
+    }, 500);
+}
+
+function openEvalModal(sessionId) {
+    // Get student info from the row
+    const rows = document.querySelectorAll('#sitinTableBody tr');
+    let studentName = '—', timeIn = null;
+    rows.forEach(row => {
+        const logoutBtn = row.querySelector(`[data-id="${sessionId}"]`);
+        if (logoutBtn) {
+            studentName = row.querySelectorAll('td')[2]?.innerText.trim() || '—';
+            timeIn = row.querySelectorAll('td')[7]?.innerText.trim() || null;
+        }
+    });
+
+    document.getElementById('evalStudentName').textContent = studentName;
+    document.getElementById('evalSessionId').value = sessionId;
+
+    // Calculate duration display
+    document.getElementById('evalDuration').textContent = 'Calculating...';
+    fetch('/admin/get-session-time?session_id=' + sessionId)
+    .then(r => r.json())
+    .then(data => {
+        if (data.duration_minutes !== undefined) {
+            const hrs  = Math.floor(data.duration_minutes / 60);
+            const mins = data.duration_minutes % 60;
+            document.getElementById('evalDuration').textContent =
+                hrs > 0 ? `${hrs}hr ${mins}mins` : `${mins}mins`;
+        }
+    });
+
+    // Reset selections
+    document.querySelectorAll('input[name="evalTidy"]').forEach(r => r.checked = false);
+    document.querySelectorAll('input[name="evalTask"]').forEach(r => r.checked = false);
+    document.getElementById('evalError').style.display = 'none';
+
+    showModal('evalModal');
+}
+
+function submitEvaluation() {
+    const sessionId    = document.getElementById('evalSessionId').value;
+    const tidyEl       = document.querySelector('input[name="evalTidy"]:checked');
+    const taskEl       = document.querySelector('input[name="evalTask"]:checked');
+    const errEl        = document.getElementById('evalError');
+
+    if (!tidyEl) { errEl.textContent = 'Please answer the tidy up question.'; errEl.style.display = 'block'; return; }
+    if (!taskEl) { errEl.textContent = 'Please answer the task completed question.'; errEl.style.display = 'block'; return; }
+
+    errEl.style.display = 'none';
+
+    const fd = new FormData();
+    fd.append('session_id',     sessionId);
+    fd.append('tidy_point',     tidyEl.value);
+    fd.append('task_completed', taskEl.value);
+
+    fetch('/admin/sitin/evaluate', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('evalModal');
+            showToast('✓ Session ended and evaluation saved.', 'success');
+
+            // Remove row from sit-in table
+            document.querySelectorAll('#sitinTableBody tr').forEach(row => {
+                const btn = row.querySelector(`[data-id="${sessionId}"]`);
+                if (btn) {
+                    allSitinRows = allSitinRows.filter(r => r !== row);
+                    sitinFiltered = sitinFiltered.filter(r => r !== row);
+                    row.remove();
+                }
+            });
+            renderTable('sitin');
+            _pendingEvalSessionId = null;
+        } else {
+            document.getElementById('evalError').textContent = data.message || 'Error saving.';
+            document.getElementById('evalError').style.display = 'block';
+        }
+    })
+    .catch(() => {
+        document.getElementById('evalError').textContent = 'Connection error.';
+        document.getElementById('evalError').style.display = 'block';
+    });
+}
 
         function doSearchMain() { const q = document.getElementById('searchInputMain').value.trim().toLowerCase(); document.querySelectorAll('#searchResultBody .search-row').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'; }); }
 
@@ -3497,12 +4031,55 @@ function exportFeedbackPDFConfirmed() {
                 .catch(() => { errEl.textContent = 'Connection error. Please try again.'; errEl.style.display='block'; });
         }
 
-        function submitEditStudent() {
-            const form = document.getElementById('editStudentForm');
-            const fd = new FormData(form);
-            pendingEditStudent = fd;
-            showModal('confirmEditStudentModal');
+function submitEditStudent() {
+    const newPw  = document.getElementById('edit_newpassword').value;
+    const confPw = document.getElementById('edit_confirmpassword').value;
+    const errEl  = document.getElementById('editPasswordError');
+    errEl.style.display = 'none';
+
+    // Confirm filled but New is empty
+    if (!newPw && confPw) {
+        errEl.textContent = '⚠️ Please enter a New Password first before confirming.';
+        errEl.style.display = 'block';
+        document.getElementById('edit_newpassword').focus();
+        return;
+    }
+
+    // New filled but Confirm is empty
+    if (newPw && !confPw) {
+        errEl.textContent = '⚠️ Please confirm your new password.';
+        errEl.style.display = 'block';
+        document.getElementById('edit_confirmpassword').focus();
+        return;
+    }
+
+    // Both filled — validate
+    if (newPw && confPw) {
+        if (newPw.length < 6) {
+            errEl.textContent = '⚠️ New password must be at least 6 characters.';
+            errEl.style.display = 'block';
+            document.getElementById('edit_newpassword').focus();
+            return;
         }
+        if (newPw !== confPw) {
+            errEl.textContent = '⚠️ Passwords do not match. Please re-enter.';
+            errEl.style.display = 'block';
+            document.getElementById('edit_confirmpassword').value = '';
+            document.getElementById('edit_confirmpassword').focus();
+            return;
+        }
+    }
+
+    // Both empty = no password change, proceed normally
+    const form = document.getElementById('editStudentForm');
+    const fd = new FormData(form);
+    if (!newPw && !confPw) {
+        fd.delete('newPassword');
+        fd.delete('confirmPassword');
+    }
+    pendingEditStudent = fd;
+    showModal('confirmEditStudentModal');
+}
 
         function submitEditStudentConfirmed() {
             if (!pendingEditStudent) return;
@@ -3902,7 +4479,9 @@ function updateReservationRowUI(id, status) {
                 : status === 'cancelled' 
                 ? 'style="background:#f8d7da;color:#c0392b;"' 
                 : '';
-            tr.innerHTML = `<td>${cells[0]?.innerText}</td><td>${cells[1]?.innerText}</td><td>${cells[2]?.innerText}</td><td>${cells[4]?.innerText}</td><td>${cells[5]?.innerText}</td><td>${cells[6]?.innerText}</td><td>${cells[7]?.innerText}</td><td>${cells[8]?.innerText}</td><td><span class="status-badge ${badgeColor}" ${badgeStyle}>${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>`;
+            const loginDisplay = ['rejected','cancelled','expired'].includes(status) ? '—' : formatTimeTo12hr(cells[7]?.innerText);
+            const logoutDisplay = ['rejected','cancelled','expired'].includes(status) ? '—' : formatTimeTo12hr(cells[8]?.innerText);
+            tr.innerHTML = `<td>${cells[0]?.innerText}</td><td>${cells[1]?.innerText}</td><td>${cells[2]?.innerText}</td><td>${cells[4]?.innerText}</td><td>${cells[5]?.innerText}</td><td>${cells[6]?.innerText}</td><td>${loginDisplay}</td><td>${logoutDisplay}</td><td>${cells[9]?.innerText}</td><td><span class="status-badge ${badgeColor}" ${badgeStyle}>${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>`;
             logBody.insertBefore(tr, logBody.firstChild);
             allLogRows.unshift(tr);
             logFiltered.unshift(tr);
@@ -4012,6 +4591,13 @@ function saveEditedResDate() {
     if (!newDate) { errEl.textContent = 'Please select a date.'; errEl.style.display = 'block'; return; }
     if (newDate !== today) { errEl.textContent = 'Date must be today to proceed with sit-in.'; errEl.style.display = 'block'; return; }
 
+    // Check if today is Sunday
+    const todayDate = new Date(today + 'T00:00:00');
+    if (todayDate.getDay() === 99) {
+        errEl.textContent = '🚫 Cannot proceed — today is Sunday. The university is closed and no sit-ins are allowed.';
+        errEl.style.display = 'block';
+        return;
+}
     const fd = new FormData();
     fd.append('id', dataset.resId);
     fd.append('date', newDate);
@@ -4225,7 +4811,7 @@ function filterLogTable() {
         if (to   && rowDate > to)   return false;
         if (lab  && cells[4]?.innerText.trim() !== lab) return false;
         if (purpose && cells[3]?.innerText.trim() !== purpose) return false;
-        if (status  && cells[8]?.innerText.trim().toLowerCase() !== status) return false;
+        if (status  && cells[9]?.innerText.trim().toLowerCase() !== status) return false;
         return true;
     });
     logPage = 1;
@@ -5106,7 +5692,10 @@ function switchStudTab(panelId, btn) {
     document.querySelectorAll('#section-students .res-tab-btn').forEach(b => b.classList.remove('res-tab-active'));
     document.getElementById(panelId).style.display = 'block';
     btn.classList.add('res-tab-active');
-    if (panelId === 'stud-panel-leaderboard') buildLeaderboard();
+    if (panelId === 'stud-panel-leaderboard') {
+        buildLeaderboard();
+        buildLBScoreTable(); // ← ADD THIS LINE
+    }
 }
 
 function buildLeaderboard() {
@@ -5114,75 +5703,178 @@ function buildLeaderboard() {
     const courseFilter = document.getElementById('lbFilterCourse')?.value || '';
     const yearFilter   = document.getElementById('lbFilterYear')?.value || '';
     const limit        = parseInt(document.getElementById('lbLimit')?.value || '10');
-    const MAX_DEFAULT  = 30; // default sitin_count before any sessions used
 
-    let data = rows.map(r => {
+    // Show loading first
+    const tbody = document.getElementById('leaderboardBody');
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:2rem;">Loading scores...</td></tr>';
+
+    // Build student map from table
+    const studentMap = {};
+    rows.forEach(r => {
         const cells = r.querySelectorAll('td');
+        const idNum    = cells[0]?.innerText.trim();
+        const name     = cells[1]?.innerText.trim();
+        const year     = cells[2]?.innerText.replace(/st|nd|rd|th/,'').trim();
+        const course   = cells[3]?.innerText.trim();
         const remaining = parseInt(cells[4]?.querySelector('.sitin-remaining')?.textContent || '30');
-        const used = MAX_DEFAULT - remaining < 0 ? 0 : MAX_DEFAULT - remaining;
-        const idNum  = cells[0]?.innerText.trim();
-        const name   = cells[1]?.innerText.trim();
-        const year   = cells[2]?.innerText.replace(/st|nd|rd|th/,'').trim();
-        const course = cells[3]?.innerText.trim();
-        return { idNum, name, year, course, used, remaining };
+        studentMap[idNum] = { idNum, name, year, course, remaining };
     });
 
-    if (courseFilter) data = data.filter(d => d.course === courseFilter);
-    if (yearFilter)   data = data.filter(d => d.year === yearFilter);
-    data.sort((a, b) => b.used - a.used);
-
-    // Summary cards
-    if (data.length > 0) {
-        document.getElementById('lbTopName').textContent = data[0].name.split(',')[0];
-        document.getElementById('lbTopSessions').textContent = data[0].used + ' sessions used';
-        const avg = data.reduce((s, d) => s + d.used, 0) / data.length;
-        document.getElementById('lbAvgSessions').textContent = avg.toFixed(1);
-        // Most active course
-        const courseCounts = {};
-        data.forEach(d => { courseCounts[d.course] = (courseCounts[d.course] || 0) + 1; });
-        const topCourse = Object.entries(courseCounts).sort((a,b) => b[1]-a[1])[0];
-        if (topCourse) {
-            document.getElementById('lbTopCourse').textContent = topCourse[0];
-            document.getElementById('lbTopCourseCount').textContent = topCourse[1] + ' students';
+    // Fetch real scores from DB
+    fetch('/admin/get-leaderboard-scores')
+    .then(r => r.json())
+    .then(scoreData => {
+        if (!scoreData.scores) {
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No score data yet.</td></tr>';
+            return;
         }
-    }
 
-    const top = data.slice(0, limit);
-    const maxUsed = top.length > 0 ? top[0].used : 1;
-    const medals = ['🥇','🥈','🥉'];
-    const barColors = ['linear-gradient(90deg,#F4B942,#f39c12)','linear-gradient(90deg,#aaa,#888)','linear-gradient(90deg,#cd7f32,#b5651d)'];
+        const medals     = ['🥇','🥈','🥉'];
+        const barColors  = [
+            'linear-gradient(90deg,#F4B942,#f39c12)',
+            'linear-gradient(90deg,#aaa,#888)',
+            'linear-gradient(90deg,#cd7f32,#b5651d)'
+        ];
 
-    const tbody = document.getElementById('leaderboardBody');
-    tbody.innerHTML = '';
-    if (top.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="no-data">No data available.</td></tr>';
-        return;
-    }
-    top.forEach((d, i) => {
-        const rank = i + 1;
-        const pct  = maxUsed > 0 ? Math.round((d.used / maxUsed) * 100) : 0;
-        const barColor = i < 3 ? barColors[i] : 'linear-gradient(90deg,#0F3E7D,#185FA5)';
-        const medalHtml = rank <= 3
-            ? `<span class="lb-rank-medal" style="background:${['#fff8dc','#e8e8e8','#f5e6d3'][i]};color:${['#b8860b','#888','#8b4513'][i]};">${medals[i]}</span>`
-            : `<span class="lb-rank-medal" style="background:#f0f0f0;color:#555;font-size:0.78rem;">#${rank}</span>`;
-        const remainClass = d.remaining <= 5 ? 'remaining-low' : d.remaining <= 10 ? 'remaining-mid' : 'remaining-ok';
-        const tr = document.createElement('tr');
-        if (rank <= 3) tr.style.background = ['rgba(244,185,66,0.08)','rgba(200,200,200,0.08)','rgba(205,127,50,0.08)'][i];
-        tr.innerHTML = `
-            <td style="text-align:center;">${medalHtml}</td>
-            <td>${d.idNum}</td>
-            <td style="font-weight:${rank<=3?'700':'400'};color:${rank===1?'#0F3E7D':'inherit'};">${d.name}</td>
-            <td><span style="background:#E6F1FB;color:#0F3E7D;padding:0.2rem 0.6rem;border-radius:10px;font-size:0.78rem;font-weight:700;">${d.course}</span></td>
-            <td>${d.year}${['','st','nd','rd','th'][parseInt(d.year)]||'th'}</td>
-            <td style="font-weight:700;color:#0F3E7D;font-size:1rem;">${d.used}</td>
-            <td><span class="sitin-remaining ${remainClass}">${d.remaining}</span></td>
-            <td style="min-width:120px;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
-                    <span style="font-size:0.75rem;color:#888;min-width:28px;">${pct}%</span>
-                </div>
-            </td>`;
-        tbody.appendChild(tr);
+        // Build scored list
+        let scored = scoreData.scores.map(s => {
+            const student = studentMap[s.idNumber] || {};
+            return {
+                idNum:     s.idNumber,
+                firstName: s.firstName,
+                lastName:  s.lastName,
+                name:      (s.lastName + ', ' + s.firstName).toUpperCase(),
+                course:    s.course,
+                year:      student.year || s.yearLevel || '—',
+                remaining: student.remaining ?? 30,
+                finalScore: parseFloat(s.final_score?.toFixed(2) || '0')
+            };
+        });
+
+        // Apply filters
+        if (courseFilter) scored = scored.filter(d => d.course === courseFilter);
+        if (yearFilter)   scored = scored.filter(d => d.year === yearFilter);
+
+        // Sort by final score descending
+        scored.sort((a, b) => b.finalScore - a.finalScore);
+
+        const top      = scored.slice(0, limit);
+        const maxScore = top[0]?.finalScore || 1;
+
+        // Update summary cards
+        if (top.length > 0) {
+            document.getElementById('lbTopName').textContent     = top[0].lastName;
+            document.getElementById('lbTopSessions').textContent = top[0].finalScore.toFixed(2) + ' final score';
+
+            const allStudents = Object.values(studentMap);
+            const avg = allStudents.reduce((s, d) => s + (30 - d.remaining), 0) / (allStudents.length || 1);
+            document.getElementById('lbAvgSessions').textContent = avg.toFixed(1);
+
+            const courseCounts = {};
+            Object.values(studentMap).forEach(d => {
+                courseCounts[d.course] = (courseCounts[d.course] || 0) + 1;
+            });
+            const topCourse = Object.entries(courseCounts).sort((a,b) => b[1]-a[1])[0];
+            if (topCourse) {
+                document.getElementById('lbTopCourse').textContent      = topCourse[0];
+                document.getElementById('lbTopCourseCount').textContent = topCourse[1] + ' students';
+            }
+        }
+
+        // Render rows
+        tbody.innerHTML = '';
+        if (top.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="no-data">No data available.</td></tr>';
+            return;
+        }
+
+        top.forEach((d, i) => {
+            const rank        = i + 1;
+            const pct         = maxScore > 0 ? Math.round((d.finalScore / maxScore) * 100) : 0;
+            const remainClass = d.remaining <= 5 ? 'remaining-low' : d.remaining <= 10 ? 'remaining-mid' : 'remaining-ok';
+            const yearSuffix  = ['','st','nd','rd','th'];
+            const scoreColor  = rank === 1 ? '#b8860b' : rank === 2 ? '#888' : rank === 3 ? '#8b4513' : '#0F3E7D';
+            const barColor    = rank <= 3 ? barColors[i] : 'linear-gradient(90deg,#0F3E7D,#185FA5)';
+
+            const medalHtml = rank <= 3
+                ? `<span class="lb-rank-medal" style="background:${['#fff8dc','#e8e8e8','#f5e6d3'][i]};color:${['#b8860b','#888','#8b4513'][i]};">${medals[i]}</span>`
+                : `<span class="lb-rank-medal" style="background:#f0f0f0;color:#555;font-size:0.78rem;">#${rank}</span>`;
+
+            const tr = document.createElement('tr');
+            if (rank <= 3) tr.style.background = ['rgba(244,185,66,0.08)','rgba(200,200,200,0.08)','rgba(205,127,50,0.08)'][i];
+
+            tr.innerHTML = `
+                <td style="text-align:center;">${medalHtml}</td>
+                <td>${d.idNum}</td>
+                <td style="font-weight:${rank<=3?'700':'400'};color:${rank===1?'#0F3E7D':'inherit'};">
+                    ${d.name}
+                    ${rank === 1 ? '<span style="margin-left:6px;background:linear-gradient(135deg,#F4B942,#f39c12);color:#412402;font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;vertical-align:middle;">RANK 1</span>' : ''}
+                </td>
+                <td><span style="background:#E6F1FB;color:#0F3E7D;padding:0.2rem 0.6rem;border-radius:10px;font-size:0.78rem;font-weight:700;">${d.course}</span></td>
+                <td>${d.year}${yearSuffix[parseInt(d.year)] || 'th'}</td>
+                <td style="font-weight:800;color:${scoreColor};font-size:1.05rem;">${d.finalScore.toFixed(2)}</td>
+                <td><span class="sitin-remaining ${remainClass}">${d.remaining}</span></td>
+                <td style="min-width:120px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="lb-bar-wrap">
+                            <div class="lb-bar-fill" style="width:${pct}%;background:${barColor};"></div>
+                        </div>
+                        <span style="font-size:0.75rem;color:#888;min-width:28px;">${pct}%</span>
+                    </div>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    })
+    .catch(() => {
+        tbody.innerHTML = '<tr><td colspan="8" class="no-data">Failed to load scores.</td></tr>';
+    });
+}
+
+function buildLBScoreTable() {
+    fetch('/admin/get-leaderboard-scores')
+    .then(r => r.json())
+    .then(data => {
+        const tbody = document.getElementById('lbScoreBody');
+        if (!data.scores || data.scores.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" class="no-data">No evaluation data yet.</td></tr>';
+            return;
+        }
+
+        // Sort by final score descending
+        data.scores.sort((a, b) => b.final_score - a.final_score);
+
+        const medals = ['🥇','🥈','🥉'];
+        tbody.innerHTML = data.scores.map((s, i) => {
+            const rank = i + 1;
+            const rankDisplay = rank <= 3
+                ? `<span style="font-size:1.1rem;">${medals[i]}</span>`
+                : `<span style="font-weight:700;color:#555;">#${rank}</span>`;
+
+            const hrs  = Math.floor(s.total_minutes / 60);
+            const mins = s.total_minutes % 60;
+            const hrsDisplay = hrs > 0 ? `${hrs}hr ${mins}m` : `${mins}m`;
+
+            return `<tr style="${rank <= 3 ? 'background:rgba(244,185,66,0.07);' : ''}">
+                <td style="text-align:center;">${rankDisplay}</td>
+                <td style="font-weight:${rank<=3?'700':'400'};color:${rank===1?'#0F3E7D':'inherit'};">
+                    ${s.lastName}, ${s.firstName}
+                </td>
+                <td><span style="background:#E6F1FB;color:#0F3E7D;padding:0.2rem 0.6rem;border-radius:10px;font-size:0.78rem;font-weight:700;">${s.course}</span></td>
+                <td style="text-align:center;">${s.raw_tidy_points}</td>
+                <td style="color:#185FA5;font-weight:700;text-align:center;">${s.lb_tidy_pts.toFixed(2)}</td>
+                <td style="text-align:center;">${hrsDisplay}</td>
+                <td style="color:#185FA5;font-weight:700;text-align:center;">${s.hrs_weighted.toFixed(2)}</td>
+                <td style="text-align:center;">${s.tasks_completed}/${s.total_sessions}</td>
+                <td style="color:#185FA5;font-weight:700;text-align:center;">${s.task_weighted.toFixed(2)}</td>
+                <td style="background:rgba(244,185,66,0.15);font-weight:800;color:#0F3E7D;font-size:1rem;text-align:center;">
+                    ${s.final_score.toFixed(2)}
+                </td>
+            </tr>`;
+        }).join('');
+    })
+    .catch(() => {
+        document.getElementById('lbScoreBody').innerHTML =
+            '<tr><td colspan="10" class="no-data">Failed to load scores.</td></tr>';
     });
 }
 
@@ -5260,7 +5952,26 @@ function computeAIInsights() {
     const labUtilPct = topLab ? Math.round((topLab[1] / total) * 100) : 0;
     const topPurposePct = topPurpose ? Math.round((topPurpose[1] / total) * 100) : 0;
 
-    return { total, topLab, topPurpose, peakSlot, lowRemain, labUtilPct, topPurposePct, activeSessions, labCounts, purposeCounts };
+    // Compute week density
+    const weekCounts = {};
+    sessionRows.forEach(r => {
+        const cells = r.querySelectorAll('td');
+        const dateStr = cells[8]?.innerText.trim();
+        if (!dateStr || dateStr === '—') return;
+        try {
+            const d = new Date(dateStr);
+            const monday = new Date(d);
+            monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+            const weekKey = monday.toISOString().slice(0, 10);
+            weekCounts[weekKey] = (weekCounts[weekKey] || 0) + 1;
+        } catch(e) {}
+    });
+
+    const weekEntries = Object.entries(weekCounts).sort((a,b) => a[0].localeCompare(b[0]));
+    const avgWeek = weekEntries.length ? Math.round(weekEntries.reduce((s,[,v]) => s+v, 0) / weekEntries.length) : 0;
+    const quietestWeek = weekEntries.length ? weekEntries.sort((a,b) => a[1]-b[1])[0] : null;
+
+    return { total, topLab, topPurpose, peakSlot, lowRemain, labUtilPct, topPurposePct, activeSessions, labCounts, purposeCounts, quietestWeek, avgWeek };
 }
 
 function renderAIInsights(d) {
@@ -5282,6 +5993,21 @@ function renderAIInsights(d) {
         </div>`).join('');
 
     const recs = [];
+
+    // Best week recommendation — built FIRST so it appears at top
+    if (d.quietestWeek && d.avgWeek > 0) {
+        const wDate = new Date(d.quietestWeek[0] + 'T00:00:00');
+        const wEnd  = new Date(wDate); wEnd.setDate(wDate.getDate() + 4);
+        const fmt   = dt => dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+        const month = wDate.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+        recs.push({
+            type: 'ok',
+            icon: '📅',
+            title: `Best week to sit-in — ${month}`,
+            body: `Week of ${fmt(wDate)}–${fmt(wEnd)} has the lowest session count (${d.quietestWeek[1]} sessions vs avg ${d.avgWeek}/week). This is the ideal window for students — labs are less congested and PCs are more available. This insight is delivered to students as a tip notification on their next login.`
+        });
+    }
+
     if (d.topLab && d.labUtilPct > 40) recs.push({ type: 'warn', icon: '🔴', title: 'Lab Congestion Risk', body: `Lab ${d.topLab[0]} accounts for ${d.labUtilPct}% of all sessions. Consider redistributing students to underutilized labs to reduce overcrowding.` });
     else if (d.topLab) recs.push({ type: 'ok', icon: '🟢', title: 'Balanced Lab Usage', body: `Lab distribution appears healthy. Lab ${d.topLab[0]} leads with ${d.labUtilPct}% utilization — no immediate action needed.` });
     if (d.lowRemain > 5) recs.push({ type: 'warn', icon: '⚠️', title: 'Session Depletion Warning', body: `${d.lowRemain} students have 5 or fewer sessions remaining. Consider notifying them or scheduling a session reset.` });
@@ -5314,24 +6040,114 @@ function renderAIInsights(d) {
 // ══════════════════════════════════════
 // LAB RANKING GRID + SCORE TABLE
 // ══════════════════════════════════════
+function buildTrendBars() {
+    const sessionRows = [...document.querySelectorAll('#recordsTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
+    const dayMap = { 'Mon':0,'Tue':0,'Wed':0,'Thu':0,'Fri':0,'Sat':0 };
+    const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    sessionRows.forEach(r => {
+        const cells = r.querySelectorAll('td');
+        const dateStr = cells[8]?.innerText.trim();
+        if (!dateStr || dateStr === '—') return;
+        try {
+            const d = new Date(dateStr);
+            const day = d.toLocaleDateString('en-US', { weekday: 'short' });
+            if (dayMap.hasOwnProperty(day)) dayMap[day]++;
+        } catch(e) {}
+    });
+
+    const maxVal = Math.max(...Object.values(dayMap), 1);
+    const container = document.getElementById('trendBarsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    dayNames.forEach(day => {
+        const count = dayMap[day];
+        const pct = Math.round((count / maxVal) * 100);
+        container.innerHTML += `
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:0.78rem;color:#555;font-weight:600;min-width:28px;">${day}</span>
+                <div style="flex:1;background:#f0f0f0;border-radius:20px;height:10px;overflow:hidden;">
+                    <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#60a5fa,#3B82F6);border-radius:20px;transition:width 0.8s ease;"></div>
+                </div>
+                <span style="font-size:0.78rem;color:#555;font-weight:700;min-width:18px;text-align:right;">${count}</span>
+            </div>`;
+    });
+}
+
+function buildPeakHoursBars() {
+    const sessionRows = [...document.querySelectorAll('#recordsTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
+    const slots = [
+        { label: '8 AM',  start: 8,  end: 10, count: 0 },
+        { label: '10 AM', start: 10, end: 12, count: 0 },
+        { label: '12 PM', start: 12, end: 14, count: 0 },
+        { label: '2 PM',  start: 14, end: 16, count: 0 },
+        { label: '4 PM',  start: 16, end: 18, count: 0 },
+    ];
+
+    sessionRows.forEach(r => {
+        const cells = r.querySelectorAll('td');
+        const loginT = cells[6]?.innerText.trim();
+        if (!loginT || loginT === '—') return;
+        const hrMatch = loginT.match(/(\d{1,2}):\d{2}\s*(AM|PM)/i);
+        if (!hrMatch) return;
+        let h = parseInt(hrMatch[1]);
+        const ap = hrMatch[2].toUpperCase();
+        if (ap === 'PM' && h !== 12) h += 12;
+        if (ap === 'AM' && h === 12) h = 0;
+        slots.forEach(slot => { if (h >= slot.start && h < slot.end) slot.count++; });
+    });
+
+    const maxVal = Math.max(...slots.map(s => s.count), 1);
+    const container = document.getElementById('peakHoursBarsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    slots.forEach(slot => {
+        const pct = Math.round((slot.count / maxVal) * 100);
+        container.innerHTML += `
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:0.78rem;color:#555;font-weight:600;min-width:36px;">${slot.label}</span>
+                <div style="flex:1;background:#f0f0f0;border-radius:20px;height:10px;overflow:hidden;">
+                    <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#6ee7b7,#10B981);border-radius:20px;transition:width 0.8s ease;"></div>
+                </div>
+                <span style="font-size:0.78rem;color:#555;font-weight:700;min-width:18px;text-align:right;">${slot.count}</span>
+            </div>`;
+    });
+}
+
 function buildLabRankings() {
     const sessionRows = [...document.querySelectorAll('#recordsTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
     const feedbackRows = [...document.querySelectorAll('#feedbackTableBody tr')].filter(r => !r.querySelector('td[colspan]'));
     const labs = ['524','526','528','530','542','544'];
-    const totalSessions = sessionRows.length || 1;
 
     const labData = {};
-    labs.forEach(l => { labData[l] = { visits:0, uniqueUsers:new Set(), ratings:[], lastVisit:'' }; });
+    labs.forEach(l => { labData[l] = { visits:0, uniqueUsers:new Set(), ratings:[], totalHours:0 }; });
 
     sessionRows.forEach(r => {
         const cells = r.querySelectorAll('td');
-        const lab  = cells[4]?.innerText.trim();
-        const user = cells[1]?.innerText.trim();
-        const date = cells[8]?.innerText.trim();
+        const lab    = cells[4]?.innerText.trim();
+        const user   = cells[1]?.innerText.trim();
+        const login  = cells[6]?.innerText.trim();
+        const logout = cells[7]?.innerText.trim();
         if (labData[lab]) {
             labData[lab].visits++;
             if (user) labData[lab].uniqueUsers.add(user);
-            if (date && date > labData[lab].lastVisit) labData[lab].lastVisit = date;
+            // Calculate hours
+            if (login && logout && logout !== '—') {
+                try {
+                    const parseTime = t => {
+                        const [hm, ap] = t.trim().split(' ');
+                        let [h, m] = hm.split(':');
+                        h = parseInt(h); m = parseInt(m);
+                        if (ap === 'PM' && h !== 12) h += 12;
+                        if (ap === 'AM' && h === 12) h = 0;
+                        return h + m / 60;
+                    };
+                    const diff = parseTime(logout) - parseTime(login);
+                    if (diff > 0) labData[lab].totalHours += diff;
+                } catch(e) {}
+            }
         }
     });
 
@@ -5343,16 +6159,14 @@ function buildLabRankings() {
         if (labData[lab]) labData[lab].ratings.push(rating);
     });
 
-    const today = new Date().toISOString().slice(0,10);
     const scored = labs.map(lab => {
         const d = labData[lab];
-        const visits = d.visits;
-        const avgRating = d.ratings.length ? d.ratings.reduce((a,b)=>a+b,0)/d.ratings.length : 0;
+        const visits     = d.visits;
+        const hours      = parseFloat(d.totalHours.toFixed(2));
+        const avgRating  = d.ratings.length ? d.ratings.reduce((a,b)=>a+b,0)/d.ratings.length : 0;
         const uniqueUsers = d.uniqueUsers.size;
-        const daysSince = d.lastVisit ? Math.max(0, Math.round((new Date(today)-new Date(d.lastVisit))/(1000*60*60*24))) : 999;
-        const recency = daysSince === 999 ? 0 : Math.max(0, 100 - daysSince * 5);
-        const score = (visits * 0.4) + (avgRating * 20 * 0.3) + (uniqueUsers * 0.2) + (recency * 0.1);
-        return { lab, visits, avgRating, uniqueUsers, recency, score };
+        const score = (visits * 0.25) + (hours * 0.25) + (avgRating * 5 * 0.25) + (uniqueUsers * 0.25);
+        return { lab, visits, hours, avgRating, uniqueUsers, score };
     }).sort((a,b) => b.score - a.score);
 
     const maxScore = scored[0]?.score || 1;
@@ -5362,13 +6176,15 @@ function buildLabRankings() {
     // Ranking bars
     const grid = document.getElementById('labRankingGrid');
     if (grid) {
-        grid.innerHTML = scored.map((d, i) => `
-            <div style="display:flex;align-items:center;gap:1rem;padding:0.7rem 1rem;background:rgba(255,255,255,0.6);border-radius:14px;border:1.5px solid rgba(255,255,255,0.9);">
-                <div style="width:36px;height:36px;border-radius:50%;background:${rankColors[i]}22;display:flex;align-items:center;justify-content:center;font-size:${i<3?'1.1':'0.82'}rem;font-weight:800;color:${rankColors[i]};flex-shrink:0;">${rankMedals[i]}</div>
-                <div style="flex-shrink:0;min-width:60px;"><div style="font-weight:800;color:#0F3E7D;font-size:0.92rem;">Lab ${d.lab}</div><div style="font-size:0.75rem;color:#888;">${d.visits} visits</div></div>
-                <div style="flex:1;"><div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:${Math.round((d.score/maxScore)*100)}%;background:linear-gradient(90deg,${rankColors[i]},${rankColors[i]}99);"></div></div></div>
-                <div style="font-size:0.88rem;font-weight:800;color:${rankColors[i]};min-width:48px;text-align:right;">${d.score.toFixed(1)}</div>
-            </div>`).join('');
+    grid.innerHTML = scored.map((d, i) => `
+    <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:0.75rem;font-weight:800;color:${rankColors[i]};min-width:28px;text-align:center;">${rankMedals[i]}</span>
+        <span style="font-size:0.78rem;color:#555;font-weight:700;min-width:48px;">Lab ${d.lab}</span>
+        <div style="flex:1;background:#f0f0f0;border-radius:20px;height:10px;overflow:hidden;">
+            <div style="width:${Math.round((d.score/maxScore)*100)}%;height:100%;background:linear-gradient(90deg,${rankColors[i]},${rankColors[i]}99);border-radius:20px;transition:width 0.8s ease;"></div>
+        </div>
+        <span style="font-size:0.78rem;color:${rankColors[i]};font-weight:700;min-width:32px;text-align:right;">${d.score.toFixed(1)}</span>
+    </div>`).join('');
     }
 
     // Score table
@@ -5376,18 +6192,18 @@ function buildLabRankings() {
     if (tbody) {
         const maxVisits = Math.max(...scored.map(d=>d.visits),1);
         tbody.innerHTML = scored.map((d, i) => `
-            <tr style="${i===0?'background:rgba(244,185,66,0.1);font-weight:700;':''}">
-                <td><span style="font-weight:800;color:#0F3E7D;">Lab ${d.lab}</span></td>
-                <td>${d.visits}</td>
-                <td style="color:#185FA5;font-weight:700;">${(d.visits*0.4).toFixed(2)}</td>
-                <td>${d.avgRating.toFixed(1)} ★</td>
-                <td style="color:#185FA5;font-weight:700;">${(d.avgRating*20*0.3).toFixed(2)}</td>
-                <td>${d.uniqueUsers}</td>
-                <td style="color:#185FA5;font-weight:700;">${(d.uniqueUsers*0.2).toFixed(2)}</td>
-                <td>${d.recency.toFixed(0)}</td>
-                <td style="color:#185FA5;font-weight:700;">${(d.recency*0.1).toFixed(2)}</td>
-                <td style="background:rgba(244,185,66,0.15);font-weight:800;color:#0F3E7D;font-size:1rem;">${d.score.toFixed(2)}</td>
-            </tr>`).join('');
+    <tr style="${i===0?'background:rgba(244,185,66,0.1);font-weight:700;':''}">
+        <td><span style="font-weight:800;color:#0F3E7D;">Lab ${d.lab}</span></td>
+        <td>${d.visits}</td>
+        <td style="color:#185FA5;font-weight:700;">${(d.visits*0.25).toFixed(2)}</td>
+        <td>${d.hours.toFixed(1)} hrs</td>
+        <td style="color:#185FA5;font-weight:700;">${(d.hours*0.25).toFixed(2)}</td>
+        <td>${d.avgRating.toFixed(1)} ★</td>
+        <td style="color:#185FA5;font-weight:700;">${(d.avgRating*5*0.25).toFixed(2)}</td>
+        <td>${d.uniqueUsers}</td>
+        <td style="color:#185FA5;font-weight:700;">${(d.uniqueUsers*0.25).toFixed(2)}</td>
+        <td style="background:rgba(244,185,66,0.15);font-weight:800;color:#0F3E7D;font-size:1rem;">${d.score.toFixed(2)}</td>
+    </tr>`).join('');
     }
 
     // Quick stats
@@ -5403,7 +6219,158 @@ function buildLabRankings() {
         }, {})
     ).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
     document.getElementById('statActiveToday').textContent = activeToday;
+    buildTrendBars();
+    buildPeakHoursBars();
 }
+function dismissAiTip() {
+    document.getElementById('aiTipCard').style.display = 'none';
+    // Use sessionStorage so card hides for this session only
+    // Student will see it again on next login
+    sessionStorage.setItem('aiTipDismissed', '1');
+}
+
+async function loadAiTip() {
+    // Show every login — only hide if dismissed this session
+    if (sessionStorage.getItem('aiTipDismissed')) return;
+    try {
+        const res = await fetch('/student/get-ai-tip');
+        const data = await res.json();
+        if (!data.tip) return;
+        document.getElementById('aiTipTitle').textContent = data.tip.title;
+        document.getElementById('aiTipBody').textContent  = data.tip.body;
+        document.getElementById('aiTipReason').textContent = data.tip.reason;
+        document.getElementById('aiTipWeekBadge').textContent = data.tip.badge || 'This week';
+        document.getElementById('aiTipCard').style.display = 'block';
+    } catch(e) {}
+}
+// ── 8AM Gate: disable sit-in actions before 8AM ──
+/*function checkSitinGate() {
+    const now = new Date();
+    const phNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Manila' }));
+    const h = phNow.getHours();
+    const m = phNow.getMinutes();
+    const s = phNow.getSeconds();
+    const dayOfWeek = phNow.getDay(); // 0 = Sunday
+
+    const isSunday = dayOfWeek === 0;
+    const before8am = h < 8;
+    const blocked = isSunday || before8am;
+
+    const sfmBtn = document.getElementById('sfmSubmitBtn');
+    const sitinQuickBtn = document.querySelector('#sitinModal .btn-modal-submit');
+
+    if (blocked) {
+        let countdownStr = '';
+
+        if (isSunday) {
+            countdownStr = '🚫 Closed on Sundays';
+        } else {
+            const secsUntil8 = ((8 - h - 1) * 3600) + ((60 - m - 1) * 60) + (60 - s);
+            const hh = Math.floor(secsUntil8 / 3600);
+            const mm = Math.floor((secsUntil8 % 3600) / 60);
+            const ss = secsUntil8 % 60;
+            countdownStr = `Opens at 8:00 AM (${hh > 0 ? hh + 'h ' : ''}${mm}m ${ss}s)`;
+        }
+
+        if (sfmBtn) {
+            sfmBtn.disabled = true;
+            sfmBtn.textContent = countdownStr;
+            sfmBtn.style.background = '#aaa';
+            sfmBtn.style.cursor = 'not-allowed';
+        }
+        if (sitinQuickBtn) {
+            sitinQuickBtn.disabled = true;
+            sitinQuickBtn.textContent = countdownStr;
+            sitinQuickBtn.style.background = '#aaa';
+            sitinQuickBtn.style.cursor = 'not-allowed';
+        }
+
+        // Disable reservation sit-in buttons
+        document.querySelectorAll('.sitin-from-res-btn').forEach(btn => {
+            if (btn.dataset.status === 'approved' && !btn.disabled) {
+                btn.disabled = true;
+                btn.dataset.gated = '1';
+                btn.textContent = isSunday ? '🚫 Sunday' : '⏳ 8AM';
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                btn.title = isSunday ? 'University closed on Sundays' : 'Sit-in opens at 8:00 AM';
+            }
+        });
+
+        // Banner
+        let banner = document.getElementById('sitinGateBanner');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'sitinGateBanner';
+            banner.style.cssText = `
+                background: linear-gradient(135deg, #fff3cd, #ffe082);
+                border: 2px solid #F4B942;
+                border-radius: 14px;
+                padding: 1rem 1.5rem;
+                margin-bottom: 1rem;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                box-shadow: 4px 4px 0px rgba(244,185,66,0.3);
+            `;
+            const sitinSection = document.getElementById('section-sitin');
+            const card = sitinSection?.querySelector('.admin-card');
+            if (card) sitinSection.insertBefore(banner, card);
+        }
+
+        banner.innerHTML = `
+            <span style="font-size:2rem;">${isSunday ? '🏫' : '🕗'}</span>
+            <div>
+                <div style="font-weight:800;color:#856404;font-size:0.95rem;">
+                    ${isSunday ? 'University Closed — Sunday' : 'Sit-in Not Yet Open'}
+                </div>
+                <div style="color:#856404;font-size:0.85rem;" id="sitinGateCountdown">
+                    ${isSunday ? 'No sit-ins are allowed on Sundays. See you tomorrow! 👋' : countdownStr}
+                </div>
+            </div>
+        `;
+
+        // Update countdown text only if not Sunday
+        if (!isSunday) {
+            const cd = document.getElementById('sitinGateCountdown');
+            if (cd) cd.textContent = countdownStr;
+        }
+
+    } else {
+        // Restore everything
+        if (sfmBtn && (sfmBtn.textContent.includes('Opens at') || sfmBtn.textContent.includes('Closed'))) {
+            sfmBtn.disabled = false;
+            sfmBtn.textContent = 'Sit-In';
+            sfmBtn.style.background = '';
+            sfmBtn.style.cursor = '';
+        }
+        if (sitinQuickBtn && (sitinQuickBtn.textContent.includes('Opens at') || sitinQuickBtn.textContent.includes('Closed'))) {
+            sitinQuickBtn.disabled = false;
+            sitinQuickBtn.textContent = 'Sit In';
+            sitinQuickBtn.style.background = '';
+            sitinQuickBtn.style.cursor = '';
+        }
+        document.querySelectorAll('.sitin-from-res-btn[data-gated="1"]').forEach(btn => {
+            if (btn.dataset.status === 'approved') {
+                btn.disabled = false;
+                btn.dataset.gated = '';
+                btn.textContent = 'Sit-in';
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+                btn.title = '';
+            }
+        });
+        document.getElementById('sitinGateBanner')?.remove();
+    }
+}
+
+setInterval(checkSitinGate, 1000);
+document.addEventListener('DOMContentLoaded', checkSitinGate);
+
+// Run every second
+setInterval(checkSitinGate, 1000);
+document.addEventListener('DOMContentLoaded', checkSitinGate);
+*/
     </script>
 <div class="modal-overlay" id="deleteFeedbackModal" style="display:none;">
     <div class="modal-box modal-sm">
@@ -5621,5 +6588,100 @@ function buildLabRankings() {
         </div>
     </div>
 </div>
+<div class="modal-overlay" id="evalModal" style="display:none; z-index:9999;">
+    <div class="modal-box" style="max-width:420px;">
+        <div class="modal-header" style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);">
+            <h3>End Sit-in — Evaluation</h3>
+            <button class="modal-close" onclick="closeModal('evalModal')">&#10005;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="evalSessionId">
+
+            <!-- Student Info -->
+            <div style="background:#E6F1FB;border-radius:10px;padding:0.75rem 1rem;margin-bottom:1.25rem;">
+                <div style="font-size:0.82rem;color:#185FA5;font-weight:700;margin-bottom:0.2rem;">STUDENT</div>
+                <div style="font-size:1rem;font-weight:800;color:#0F3E7D;" id="evalStudentName">—</div>
+                <div style="font-size:0.82rem;color:#185FA5;margin-top:0.3rem;">
+                    Duration: <strong id="evalDuration">—</strong>
+                </div>
+            </div>
+
+            <!-- Tidy Up Question -->
+            <div style="margin-bottom:1.25rem;">
+                <p style="font-size:0.9rem;font-weight:700;color:#333;margin-bottom:0.65rem;">
+                    Did the student tidy up the PC & chairs?
+                </p>
+                <div style="display:flex;gap:0.75rem;">
+                    <label style="flex:1;display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;border:2px solid #ddd;border-radius:12px;cursor:pointer;transition:all 0.18s;" 
+                        id="tidyYesLabel">
+                        <input type="radio" name="evalTidy" value="1" 
+                            onchange="document.getElementById('tidyYesLabel').style.borderColor='#27ae60';document.getElementById('tidyYesLabel').style.background='#eafaf1';document.getElementById('tidyNoLabel').style.borderColor='#ddd';document.getElementById('tidyNoLabel').style.background='white';">
+                        <span style="font-size:0.9rem;font-weight:700;color:#27ae60;">✅ Yes</span>
+                    </label>
+                    <label style="flex:1;display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;border:2px solid #ddd;border-radius:12px;cursor:pointer;transition:all 0.18s;"
+                        id="tidyNoLabel">
+                        <input type="radio" name="evalTidy" value="0"
+                            onchange="document.getElementById('tidyNoLabel').style.borderColor='#c0392b';document.getElementById('tidyNoLabel').style.background='#fdecea';document.getElementById('tidyYesLabel').style.borderColor='#ddd';document.getElementById('tidyYesLabel').style.background='white';">
+                        <span style="font-size:0.9rem;font-weight:700;color:#c0392b;">❌ No</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Task Completed Question -->
+            <div style="margin-bottom:1.25rem;">
+                <p style="font-size:0.9rem;font-weight:700;color:#333;margin-bottom:0.65rem;">
+                    Task completed?
+                </p>
+                <div style="display:flex;gap:0.75rem;">
+                    <label style="flex:1;display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;border:2px solid #ddd;border-radius:12px;cursor:pointer;transition:all 0.18s;"
+                        id="taskDoneLabel">
+                        <input type="radio" name="evalTask" value="1"
+                            onchange="document.getElementById('taskDoneLabel').style.borderColor='#27ae60';document.getElementById('taskDoneLabel').style.background='#eafaf1';document.getElementById('taskIncompleteLabel').style.borderColor='#ddd';document.getElementById('taskIncompleteLabel').style.background='white';">
+                        <span style="font-size:0.9rem;font-weight:700;color:#27ae60;">✅ Completed</span>
+                    </label>
+                    <label style="flex:1;display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1rem;border:2px solid #ddd;border-radius:12px;cursor:pointer;transition:all 0.18s;"
+                        id="taskIncompleteLabel">
+                        <input type="radio" name="evalTask" value="0"
+                            onchange="document.getElementById('taskIncompleteLabel').style.borderColor='#e67e22';document.getElementById('taskIncompleteLabel').style.background='#fef5e7';document.getElementById('taskDoneLabel').style.borderColor='#ddd';document.getElementById('taskDoneLabel').style.background='white';">
+                        <span style="font-size:0.9rem;font-weight:700;color:#e67e22;">⏳ Incomplete</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="evalError" style="display:none;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;margin-bottom:0.75rem;"></div>
+
+            <div class="sitin-form-btns">
+                <button type="button" class="btn-modal-close" onclick="closeModal('evalModal')">Cancel</button>
+                <button type="button" class="btn-modal-submit" onclick="submitEvaluation()">
+                    ✅ Confirm Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- AI Best Week Tip Card -->
+<div id="aiTipCard" style="display:none; position:fixed; top:80px; right:20px; width:280px; z-index:8000; border-radius:16px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.18); border:1px solid rgba(255,255,255,0.9); animation: tipSlideIn 0.4s ease;">
+  <style>
+    @keyframes tipSlideIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+  </style>
+  <div style="background:linear-gradient(135deg,#0a1e50,#0F3E7D); padding:10px 14px; display:flex; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span style="font-size:14px; color:white;">🤖</span>
+      <span style="color:white; font-size:12px; font-weight:700; letter-spacing:0.03em;">AI Tip for You</span>
+      <span style="background:#F4B942; color:#412402; font-size:9px; font-weight:800; padding:1px 6px; border-radius:10px;" id="aiTipWeekBadge">This week</span>
+    </div>
+    <button onclick="dismissAiTip()" style="background:none; border:none; color:rgba(255,255,255,.7); font-size:18px; cursor:pointer; line-height:1; padding:0 2px;">&times;</button>
+  </div>
+  <div style="background:white; padding:14px;">
+    <p style="font-size:13px; font-weight:700; color:#0F3E7D; margin:0 0 6px;" id="aiTipTitle">Best time to sit-in this month</p>
+    <p style="font-size:12px; color:#555; line-height:1.55; margin:0 0 10px;" id="aiTipBody">Loading...</p>
+    <div style="background:#eafaf1; border-left:3px solid #27ae60; border-radius:0 8px 8px 0; padding:8px 10px; margin-bottom:12px;">
+      <p style="font-size:10px; font-weight:700; color:#085041; margin:0 0 2px;">Why this week?</p>
+      <p style="font-size:10px; color:#0f6e56; margin:0; line-height:1.5;" id="aiTipReason">—</p>
+    </div>
+    <button onclick="dismissAiTip()" style="width:100%; background:linear-gradient(135deg,#1a5db5,#0F3E7D); color:white; border:none; padding:9px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; letter-spacing:0.02em;">Okay, got it</button>
+  </div>
+</div>
+
 </body>
 </html>

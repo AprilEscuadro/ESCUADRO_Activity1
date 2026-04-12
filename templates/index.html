@@ -224,6 +224,50 @@ footer {
     text-align: center;
     border: 2px dashed rgba(197, 213, 238, 0.8);
 }
+
+#publicLbTable {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 5px 5px 0px rgba(192,132,252,0.2), 0 8px 24px rgba(150,120,220,0.10);
+    border: 2px solid rgba(255,255,255,0.9);
+}
+#publicLbTable thead th {
+    background: linear-gradient(135deg, #0a1e50, #0F3E7D) !important;
+    color: white;
+    padding: 0.9rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: none;
+}
+#publicLbTable thead th:first-child { border-radius: 14px 0 0 0; }
+#publicLbTable thead th:last-child  { border-radius: 0 14px 0 0; }
+#publicLbTable tbody tr { 
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    cursor: default;
+}
+#publicLbTable tbody tr:last-child td:first-child { border-radius: 0 0 0 14px; }
+#publicLbTable tbody tr:last-child td:last-child  { border-radius: 0 0 14px 0; }
+#publicLbTable tbody td {
+    border-bottom: 1px solid rgba(15,62,125,0.06);
+    font-size: 0.9rem;
+}
+#publicLbTable tbody tr:last-child td { border-bottom: none; }
+#publicLbTable tbody tr:nth-child(even) { background: rgba(230,241,251,0.35); }
+#publicLeaderboardWrap {
+    background: rgba(255,255,255,0.6);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 20px;
+    padding: 1.5rem;
+    border: 2px solid rgba(255,255,255,0.9);
+    box-shadow: 6px 6px 0px rgba(192,132,252,0.22), 0 8px 24px rgba(150,120,220,0.10);
+}
         .uc-icon {
             font-size: 4rem;
             display: block;
@@ -431,12 +475,12 @@ footer {
     animation: ftFloat 6s ease-in-out infinite alternate;
 }
 
-.ft-1 { top: -8%;  left: -5%;   animation-duration: 5s;   animation-delay: 0s;   z-index: 0; }
-.ft-2 { top: -8%;  right: -5%;  animation-duration: 7s;   animation-delay: 1s;   z-index: 0; }
-.ft-3 { top: 35%;  left: -12%;  animation-duration: 6s;   animation-delay: 0.5s; z-index: 0; }
-.ft-4 { top: 35%;  right: -12%; animation-duration: 8s;   animation-delay: 2s;   z-index: 0; }
-.ft-5 { bottom: -8%; left: -5%; animation-duration: 5.5s; animation-delay: 1.5s; z-index: 0; }
-.ft-6 { bottom: -8%; right: -5%;animation-duration: 7.5s; animation-delay: 0.8s; z-index: 0; }
+.ft-1 { top: -8%;  left: 5%;   animation-duration: 5s;   animation-delay: 0s;   z-index: 0; }
+.ft-2 { top: -8%;  right: 5%;  animation-duration: 7s;   animation-delay: 1s;   z-index: 0; }
+.ft-3 { top: 35%;  left: 2%;   animation-duration: 6s;   animation-delay: 0.5s; z-index: 0; }
+.ft-4 { top: 35%;  right: 2%;  animation-duration: 8s;   animation-delay: 2s;   z-index: 0; }
+.ft-5 { bottom: -8%; left: 5%; animation-duration: 5.5s; animation-delay: 1.5s; z-index: 0; }
+.ft-6 { bottom: -8%; right: 5%;animation-duration: 7.5s; animation-delay: 0.8s; z-index: 0; }
 
 @keyframes ftFloat {
     0%   { transform: translateY(0px)   rotate(-2deg); opacity: 0.6; }
@@ -505,6 +549,44 @@ footer {
 
             <!-- Floating tech elements -->
             <div class="floating-tech" aria-hidden="true">
+
+                <div style="
+    position: absolute;
+    top: 2%;
+    right: 58%;
+    z-index: 10;
+    text-align: center;
+    animation: heartFloat 3s ease-in-out infinite;
+    pointer-events: none;
+">
+    <!-- Gradient Heart using SVG -->
+    <svg width="60" height="55" viewBox="0 0 100 90" xmlns="http://www.w3.org/2000/svg"
+        style="filter: drop-shadow(0 6px 18px rgba(15,62,125,0.35)); animation: heartPulse 1.5s ease-in-out infinite;">
+        <defs>
+            <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#0F3E7D;stop-opacity:1" />
+                <stop offset="50%" style="stop-color:#1a6fbc;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#F4B942;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <path d="M50 85 C50 85 5 55 5 28 C5 12 17 2 30 2 C38 2 45 7 50 13 C55 7 62 2 70 2 C83 2 95 12 95 28 C95 55 50 85 50 85Z"
+            fill="url(#heartGrad)"/>
+    </svg>
+
+    <!-- ADDE text — bigger than heart -->
+    <div style="
+        font-family: 'Georgia', serif;
+        font-size: 0.5rem;
+        font-weight: 900;
+        letter-spacing: 0.4em;
+        background: linear-gradient(135deg, #0F3E7D, #F4B942);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: shimmerText 2.5s linear infinite;
+        margin-top: 0.1rem;
+    ">ADDE</div>
+</div>
 
                 <!-- Laptop 1 -->
                 <svg class="ft-item ft-1" width="80" height="60" viewBox="0 0 80 60" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -669,20 +751,27 @@ footer {
             <p class="section-subtext">All students must comply with the following rules during sit-in sessions.</p>
             <div class="rules-wrap">
                 <p class="rules-intro-text">
-                    The CCS Computer Laboratories are shared academic resources. To maintain a productive and respectful environment for all users, the following rules are strictly enforced. Violations may result in the suspension of sit-in privileges.
+                    To avoid embarrassment and maintain camaraderie with your friends and superiors at our laboratories, please observe the following:
                 </p>
                 <ul class="rules-list">
-                    <li><span class="rule-num">1</span>Students must log in to the Sit-in Monitoring System before using any laboratory computer. Unauthorized use without a logged session is not permitted.</li>
-                    <li><span class="rule-num">2</span>Maintain silence and proper decorum at all times. Mobile phones must be set to silent mode. Loud conversations and disruptive behavior are not allowed.</li>
-                    <li><span class="rule-num">3</span>Playing computer games, watching non-academic videos, or accessing social media is strictly prohibited during sit-in sessions.</li>
-                    <li><span class="rule-num">4</span>Downloading, installing, or uninstalling any software is not allowed without prior permission from the laboratory-in-charge.</li>
-                    <li><span class="rule-num">5</span>Do not alter system settings, desktop configurations, or any computer files that do not belong to your work.</li>
-                    <li><span class="rule-num">6</span>Food and drinks are strictly prohibited inside the laboratory at all times.</li>
-                    <li><span class="rule-num">7</span>Keep the laboratory clean and orderly. Place all bags and personal belongings in the designated area, not on the computer tables.</li>
-                    <li><span class="rule-num">8</span>Report any damaged equipment, hardware malfunctions, or technical issues immediately to the laboratory-in-charge.</li>
-                    <li><span class="rule-num">9</span>Students must log out of the system and properly shut down the computer before leaving. Inform the laboratory-in-charge when your session ends.</li>
-                    <li><span class="rule-num">10</span>Respect the property of others. Accessing another student's files, accounts, or personal data is a serious violation subject to disciplinary action.</li>
+                    <li><span class="rule-num">1</span>Maintain silence, proper decorum, and discipline inside the laboratory. Mobile phones, walkmans and other personal pieces of equipment must be switched off.</li>
+                    <li><span class="rule-num">2</span>Games are not allowed inside the lab. This includes computer-related games, card games and other games that may disturb the operation of the lab.</li>
+                    <li><span class="rule-num">3</span>Surfing the Internet is allowed only with the permission of the instructor. Downloading and installing of software are strictly prohibited.</li>
+                    <li><span class="rule-num">4</span>Getting access to other websites not related to the course (especially pornographic and illicit sites) is strictly prohibited.</li>
+                    <li><span class="rule-num">5</span>Deleting computer files and changing the set-up of the computer is a major offense.</li>
+                    <li><span class="rule-num">6</span>Observe computer time usage carefully. A fifteen-minute allowance is given for each use. Otherwise, the unit will be given to those who wish to "sit-in".</li>
+                    <li><span class="rule-num">7</span>Observe proper decorum while inside the laboratory. Do not get inside the lab unless the instructor is present. All bags, knapsacks, and the likes must be deposited at the counter. Follow the seating arrangement of your instructor. At the end of class, all software programs must be closed. Return all chairs to their proper places after using.</li>
+                    <li><span class="rule-num">8</span>Chewing gum, eating, drinking, smoking, and other forms of vandalism are prohibited inside the lab.</li>
+                    <li><span class="rule-num">9</span>Anyone causing a continual disturbance will be asked to leave the lab. Acts or gestures offensive to the members of the community, including public display of physical intimacy, are not tolerated.</li>
+                    <li><span class="rule-num">10</span>Persons exhibiting hostile or threatening behavior such as yelling, swearing, or disregarding requests made by lab personnel will be asked to leave the lab.</li>
+                    <li><span class="rule-num">11</span>For serious offense, the lab personnel may call the Civil Security Office (CSU) for assistance.</li>
+                    <li><span class="rule-num">12</span>Any technical problem or difficulty must be addressed to the laboratory supervisor, student assistant or instructor immediately.</li>
                 </ul>
+                <div style="margin-top:1.25rem; padding:0.85rem 1.25rem; background:#fdecea; border-left:3px solid #c0392b; border-radius:8px;">
+                    <p style="font-size:0.85rem; font-weight:800; color:#c0392b; margin:0 0 0.5rem;">⚠️ DISCIPLINARY ACTION</p>
+                    <p style="font-size:0.85rem; color:#555; margin:0 0 0.35rem;"><strong>First Offense</strong> — The Head or the Dean or OIC recommends to the Guidance Center for a suspension from classes for each offender.</p>
+                    <p style="font-size:0.85rem; color:#555; margin:0;"><strong>Second and Subsequent Offenses</strong> — A recommendation for a heavier sanction will be endorsed to the Guidance Center.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -800,24 +889,23 @@ footer {
     <section id="leaderboard">
         <div class="community-section">
             <h2 class="section-heading">&#127942; Student Leaderboard</h2>
-            <p class="section-subtext">Top students by total sit-in sessions this semester.</p>
-            <div class="under-construction-wrap">
-                <span class="uc-icon">&#127959;&#65039;</span>
-                <div class="uc-title">Feature Under Construction</div>
-                <div class="uc-subtitle">
-                    We're working hard to bring you the Student Leaderboard! This feature will display the top sit-in students each semester. Stay tuned — it's coming soon.
-                </div>
-                <span class="uc-badge">&#128736; Coming Soon</span>
-                <div class="uc-progress">
-                    <div class="uc-progress-label">
-                        <span>Development in progress...</span>
-                        <span>&#128293;</span>
-                    </div>
-                    <div class="uc-progress-bar">
-                        <div class="uc-progress-fill"></div>
-                    </div>
-                </div>
-            </div>
+            <p class="section-subtext">Top 10 students ranked by final score this semester. Updates live every 30 seconds.</p>
+            <div id="publicLeaderboardWrap">
+            <table style="width:100%;border-collapse:collapse;font-size:0.88rem;" id="publicLbTable">
+                <thead>
+                    <tr>
+                        <th style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);color:white;padding:0.9rem 1rem;text-align:center;font-weight:700;font-size:0.75rem;letter-spacing:0.06em;text-transform:uppercase;border-radius:14px 0 0 0;width:60px;">Rank</th>
+                        <th style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);color:white;padding:0.9rem 1rem;font-weight:700;font-size:0.75rem;letter-spacing:0.06em;text-transform:uppercase;">Student</th>
+                        <th style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);color:white;padding:0.9rem 1rem;font-weight:700;font-size:0.75rem;letter-spacing:0.06em;text-transform:uppercase;width:100px;">Course</th>
+                        <th style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);color:white;padding:0.9rem 1rem;font-weight:700;font-size:0.75rem;letter-spacing:0.06em;text-transform:uppercase;width:140px;">Final Score</th>
+                        <th style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);color:white;padding:0.9rem 1rem;font-weight:700;font-size:0.75rem;letter-spacing:0.06em;text-transform:uppercase;border-radius:0 14px 0 0;width:180px;">Activity</th>
+                    </tr>
+                </thead>
+                <tbody id="publicLbBody">
+                    <tr><td colspan="5" style="text-align:center;color:#aaa;padding:2rem;">Loading leaderboard...</td></tr>
+                </tbody>
+            </table>
+        </div>
         </div>
     </section>
 
@@ -866,19 +954,104 @@ footer {
 
     <script>
         function toggleFaq(btn) {
-            const answer = btn.nextElementSibling;
-            const isOpen = answer.classList.contains('open');
+        const answer = btn.nextElementSibling;
+        const isOpen = answer.classList.contains('open');
+        document.querySelectorAll('.faq-answer').forEach(a => a.classList.remove('open'));
+        document.querySelectorAll('.faq-question').forEach(b => b.classList.remove('open'));
+        if (!isOpen) { answer.classList.add('open'); btn.classList.add('open'); }
+    }
 
-            // Close all
-            document.querySelectorAll('.faq-answer').forEach(a => a.classList.remove('open'));
-            document.querySelectorAll('.faq-question').forEach(b => b.classList.remove('open'));
+    const PUBLIC_MEDALS = ['🥇','🥈','🥉'];
+    const PUBLIC_BAR_COLORS = [
+        'linear-gradient(90deg,#F4B942,#f39c12)',
+        'linear-gradient(90deg,#aaa,#888)',
+        'linear-gradient(90deg,#cd7f32,#b5651d)',
+        'linear-gradient(90deg,#0F3E7D,#185FA5)'
+    ];
+    const YEAR_SUFFIX = ['','st','nd','rd','th'];
 
-            // Open clicked if it was closed
-            if (!isOpen) {
-                answer.classList.add('open');
-                btn.classList.add('open');
-            }
+    function loadPublicLeaderboard() {
+    fetch('/public/leaderboard-scores')
+    .then(r => r.json())
+    .then(data => {
+        if (!data.scores || data.scores.length === 0) {
+            document.getElementById('publicLbBody').innerHTML =
+                '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:2rem;">No leaderboard data yet.</td></tr>';
+            return;
         }
+
+        const maxScore = data.scores[0]?.final_score || 1;
+        const medals = ['🥇','🥈','🥉'];
+        const rankBg = [
+            'background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,193,7,0.04));border-left:3px solid #F4B942;',
+            'background:linear-gradient(135deg,rgba(192,192,192,0.08),rgba(180,180,180,0.04));border-left:3px solid #aaa;',
+            'background:linear-gradient(135deg,rgba(205,127,50,0.08),rgba(180,100,30,0.04));border-left:3px solid #cd7f32;',
+        ];
+        const barGradients = [
+            'linear-gradient(90deg,#F4B942,#f39c12)',
+            'linear-gradient(90deg,#aaa,#888)',
+            'linear-gradient(90deg,#cd7f32,#b5651d)',
+            'linear-gradient(90deg,#0F3E7D,#185FA5)'
+        ];
+        const YEAR_SUFFIX = ['','st','nd','rd','th'];
+
+        document.getElementById('publicLbBody').innerHTML = data.scores.map((s, i) => {
+            const rank = i + 1;
+            const pct = maxScore > 0 ? Math.round((s.final_score / maxScore) * 100) : 0;
+            const rowStyle = i < 3 ? rankBg[i] : '';
+            const barColor = i < 3 ? barGradients[i] : barGradients[3];
+            const yr = s.yearLevel || '';
+            const scoreColor = rank === 1 ? '#b8860b' : rank === 2 ? '#888' : rank === 3 ? '#8b4513' : '#0F3E7D';
+
+            const medalHtml = rank <= 3
+                ? `<div style="width:36px;height:36px;border-radius:50%;background:${['linear-gradient(135deg,#fff8dc,#ffe082)','linear-gradient(135deg,#f0f0f0,#d8d8d8)','linear-gradient(135deg,#f5e6d3,#ddb07a)'][i]};display:inline-flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.12);">${medals[i]}</div>`
+                : `<div style="width:36px;height:36px;border-radius:50%;background:rgba(15,62,125,0.06);display:inline-flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:700;color:#0F3E7D;">#${rank}</div>`;
+
+            const sessionUsed = 30 - (parseInt(s.remaining || 0));
+            const sessionPct  = Math.min(100, Math.round((sessionUsed / 30) * 100));
+
+            const scoreBadge = s.final_score > 0
+                ? `<span style="display:inline-block;background:linear-gradient(135deg,#E6F1FB,#d0e8f8);color:#0F3E7D;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;border:1px solid rgba(15,62,125,0.15);">+${s.final_score.toFixed(2)} pts</span>`
+                : `<span style="display:inline-block;background:#f5f5f5;color:#aaa;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:6px;">no score yet</span>`;
+
+            return `<tr style="${rowStyle}transition:all 0.18s ease;"
+                onmouseover="this.style.transform='translateX(4px)';this.style.boxShadow='2px 0 0 #F4B942 inset'"
+                onmouseout="this.style.transform='';this.style.boxShadow=''">
+                <td style="padding:1rem 1rem;text-align:center;">${medalHtml}</td>
+                <td style="padding:1rem 1rem;text-align:center;">
+                    <div style="font-weight:${rank<=3?'700':'500'};color:${rank===1?'#0F3E7D':'#222'};font-size:0.92rem;">
+                        ${s.lastName}, ${s.firstName}
+                        ${rank === 1 ? '<span style="margin-left:6px;background:linear-gradient(135deg,#F4B942,#f39c12);color:#412402;font-size:9px;font-weight:800;padding:2px 7px;border-radius:10px;vertical-align:middle;letter-spacing:0.04em;">RANK 1</span>' : ''}
+                    </div>
+                    <div style="font-size:0.75rem;color:#aaa;margin-top:2px;">${yr}${YEAR_SUFFIX[parseInt(yr)]||'th'} Year</div>
+                </td>
+                <td style="padding:1rem 1rem;text-align:center;">
+                    <span style="background:#E6F1FB;color:#0F3E7D;padding:0.25rem 0.7rem;border-radius:20px;font-size:0.75rem;font-weight:700;display:inline-block;">${s.course}</span>
+                    </td>
+                    <td style="padding:1rem 1rem;text-align:center;">
+                    <div style="font-weight:700;color:${scoreColor};font-size:1.05rem;line-height:1;">${s.final_score.toFixed(2)}</div>
+                    ${scoreBadge}
+                </td>
+                <td style="padding:1rem 1rem;min-width:160px;text-align:center;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="flex:1;background:rgba(15,62,125,0.08);border-radius:20px;height:8px;overflow:hidden;">
+                            <div style="width:${pct}%;height:100%;background:${barColor};border-radius:20px;transition:width 1.2s cubic-bezier(0.4,0,0.2,1);"></div>
+                        </div>
+                        <span style="font-size:0.72rem;color:#888;min-width:32px;font-weight:600;text-align:right;">${pct}%</span>
+                    </div>
+                    <div style="font-size:0.7rem;color:#aaa;margin-top:3px;">${pct === 100 ? 'leading' : pct === 0 ? 'no activity yet' : `${pct}% of top score`}</div>
+                </td>
+            </tr>`;
+        }).join('');
+    })
+    .catch(() => {
+        document.getElementById('publicLbBody').innerHTML =
+            '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:2rem;">Unable to load leaderboard.</td></tr>';
+    });
+}
+
+    loadPublicLeaderboard();
+    setInterval(loadPublicLeaderboard, 30000);
     </script>
 
 </body>

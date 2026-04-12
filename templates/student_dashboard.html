@@ -70,8 +70,9 @@
         grid-template-columns: 1fr 1fr 1fr;
         gap: 1.5rem;
         align-items: stretch;
+        overflow: visible !important;
     }
-        .student-info-panel, .panel-card {
+    .student-info-panel, .panel-card {
     background: rgba(255, 255, 255, 0.55);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -80,7 +81,7 @@
     box-shadow: 
         6px 6px 0px rgba(192, 132, 252, 0.3),
         0 8px 24px rgba(150, 120, 220, 0.1);
-    overflow: hidden;
+    overflow: visible;
     display: flex;
     flex-direction: column;
     height: auto;
@@ -93,29 +94,30 @@
         8px 8px 0px rgba(192, 132, 252, 0.35),
         0 12px 28px rgba(150, 120, 220, 0.15);
 }
-        .panel-tab-header, .panel-card-header {
-        background: linear-gradient(135deg, #0a1e50, #0F3E7D);
-        box-shadow: 0 2px 12px rgba(15, 62, 125, 0.2);
-        backdrop-filter: blur(8px);
-        color: white;
-        padding: 0.85rem 1.1rem;
-        font-size: 0.92rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        flex-shrink: 0;
-        text-align: center;
-        border-bottom: 1px solid rgba(255,255,255,0.15);
-        text-shadow: 0 1px 4px rgba(0,0,0,0.18);
-    }
-        .panel-body, .panel-card-body {
+    .panel-tab-header, .panel-card-header {
+    background: linear-gradient(135deg, #0a1e50, #0F3E7D);
+    box-shadow: 0 2px 12px rgba(15, 62, 125, 0.2);
+    backdrop-filter: blur(8px);
+    color: white;
+    padding: 0.85rem 1.1rem;
+    font-size: 0.92rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+    text-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    border-radius: 14px 14px 0 0;
+}
+        .panel-card-body {
         padding: 1.1rem 1.25rem;
         overflow-y: auto;
-        max-height: none;
+        max-height: 500px;
     }
         .panel-card:nth-child(2) .panel-card-body,
         .panel-card:nth-child(3) .panel-card-body {
-        overflow-y: auto;
-        max-height: 500px;
+        overflow-y: auto !important;
+        max-height: 500px !important;
     }
 
         .announcement-card { border-bottom: 1px solid #f0f0f0; padding-bottom: 0.85rem; margin-bottom: 0.85rem; border-radius: 6px; }
@@ -613,6 +615,127 @@ footer {
     transition: all 0.3s;
 }
 body { visibility: hidden; }
+.robot-float-btn {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    animation: robotBob 2.5s ease-in-out infinite;
+    filter: drop-shadow(0 6px 16px rgba(15,62,125,0.25));
+    transition: filter 0.2s ease;
+    display: block;
+}
+.robot-float-btn:hover {
+    filter: drop-shadow(0 8px 20px rgba(15,62,125,0.4));
+    animation-play-state: paused;
+}
+.robot-float-btn:active {
+    transform: scale(0.92);
+}
+@keyframes robotBob {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-8px); }
+}
+.robot-pulse-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(15,62,125,0.12);
+    animation: robotPulse 2s ease-out infinite;
+    pointer-events: none;
+}
+@keyframes robotPulse {
+    0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.7; }
+    100% { transform: translate(-50%,-50%) scale(1.9); opacity: 0; }
+}
+.robot-tooltip {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0F3E7D;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 3px 10px rgba(15,62,125,0.3);
+}
+.robot-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #0F3E7D;
+}
+.robot-wrap:hover .robot-tooltip {
+    opacity: 1;
+}
+.robot-wrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80px;
+    margin-bottom: 0;
+}
+.panel-card:last-child {
+    overflow: visible !important;
+    border-radius: 16px !important;
+    margin-top: 0px !important;
+}
+.robot-wrap {
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50px;
+    top: -55px;
+    left: auto;
+    right: 20px;
+    background: transparent;
+    overflow: visible;
+}
+
+.student-panel-grid {
+    overflow: visible !important;
+    position: relative;
+}
+
+.robot-float-btn span {
+    font-size: 2rem !important;
+}
+.panel-card:last-child .panel-card-header {
+    border-radius: 16px 16px 0 0 !important;
+}
+
+.panel-card:last-child .panel-card-body {
+    border-radius: 0 0 16px 16px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    max-height: 480px !important;
+}
+
+.admin-main {
+    position: relative !important;
+}
+@keyframes shake {
+    0%,100%{transform:translateX(0);}
+    20%{transform:translateX(-6px);}
+    40%{transform:translateX(6px);}
+    60%{transform:translateX(-4px);}
+    80%{transform:translateX(4px);}
+}
 </style>
 </head>
 <body>
@@ -710,11 +833,12 @@ body { visibility: hidden; }
             </div>
             <script>
                 localStorage.removeItem('studentSection');
+                sessionStorage.removeItem('aiTipDismissed_v2');
                 history.replaceState(null, '', '/dashboard');
-                    setTimeout(() => {
-                        const t = document.getElementById('loginSuccessToast');
-                        if (t) t.style.display = 'none';
-                    }, 3000);
+                setTimeout(() => {
+                    const t = document.getElementById('loginSuccessToast');
+                    if (t) t.style.display = 'none';
+                }, 3000);
             </script>
             {% endif %}
 
@@ -772,6 +896,16 @@ body { visibility: hidden; }
                     </div>
 
                     <div class="panel-card">
+
+                        <!-- 🤖 ROBOT FLOATS ABOVE HEADER -->
+                        <div class="robot-wrap" id="robotWrap">
+                            <div class="robot-pulse-ring"></div>
+                            <button class="robot-float-btn" onclick="toggleAiTipCard()">
+                                <span style="font-size:3rem; line-height:1;">🤖</span>
+                            </button>
+                            <div class="robot-tooltip">✨ Get AI Study Tips!</div>
+                        </div>
+
                         <div class="panel-card-header">Rules and Regulation</div>
                         <div class="panel-card-body">
                             <h3 class="rules-header">University of Cebu</h3>
@@ -1138,9 +1272,11 @@ body { visibility: hidden; }
                         </td>
                         <td style="max-width:220px;white-space:normal;word-break:break-word;font-size:0.82rem;">
                             {% if r.message %}
-                                <span style="color:{% if r.status == 'rejected' %}#c0392b{% elif r.status == 'expired' %}#856404{% else %}#555{% endif %};">
+                                <span style="color:{% if r.status == 'rejected' %}#c0392b{% elif r.status == 'expired' %}#856404{% elif r.status == 'done' %}#004085{% else %}#555{% endif %};">
                                     💬 {{ r.message }}
                                 </span>
+                            {% elif r.status == 'done' %}
+                                <span style="color:#004085;">💬 Your sit-in session has been completed successfully. Thank you for using the CCS Laboratory! We hope your session was productive. Please take a moment to leave a feedback — your thoughts help us improve our services. We appreciate you! 😊</span>
                             {% else %}
                                 <span style="color:#ccc;">—</span>
                             {% endif %}
@@ -1321,49 +1457,65 @@ body { visibility: hidden; }
     </div>
 </div>
 
-    <!-- FEEDBACK MODAL -->
-    <div class="modal-overlay" id="feedbackModal" style="display:none;">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3>Submit Feedback</h3>
-                <button class="modal-close" onclick="closeFeedbackModal()">&#10005;</button>
+<!-- FEEDBACK MODAL -->
+<div class="modal-overlay" id="feedbackModal" style="display:none;">
+    <div class="modal-box" style="max-width:420px;border-radius:24px;overflow:hidden;background:rgba(245,247,251,0.97);">
+        <div class="modal-header" style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);padding:0.75rem 1.25rem;display:flex;align-items:center;gap:0.6rem;">
+            <span style="font-size:16px;">💬</span>
+            <h3 style="margin:0;font-size:1rem;font-weight:700;letter-spacing:0.02em;">Submit Feedback</h3>
+            <button class="modal-close" onclick="closeFeedbackModal()" style="margin-left:auto;">&#10005;</button>
+        </div>
+        <div class="modal-body" style="padding:0.9rem 1.1rem;display:flex;flex-direction:column;gap:0.65rem;">
+
+            <!-- Top row: description + lab badge inline -->
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;flex-wrap:wrap;">
+                <p style="font-size:0.85rem;color:#555;margin:0;">Share your experience for this sit-in session.</p>
+                <div style="display:inline-flex;align-items:center;gap:5px;background:#E6F1FB;padding:0.25rem 0.75rem;border-radius:20px;flex-shrink:0;">
+                    <span style="font-size:13px;">🏫</span>
+                    <span id="feedbackLabDisplay" style="font-size:0.82rem;font-weight:700;color:#0F3E7D;"></span>
+                </div>
             </div>
-            <div class="modal-body">
-                <p style="font-size:0.88rem; color:#666; margin-bottom:0.5rem;">
-                    Share your experience for this sit-in session.
-                </p>
-                <p style="font-size:0.82rem; color:#aaa; margin-bottom:1rem;">
-                    Lab: <strong id="feedbackLabDisplay" style="color:#0F3E7D;"></strong>
-                </p>
 
-                <!-- Star Rating -->
-                <div style="margin-bottom:1rem;">
-                    <label style="display:block; font-size:0.85rem; font-weight:700; color:#444; margin-bottom:0.4rem;">Rating <span style="font-weight:400; color:#aaa; font-size:0.8rem;">(optional)</span></label>
-                    <div class="star-rating" id="starRating">
-                        <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
-                        <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
-                        <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
-                        <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
-                        <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
-                    </div>
+            <!-- RATING CARD -->
+            <div style="background:white;border-radius:14px;border:1.5px solid #e8e8e8;padding:0.75rem 1rem;">
+                <div style="font-size:0.7rem;font-weight:800;color:#0F3E7D;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">RATING <span style="color:#e74c3c;">★</span></div>
+                <div class="star-rating" id="starRating" style="display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:4px;margin-bottom:0;">
+                    <input type="radio" id="star5" name="rating" value="5">
+                    <label for="star5" style="font-size:2rem;cursor:pointer;transition:color 0.15s;line-height:1;">★</label>
+                    <input type="radio" id="star4" name="rating" value="4">
+                    <label for="star4" style="font-size:2rem;cursor:pointer;transition:color 0.15s;line-height:1;">★</label>
+                    <input type="radio" id="star3" name="rating" value="3">
+                    <label for="star3" style="font-size:2rem;cursor:pointer;transition:color 0.15s;line-height:1;">★</label>
+                    <input type="radio" id="star2" name="rating" value="2">
+                    <label for="star2" style="font-size:2rem;cursor:pointer;transition:color 0.15s;line-height:1;">★</label>
+                    <input type="radio" id="star1" name="rating" value="1">
+                    <label for="star1" style="font-size:2rem;cursor:pointer;transition:color 0.15s;line-height:1;">★</label>
                 </div>
+                <div id="ratingErrorMsg" style="display:none;margin-top:0.4rem;font-size:0.78rem;font-weight:700;color:#c0392b;">⚠️ Please select a star rating before submitting.</div>
+            </div>
 
-                <input type="hidden" id="feedbackSessionId">
-                <input type="hidden" id="feedbackLabHidden">
-                <div style="margin-bottom:0.9rem;">
-                    <label style="display:block; font-size:0.85rem; font-weight:700; color:#444; margin-bottom:0.35rem;">Your Feedback <span style="color:#e74c3c;">*</span></label>
-                    <textarea id="feedbackText" rows="4"
-                        placeholder="Write your feedback here..."
-                        style="width:100%; padding:0.65rem 0.8rem; border:1.5px solid #ddd; border-radius:6px; font-size:0.9rem; font-family:Arial,sans-serif; resize:vertical; box-sizing:border-box;"></textarea>
-                </div>
-                <div id="feedbackMsg" style="display:none; margin-bottom:0.8rem;"></div>
-                <div class="modal-btns">
-                    <button class="btn-modal-close" onclick="closeFeedbackModal()">Cancel</button>
-                    <button class="btn-modal-submit" id="feedbackSubmitBtn" onclick="submitFeedback()">Submit</button>
-                </div>
+            <!-- FEEDBACK CARD -->
+            <div style="background:white;border-radius:14px;border:1.5px solid #e8e8e8;padding:0.75rem 1rem;">
+                <div style="font-size:0.7rem;font-weight:800;color:#0F3E7D;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">YOUR FEEDBACK <span style="color:#e74c3c;">★</span></div>
+                <textarea id="feedbackText" rows="3"
+                    placeholder="Write your feedback here..."
+                    style="width:100%;padding:0.55rem 0.75rem;border:1.5px solid #eee;border-radius:10px;font-size:0.88rem;font-family:Arial,sans-serif;resize:vertical;box-sizing:border-box;background:#fafafa;outline:none;transition:border-color 0.2s;"
+                    onfocus="this.style.borderColor='#0F3E7D';this.style.background='white';"
+                    onblur="this.style.borderColor='#eee';this.style.background='#fafafa';"></textarea>
+            </div>
+
+            <input type="hidden" id="feedbackSessionId">
+            <input type="hidden" id="feedbackLabHidden">
+
+            <div id="feedbackMsg" style="display:none;"></div>
+
+            <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+                <button class="btn-modal-close" onclick="closeFeedbackModal()" style="padding:0.55rem 1.3rem;border-radius:14px;">Cancel</button>
+                <button class="btn-modal-submit" id="feedbackSubmitBtn" onclick="submitFeedback()" style="padding:0.55rem 1.5rem;border-radius:14px;">Submit</button>
             </div>
         </div>
     </div>
+</div>
 
     <footer>
         <p>&copy; 2026 College of Computer Studies - University of Cebu</p>
@@ -1636,184 +1788,192 @@ body { visibility: hidden; }
         }
 
         function submitFeedback() {
-            const sessionId = document.getElementById('feedbackSessionId').value;
-            const message   = document.getElementById('feedbackText').value.trim();
-            const msgEl     = document.getElementById('feedbackMsg');
-            const submitBtn = document.getElementById('feedbackSubmitBtn');
+    const sessionId = document.getElementById('feedbackSessionId').value;
+    const message   = document.getElementById('feedbackText').value.trim();
+    const msgEl     = document.getElementById('feedbackMsg');
+    const submitBtn = document.getElementById('feedbackSubmitBtn');
+    const ratingInput = document.querySelector('#starRating input:checked');
+    const ratingError = document.getElementById('ratingErrorMsg');
 
-            // ── Get selected star rating ──
-            const ratingInput = document.querySelector('#starRating input:checked');
-            const rating = ratingInput ? ratingInput.value : '0';
+    ratingError.style.display = 'none';
+    msgEl.style.display = 'none';
 
-            if (!message) {
-                msgEl.style.cssText = 'display:block; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; padding:0.6rem 1rem; border-radius:5px; font-size:0.85rem;';
-                msgEl.textContent = '⚠️ Please write your feedback before submitting.';
-                return;
+    if (!ratingInput) {
+        ratingError.style.display = 'block';
+        document.getElementById('starRating').style.animation = 'none';
+        document.getElementById('starRating').offsetHeight;
+        document.getElementById('starRating').style.animation = 'shake 0.4s ease';
+        return;
+    }
+    const rating = ratingInput.value;
+
+    if (!message) {
+        msgEl.style.cssText = 'display:block;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;';
+        msgEl.textContent = '⚠️ Please write your feedback before submitting.';
+        return;
+    }
+
+    // ✅ FULL BAD WORDS LIST — paste your original list here
+    const badWords = [
+        'piste', 'pisti', 'yawa', 'yewe', 'inatay', 'atay', 'atayang', 'ataya',
+        'animal', 'boang', 'buang', 'bogo', 'ogag', 'gunggong',
+        'tonto', 'tungo', 'ngongo', 'ungo', 'mananap', 'bastos',
+        'pakyas', 'paksha', 'bilat', 'bilata', 'boto', 'buyot',
+        'luod', 'luoy', 'yawaa', 'yawang', 'dautan', 'dautang',
+        'pastilan', 'pastil', 'susma', 'susmaryosep', 'susmariosep',
+        'letse', 'leche', 'letcheng', 'lecheng',
+        'bwisit', 'bwesit', 'busit', 'bsit', 'buwisit',
+        'pakshet', 'pakshot', 'puta', 'pota', 'pote',
+        'putang', 'putangina', 'putanginamo',
+        'giatay', 'giatayan', 'giata',
+        'hudas', 'ulol', 'ulong',
+        'burikat', 'burikata',
+        'animala', 'animalia',
+        'unggoy', 'unggoyan', 'unggoya',
+        'baboy', 'baboya', 'baboyang',
+        'aso', 'asong', 'asoa',
+        'ihalas', 'ihalasin',
+        'uwak', 'uwakan',
+        'bubuyog', 'bubuyogan',
+        'ahas', 'ahasan', 'ahasin',
+        'butiki', 'butikia',
+        'ipis', 'ipisang',
+        'daga', 'dagaan', 'dagaang',
+        'ambugas', 'ambugasan',
+        'nawng', 'nawngaso', 'nawngbaboy', 'nawngunggoy',
+        'mukha', 'mukhaaso', 'mukhangaso', 'mukhangbaboy',
+        'hitsura', 'hitsurang aso',
+        'dagway', 'dagwayaso', 'dagwaybaboy', 'dagwayunggoy',
+        'panget', 'pangetang', 'pangit', 'pangitang', 'napangit',
+        'kagwang', 'langgam', 'kulisap', 'uod', 'uodan',
+        'bulate', 'bulaten', 'bulateng',
+        'tanga', 'tangina', 'tanginamo',
+        'gago', 'gaga', 'gagong', 'inutil', 'duwag',
+        'pakyu', 'tarantado', 'tarantadong',
+        'punyeta', 'punyemas', 'punyetang',
+        'hayop', 'hayopang', 'hayupa',
+        'bobo', 'bobong', 'b0b0', 'b080',
+        'loko', 'lokong', 'siraulo', 'siraulong',
+        'gungong', 'gunggung',
+        'salot', 'salota', 'salotang',
+        'demonyo', 'demonyong', 'diyablo',
+        'kupal', 'kupaling', 'kupala',
+        'palpak', 'palpaking',
+        'ampota', 'ampotek', 'ampoteng',
+        'ulolang', 'uluul',
+        'hinayupak', 'hinayupaking',
+        'nakakainit', 'nakakainis',
+        'walangkwenta', 'walaghiya', 'walanghiya',
+        'putragis', 'putragys',
+        'supot', 'supota',
+        'lintik', 'lintikan', 'lintikang',
+        'kingina', 'kinginamo',
+        'buset', 'buseta', 'busetang',
+        'peste', 'pesteng', 'pesting',
+        'shunga', 'sungga', 'sunga',
+        'taena', 'taenang',
+        'galitera', 'galitero',
+        'fuck', 'fucker', 'fucking', 'fucked', 'fck', 'f0ck', 'fvck',
+        'shit', 'shitty', 'shitter', 'bullshit', 'bullcrap',
+        'ass', 'asshole', 'asses', 'jackass', 'smartass',
+        'bitch', 'bitchy', 'bitching', 'bitches',
+        'bastard', 'bastards', 'bastardly',
+        'damn', 'damned', 'dammit', 'goddamn',
+        'idiot', 'idiotic', 'idiots',
+        'stupid', 'stupidity', 'stuped', 'stoopid', 'st4pid', 'stpid', 'styupid',
+        'dumb', 'dumbass', 'dumbest',
+        'moron', 'moronic', 'morons',
+        'retard', 'retarded',
+        'crap', 'crappy', 'craps',
+        'hell', 'hells', 'hellish',
+        'jerk', 'jerkoff', 'jerks',
+        'loser', 'losers', 'l0ser',
+        'trash', 'trashy',
+        'ugly', 'uglyass',
+        'fat', 'fatass', 'fatso',
+        'pig', 'pighead',
+        'freak', 'freaking', 'freaks',
+        'suck', 'sucks', 'sucker', 'suckup',
+        'pathetic', 'pathetico',
+        'useless', 'uselessness',
+        'worthless', 'worthlessness',
+        'lazy', 'lazyass',
+        'liar', 'liars',
+        'cheater', 'cheaters',
+        'scum', 'scumbag', 'scums',
+        'slut', 'slutty', 'slob',
+        'whore', 'whorish',
+        'cunt', 'cunts',
+        'dick', 'dicks', 'dickhead',
+        'prick', 'pricks',
+        'douchebag', 'douche',
+        'numbskull', 'numskull',
+        'imbecile', 'imbeciles',
+        'nitwit', 'dimwit', 'halfwit',
+        'bonehead', 'blockhead', 'knucklehead',
+        'p0ta', 'p0t4', 'g4go', 'g@go',
+        't4nga', 'tng4', 'b0b0', 'b080',
+        'p1ste', 'y4wa', 'l3che',
+        'f4ck', 'sh1t', 'b1tch', 'a55',
+    ];
+
+    function normalizeLeet(t) {
+        const map={'0':'o','1':'i','3':'e','4':'a','5':'s','7':'t','8':'b','@':'a','$':'s','!':'i'};
+        t=t.toLowerCase();
+        for(const[k,v]of Object.entries(map))t=t.split(k).join(v);
+        t=t.replace(/[\s\.\-\_\*]+/g,'');
+        t=t.replace(/(.)\1+/g,'$1');
+        return t;
+    }
+
+    const normalized = normalizeLeet(message);
+    const noSpaces   = message.toLowerCase().replace(/\s+/g, '');
+    const found = badWords.find(w =>
+        normalized.includes(w) ||
+        message.toLowerCase().includes(w) ||
+        noSpaces.includes(w)
+    );
+    if (found) {
+        msgEl.style.cssText = 'display:block;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;';
+        msgEl.textContent = '⚠️ Please keep your feedback respectful and free of inappropriate language.';
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+
+    const fd = new FormData();
+    fd.append('session_id', sessionId);
+    fd.append('message', message);
+    fd.append('rating', rating);
+
+    fetch('/student/submit-feedback', {method:'POST', body:fd})
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            msgEl.style.cssText = 'display:block;background:#d4edda;border-left:4px solid #1e7e34;color:#1e7e34;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;';
+            msgEl.textContent = '✓ Feedback submitted successfully!';
+            if (_activeFeedbackBtn) {
+                _activeFeedbackBtn.textContent = '✓ Submitted';
+                _activeFeedbackBtn.classList.add('submitted');
+                _activeFeedbackBtn.disabled = true;
+                _activeFeedbackBtn.onclick = null;
             }
-
-            const badWords = [
-                    'piste', 'pisti', 'yawa', 'yewe', 'inatay', 'atay', 'atayang', 'ataya',
-                    'animal', 'boang', 'buang', 'bogo', 'bogo', 'ogag', 'gunggong',
-                    'tonto', 'tungo', 'ngongo', 'ungo', 'mananap', 'bastos',
-                    'pakyas', 'paksha', 'bilat', 'bilata', 'boto', 'buyot',
-                    'luod', 'luoy', 'yawaa', 'yawang', 'dautan', 'dautang',
-                    'pastilan', 'pastil', 'susma', 'susmaryosep', 'susmariosep',
-                    'letse', 'leche', 'letcheng', 'lecheng',
-                    'bwisit', 'bwesit', 'busit', 'bsit', 'buwisit',
-                    'pakshet', 'pakshot', 'puta', 'pota', 'pote',
-                    'putang', 'putangina', 'putanginamo',
-                    'giatay', 'giatayan', 'giata',
-                    'hudas', 'ulol', 'ulong',
-                    'burikat', 'burikata',
-                    'animal', 'animala', 'animalia',
-                    'unggoy', 'unggoyan', 'unggoya',
-                    'baboy', 'baboya', 'baboyang',
-                    'aso', 'asong', 'asoa',
-                    'ihalas', 'ihalasin',
-                    'uwak', 'uwakan',
-                    'bubuyog', 'bubuyogan',
-                    'ahas', 'ahasan', 'ahasin',
-                    'butiki', 'butikia',
-                    'ipis', 'ipisang',
-                    'daga', 'dagaan', 'dagaang',
-                    'ambugas', 'ambugasan',
-                    'nawng', 'nawng aso', 'nawngaso',
-                    'nawng baboy', 'nawngbaboy',
-                    'nawng unggoy', 'nawngunggoy',
-                    'mukha', 'mukhaaso', 'mukha kang aso',
-                    'mukhang aso', 'mukhangaso',
-                    'mukhang baboy', 'mukhangbaboy',
-                    'mukhang unggoy', 'mukhangbaboy',
-                    'hitsura', 'hitsurang aso',
-                    'dagway', 'dagway aso', 'dagwayaso',
-                    'dagway baboy', 'dagwaybaboy',
-                    'dagway unggoy', 'dagwayunggoy',
-                    'panget', 'pangetang', 'pangit',
-                    'pangitang', 'napangit',
-                    'kagwang', 'uwak', 'langgam',
-                    'kulisap', 'uod', 'uodan',
-                    'bulate', 'bulaten', 'bulateng',
-                    'tanga', 'tangina', 'tanginamo', 'tanginamo',
-                    'gago', 'gaga', 'gagong', 'inutil', 'duwag',
-                    'pakyu', 'tarantado', 'tarantadong',
-                    'punyeta', 'punyemas', 'punyetang',
-                    'leche', 'letse', 'letcheng',
-                    'bwisit', 'buwisit', 'bwiset',
-                    'hayop', 'hayopang', 'hayupa',
-                    'bobo', 'bobong', 'b0b0', 'b080',
-                    'loko', 'lokong', 'siraulo', 'siraulong',
-                    'gunggong', 'gungong', 'gunggung',
-                    'salot', 'salota', 'salotang',
-                    'demonyo', 'demonyong', 'diyablo',
-                    'kupal', 'kupaling', 'kupala',
-                    'palpak', 'palpaking',
-                    'ampota', 'ampotek', 'ampoteng',
-                    'ulol', 'ulolang', 'uluul',
-                    'hinayupak', 'hinayupaking',
-                    'nakakainit', 'nakakainis',
-                    'walang kwenta', 'walangkwenta',
-                    'walang hiya', 'walaghiya', 'walanghiya',
-                    'putragis', 'putragys',
-                    'supot', 'supota',
-                    'lintik', 'lintikan', 'lintikang',
-                    'kingina', 'kinginamo', 'kingina',
-                    'buset', 'buseta', 'busetang',
-                    'peste', 'pesteng', 'pesting',
-                    'shunga', 'sungga', 'sunga',
-                    'taena', 'taenang', 'taena',
-                    'galitera', 'galitero',
-                    'fuck', 'fucker', 'fucking', 'fucked', 'fck', 'f0ck', 'fvck',
-                    'shit', 'shitty', 'shitter', 'bullshit', 'bullcrap',
-                    'ass', 'asshole', 'asses', 'jackass', 'smartass',
-                    'bitch', 'bitchy', 'bitching', 'bitches',
-                    'bastard', 'bastards', 'bastardly',
-                    'damn', 'damned', 'dammit', 'goddamn',
-                    'idiot', 'idiotic', 'idiots',
-                    'stupid', 'stupidity', 'stuped', 'stoopid', 'st4pid', 'stpid', 'styupid',
-                    'dumb', 'dumbass', 'dumbest',
-                    'moron', 'moronic', 'morons',
-                    'retard', 'retarded',
-                    'crap', 'crappy', 'craps',
-                    'hell', 'hells', 'hellish',
-                    'jerk', 'jerkoff', 'jerks',
-                    'loser', 'losers', 'l0ser',
-                    'trash', 'trashy',
-                    'ugly', 'uglyass',
-                    'fat', 'fatass', 'fatso',
-                    'pig', 'pighead',
-                    'freak', 'freaking', 'freaks',
-                    'suck', 'sucks', 'sucker', 'suckup',
-                    'pathetic', 'pathetico',
-                    'useless', 'uselessness',
-                    'worthless', 'worthlessness',
-                    'lazy', 'lazyass',
-                    'liar', 'liars',
-                    'cheater', 'cheaters',
-                    'scum', 'scumbag', 'scums',
-                    'slut', 'slutty', 'slob',
-                    'whore', 'whorish',
-                    'cunt', 'cunts',
-                    'dick', 'dicks', 'dickhead',
-                    'prick', 'pricks',
-                    'douchebag', 'douche',
-                    'numbskull', 'numskull',
-                    'imbecile', 'imbeciles',
-                    'nitwit', 'dimwit', 'halfwit',
-                    'bonehead', 'blockhead', 'knucklehead',
-                    'p0ta', 'p0t4', 'g4go', 'g@go',
-                    't4nga', 'tng4', 'b0b0', 'b080',
-                    'p1ste', 'y4wa', 'l3che',
-                    'f4ck', 'sh1t', 'b1tch', 'a55',
-                ];
-
-            const normalized  = normalizeLeet(message);
-            const noSpaces    = message.toLowerCase().replace(/\s+/g, '');
-            const found = badWords.find(w => 
-                normalized.includes(w) || 
-                message.toLowerCase().includes(w) ||
-                noSpaces.includes(w)
-            );
-            if (found) {
-                msgEl.style.cssText = 'display:block; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; padding:0.6rem 1rem; border-radius:5px; font-size:0.85rem;';
-                msgEl.textContent = '⚠️ Please keep your feedback respectful and free of inappropriate language.';
-                return;
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting…';
-
-            const fd = new FormData();
-            fd.append('session_id', sessionId);
-            fd.append('message', message);
-            fd.append('rating', rating);   // ← rating is now included
-
-            fetch('/student/submit-feedback', { method: 'POST', body: fd })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    msgEl.style.cssText = 'display:block; background:#d4edda; border-left:4px solid #1e7e34; color:#1e7e34; padding:0.6rem 1rem; border-radius:5px; font-size:0.85rem;';
-                    msgEl.textContent = '✓ Feedback submitted successfully!';
-                    if (_activeFeedbackBtn) {
-                        _activeFeedbackBtn.textContent = '✓ Submitted';
-                        _activeFeedbackBtn.classList.add('submitted');
-                        _activeFeedbackBtn.disabled = true;
-                        _activeFeedbackBtn.onclick   = null;
-                    }
-                    setTimeout(() => closeFeedbackModal(), 1800);
-                } else {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Submit';
-                    msgEl.style.cssText = 'display:block; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; padding:0.6rem 1rem; border-radius:5px; font-size:0.85rem;';
-                    msgEl.textContent = '⚠️ ' + (data.message || 'Something went wrong.');
-                }
-            })
-            .catch(() => {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Submit';
-                msgEl.style.cssText = 'display:block; background:#fdecea; border-left:4px solid #c0392b; color:#c0392b; padding:0.6rem 1rem; border-radius:5px; font-size:0.85rem;';
-                msgEl.textContent = '⚠️ Connection error. Please try again.';
-            });
+            setTimeout(() => closeFeedbackModal(), 1800);
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit';
+            msgEl.style.cssText = 'display:block;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;';
+            msgEl.textContent = '⚠️ ' + (data.message || 'Something went wrong.');
         }
+    })
+    .catch(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit';
+        msgEl.style.cssText = 'display:block;background:#fdecea;border-left:4px solid #c0392b;color:#c0392b;padding:0.6rem 1rem;border-radius:5px;font-size:0.85rem;';
+        msgEl.textContent = '⚠️ Connection error. Please try again.';
+    });
+}
 
         document.getElementById('feedbackModal').addEventListener('click', function(e) { if (e.target === this) closeFeedbackModal(); });
     
@@ -2342,6 +2502,284 @@ function cancelReservation(resId) {
         .catch(() => showResToast('✗ Connection error.', 'error'));
     };
 }
+(function() {
+
+    function buildTip() {
+        const rows = [...document.querySelectorAll('#reservationTableBody tr')]
+            .filter(r => !r.querySelector('td[colspan]'));
+        const histRows = [...document.querySelectorAll('#section-history .dashboard-table tbody tr')]
+            .filter(r => !r.querySelector('td[colspan]'));
+
+        // ── Week analysis from reservation data ──
+        const weekMap = {};
+        rows.forEach(r => {
+            const cells = r.querySelectorAll('td');
+            const dateStr = cells[5]?.innerText.trim();
+            if (!dateStr || dateStr === '—') return;
+            try {
+                const d = new Date(dateStr);
+                const mon = new Date(d);
+                mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+                const key = mon.toISOString().slice(0, 10);
+                weekMap[key] = (weekMap[key] || 0) + 1;
+            } catch(e) {}
+        });
+
+        // ── Day analysis from history ──
+        const dayMap = { Mon:0, Tue:0, Wed:0, Thu:0, Fri:0, Sat:0 };
+        histRows.forEach(r => {
+            const cells = r.querySelectorAll('td');
+            const dateStr = cells[6]?.innerText.trim();
+            if (!dateStr || dateStr === '—') return;
+            try {
+                const d = new Date(dateStr);
+                const day = d.toLocaleDateString('en-US', { weekday:'short' });
+                if (dayMap.hasOwnProperty(day)) dayMap[day]++;
+            } catch(e) {}
+        });
+
+        // ── Lab analysis from history ──
+        const labMap = {};
+        histRows.forEach(r => {
+            const cells = r.querySelectorAll('td');
+            const lab = cells[3]?.innerText.trim();
+            if (lab && lab !== '—') labMap[lab] = (labMap[lab] || 0) + 1;
+        });
+
+        // ── Time analysis from history ──
+        const timeMap = { 'Morning (8–12 AM)': 0, 'Afternoon (12–3 PM)': 0, 'Late Afternoon (3–6 PM)': 0, 'Evening (6–8 PM)': 0 };
+        histRows.forEach(r => {
+            const cells = r.querySelectorAll('td');
+            const loginT = cells[4]?.innerText.trim();
+            if (!loginT || loginT === '—') return;
+            const hrMatch = loginT.match(/(\d{1,2}):\d{2}\s*(AM|PM)/i);
+            if (!hrMatch) return;
+            let h = parseInt(hrMatch[1]);
+            const ap = hrMatch[2].toUpperCase();
+            if (ap === 'PM' && h !== 12) h += 12;
+            if (ap === 'AM' && h === 12) h = 0;
+            if (h >= 8  && h < 12) timeMap['Morning (8–12 AM)']++;
+            else if (h >= 12 && h < 15) timeMap['Afternoon (12–3 PM)']++;
+            else if (h >= 15 && h < 18) timeMap['Late Afternoon (3–6 PM)']++;
+            else if (h >= 18 && h < 20) timeMap['Evening (6–8 PM)']++;
+        });
+
+        // ── Best week ──
+        const entries = Object.entries(weekMap).sort((a,b) => a[0].localeCompare(b[0]));
+        let weekBadge, weekTitle, weekBody, weekReason;
+        const now = new Date();
+        const fmt = dt => dt.toLocaleDateString('en-US', { month:'short', day:'numeric' });
+
+        if (entries.length >= 2) {
+            const avg = Math.round(entries.reduce((s,[,v]) => s+v, 0) / entries.length);
+            const quietest = [...entries].sort((a,b) => a[1]-b[1])[0];
+            const wStart = new Date(quietest[0] + 'T00:00:00');
+            const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 4);
+            const month = wStart.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+            weekBadge  = fmt(wStart) + '–' + fmt(wEnd);
+            weekTitle  = 'Best week to sit-in — ' + month;
+            weekBody   = 'Week of ' + fmt(wStart) + '–' + fmt(wEnd) + ' has the lowest lab traffic (' + quietest[1] + ' bookings vs avg ' + avg + '/week). Less competition for PCs — ideal for focused study!';
+            weekReason = quietest[1] + ' reservations that week · avg is ' + avg + '/week · more PCs available';
+        } else {
+            const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+            const fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+            const month = mon.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+            weekBadge  = fmt(mon) + '–' + fmt(fri);
+            weekTitle  = 'Good time to sit-in — ' + month;
+            weekBody   = 'Lab traffic looks quiet this week! Great chance to grab a PC without waiting.';
+            weekReason = 'Low reservation activity · More PCs available · Less waiting time';
+        }
+
+        // ── Best day ──
+        const dayEntries = Object.entries(dayMap).filter(([,v]) => v > 0).sort((a,b) => a[1]-b[1]);
+        const bestDay  = dayEntries.length ? dayEntries[0][0] : null;
+        const worstDay = dayEntries.length > 1 ? dayEntries[dayEntries.length-1][0] : null;
+
+        // ── Best lab ──
+        const labEntries = Object.entries(labMap).sort((a,b) => a[1]-b[1]);
+        const leastBusyLab = labEntries.length ? labEntries[0][0] : null;
+
+        // ── Best time ──
+        const timeEntries = Object.entries(timeMap).filter(([,v]) => v > 0).sort((a,b) => a[1]-b[1]);
+        const bestTime = timeEntries.length ? timeEntries[0][0] : null;
+
+        return { weekBadge, weekTitle, weekBody, weekReason, bestDay, worstDay, leastBusyLab, bestTime, hasHistory: histRows.length > 0 };
+    }
+
+    function showCard(tip) {
+        const card = document.createElement('div');
+        card.id = 'aiTipCard';
+
+        // Paper/memo style — horizontal layout
+        card.style.cssText = [
+        'position:fixed',
+        'top:82px',
+        'right:12px',
+        'left:auto',
+        'width:min(350px, calc(100vw - 24px))',
+        'max-height:min(520px, calc(100vh - 100px))',
+        'z-index:99999',
+        'font-family:Arial,sans-serif',
+        'opacity:0',
+        'transform:translateX(24px)',
+        'transition:opacity 0.38s ease,transform 0.38s ease',
+        'display:flex',
+        'flex-direction:column',
+        // Claymorphism + iOS feel
+        'background:rgba(255,255,255,0.82)',
+        'backdrop-filter:blur(40px)',
+        '-webkit-backdrop-filter:blur(40px)',
+        'border-radius:28px',
+        'border:2px solid rgba(255,255,255,0.95)',
+        'box-shadow:0 30px 60px rgba(15,62,125,0.18), 0 8px 20px rgba(15,62,125,0.10), 0 2px 0 rgba(255,255,255,1) inset, 6px 6px 0px rgba(192,132,252,0.15)',
+        'overflow:hidden'
+    ].join(';');
+
+        // Insight rows — only show if we have data
+        let insightRows = '';
+        if (tip.bestDay) {
+            insightRows += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed #f0e8d0;">' +
+                '<span style="font-size:14px;flex-shrink:0;">📅</span>' +
+                '<div>' +
+                    '<span style="font-size:10px;font-weight:700;color:#856404;text-transform:uppercase;letter-spacing:0.05em;">Best Day to Sit-in</span>' +
+                    '<p style="font-size:12px;color:#444;margin:1px 0 0;font-weight:600;">' + tip.bestDay + ' — least crowded system-wide</p>' +
+                '</div></div>';
+        }
+        if (tip.worstDay) {
+            insightRows += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed #f0e8d0;">' +
+                '<span style="font-size:14px;flex-shrink:0;">⚠️</span>' +
+                '<div>' +
+                    '<span style="font-size:10px;font-weight:700;color:#c0392b;text-transform:uppercase;letter-spacing:0.05em;">Busiest Day</span>' +
+                    '<p style="font-size:12px;color:#444;margin:1px 0 0;font-weight:600;">' + tip.worstDay + ' — tends to be the most crowded</p>' +
+                '</div></div>';
+        }
+        if (tip.leastBusyLab) {
+            insightRows += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px dashed #f0e8d0;">' +
+                '<span style="font-size:14px;flex-shrink:0;">🖥️</span>' +
+                '<div>' +
+                    '<span style="font-size:10px;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:0.05em;">Most Available Lab</span>' +
+                    '<p style="font-size:12px;color:#444;margin:1px 0 0;font-weight:600;">Lab ' + tip.leastBusyLab + ' — fewest bookings overall</p>' +
+                '</div></div>';
+        }
+        if (tip.bestTime) {
+            insightRows += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;">' +
+                '<span style="font-size:14px;flex-shrink:0;">⏰</span>' +
+                '<div>' +
+                    '<span style="font-size:10px;font-weight:700;color:#0f6e56;text-transform:uppercase;letter-spacing:0.05em;">Best Time to Visit</span>' +
+                    '<p style="font-size:12px;color:#444;margin:1px 0 0;font-weight:600;">' + tip.bestTime + ' — quietest slot system-wide</p>' +
+                '</div></div>';
+        }
+        if (!insightRows) {
+            insightRows = '<p style="font-size:11px;color:#888;margin:4px 0 0;font-style:italic;">Start sitting in to get personalized day & lab insights!</p>';
+        }
+
+      card.innerHTML =
+    // Header
+    '<div style="background:linear-gradient(135deg,#0a1e50,#0F3E7D);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:26px 26px 0 0;box-shadow:0 4px 20px rgba(10,30,80,0.25);">' +
+        '<div style="display:flex;align-items:center;gap:7px;">' +
+            '<span style="font-size:13px;">🤖</span>' +
+            '<span style="color:white;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">AI Study Tip</span>' +
+            '<span style="background:#F4B942;color:#412402;font-size:9px;font-weight:800;padding:2px 8px;border-radius:10px;">Best Week: ' + tip.weekBadge + '</span>' +
+        '</div>' +
+        '<button id="aiTipCloseBtn" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);color:white;font-size:18px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:8px;backdrop-filter:blur(8px);transition:all 0.18s ease;">&times;</button>' +
+    '</div>' +
+
+    // Scrollable body
+    '<div style="overflow-y:auto;flex:1;padding:14px 16px 4px 16px;scrollbar-width:thin;scrollbar-color:#F4B942 transparent;max-height:calc(100vh - 220px);min-height:0;">' +
+
+        // Week tip box — claymorphism
+        '<div style="background:linear-gradient(135deg,rgba(230,241,251,0.85),rgba(214,232,250,0.8));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1.5px solid rgba(255,255,255,0.9);border-radius:16px;padding:12px 14px;margin-bottom:10px;box-shadow:3px 3px 0px rgba(192,132,252,0.18),0 4px 12px rgba(15,62,125,0.08);">' +
+            '<p style="font-size:12px;font-weight:800;color:#0F3E7D;margin:0 0 4px;line-height:1.3;">' + tip.weekTitle + '</p>' +
+            '<p style="font-size:11px;color:#444;margin:0 0 8px;line-height:1.6;">' + tip.weekBody + '</p>' +
+            '<div style="background:rgba(255,255,255,0.75);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.9);border-radius:10px;padding:7px 10px;box-shadow:2px 2px 0px rgba(192,132,252,0.12);">' +
+                '<p style="font-size:10px;color:#185FA5;margin:0;line-height:1.5;font-weight:600;">📌 ' + tip.weekReason + '</p>' +
+            '</div>' +
+        '</div>' +
+
+        // Insight rows
+        '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">' + insightRows + '</div>' +
+
+        // Bottom label
+        '<div style="text-align:center;padding-bottom:4px;">' +
+            '<span style="font-size:10px;color:#bbb;font-style:italic;">📊 Based on system-wide lab data</span>' +
+        '</div>' +
+
+    '</div>' +
+
+    // Footer button — always visible at bottom
+    '<div style="padding:10px 14px 14px;flex-shrink:0;border-top:1px solid rgba(15,62,125,0.08);background:rgba(255,255,255,0.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:0 0 26px 26px;">' +
+        '<button id="aiTipOkBtn" style="width:100%;background:linear-gradient(135deg,#1a5db5,#0F3E7D);color:white;border:none;padding:10px;border-radius:14px;font-size:12px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;letter-spacing:0.02em;box-shadow:0 4px 14px rgba(15,62,125,0.35),0 1px 0 rgba(255,255,255,0.2) inset;transition:all 0.18s ease;">Okay, got it ✓</button>' +
+    '</div>';
+
+        document.body.appendChild(card);
+
+        function dismiss() {
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(24px)';
+            setTimeout(() => { card.style.display = 'none'; }, 320);
+        }
+
+        document.getElementById('aiTipCloseBtn').onclick = dismiss;
+        document.getElementById('aiTipOkBtn').onclick    = dismiss;
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                card.style.opacity   = '1';
+                card.style.transform = 'translateX(0)';
+            });
+        });
+    }
+    window._buildTip = function() {
+    const serverTip = window._serverTip;
+    const tip = buildTip(); // still build local tip
+
+    // Override with server (system-wide) data if available
+    if (serverTip) {
+        tip.weekTitle       = serverTip.title       || tip.weekTitle;
+        tip.weekBody        = serverTip.body        || tip.weekBody;
+        tip.weekReason      = serverTip.reason      || tip.weekReason;
+        tip.weekBadge       = serverTip.badge       || tip.weekBadge;
+        tip.bestDay         = serverTip.best_day    || tip.bestDay;
+        tip.worstDay        = serverTip.worst_day   || tip.worstDay;
+        tip.leastBusyLab    = serverTip.least_busy_lab || tip.leastBusyLab;
+        tip.bestTime        = serverTip.best_time   || tip.bestTime;
+    }
+    return tip;
+};
+    window._showCard = showCard;
+})();
+function toggleAiTipCard() {
+    let existing = document.getElementById('aiTipCard');
+    if (!existing) {
+        const tip = window._buildTip();
+        if (tip) window._showCard(tip);
+        return;
+    }
+    const isVisible = existing.style.opacity !== '0' && existing.style.display !== 'none';
+    if (isVisible) {
+        existing.style.opacity = '0';
+        existing.style.transform = 'translateX(24px)';
+        setTimeout(() => { if (existing) existing.style.display = 'none'; }, 320);
+    } else {
+        existing.style.display = 'block';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                existing.style.opacity = '1';
+                existing.style.transform = 'translateX(0)';
+            });
+        });
+    }
+}
+// ── Load system-wide AI tip from server ──
+async function loadAiTip() {
+    try {
+        const res = await fetch('/student/get-ai-tip');
+        const data = await res.json();
+        if (!data.tip) return;
+        window._serverTip = data.tip;
+    } catch(e) {}
+}
+window.addEventListener('DOMContentLoaded', () => setTimeout(loadAiTip, 1200));
     </script>
 <div class="modal-overlay" id="cancelResModal" style="display:none; z-index:9999;">
     <div class="modal-box" style="max-width:360px;">

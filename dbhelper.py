@@ -163,9 +163,16 @@ def contains_bad_words(text):
 # REST OF YOUR CODE BELOW...
 # ══════════════════════════════════════════
 def get_db():
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect(DATABASE, timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
     return conn
+
+# Enable WAL mode on startup
+_startup_conn = sqlite3.connect(DATABASE, timeout=30)
+_startup_conn.execute("PRAGMA journal_mode=WAL")
+_startup_conn.commit()
+_startup_conn.close()
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -465,11 +472,14 @@ def get_all_announcements():
     return announcements
 
 def add_announcement(title, content, posted_by):
+    from datetime import datetime, timezone, timedelta
+    PH_TZ = timezone(timedelta(hours=8))
+    now_ph = datetime.now(PH_TZ).strftime('%Y-%m-%d %H:%M:%S')
     conn = get_db()
     conn.execute("""
-        INSERT INTO announcements (title, content, posted_by)
-        VALUES (?, ?, ?)
-    """, (title, content, posted_by))
+        INSERT INTO announcements (title, content, posted_by, created_at)
+        VALUES (?, ?, ?, ?)
+    """, (title, content, posted_by, now_ph))
     conn.commit()
     conn.close()
 
@@ -1011,3 +1021,52 @@ def check_pc_conflict_after(lab, pc_number, date, time_start, exclude_res_id=Non
         """, (lab, pc_number, date, time_start)).fetchone()
     conn.close()
     return row
+
+def init_evaluations_table():
+    conn = get_db()
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS sit_evaluations (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id      INTEGER NOT NULL UNIQUE,
+            idNumber        TEXT NOT NULL,
+            tidy_point      INTEGER DEFAULT 0,
+            task_completed  INTEGER DEFAULT 0,
+            duration_minutes INTEGER DEFAULT 0,
+            created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (session_id) REFERENCES sitin_sessions(id),
+            FOREIGN KEY (idNumber) REFERENCES students(idNumber)
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+def save_evaluation(session_id, id_number, tidy_point, task_completed, duration_minutes):
+    conn = get_db()
+    conn.execute("""
+        INSERT OR REPLACE INTO sit_evaluations
+        (session_id, idNumber, tidy_point, task_completed, duration_minutes)
+        VALUES (?, ?, ?, ?, ?)
+    """, (session_id, id_number, tidy_point, task_completed, duration_minutes))
+    conn.commit()
+    conn.close()
+
+def get_leaderboard_scores():
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT 
+            e.idNumber,
+            s.firstName,
+            s.lastName,
+            s.course,
+            s.yearLevel,
+            COUNT(e.session_id) AS total_sessions,
+            SUM(e.tidy_point) AS raw_tidy_points,
+            SUM(e.duration_minutes) AS total_minutes,
+            SUM(e.task_completed) AS tasks_completed
+        FROM sit_evaluations e
+        JOIN students s ON e.idNumber = s.idNumber
+        GROUP BY e.idNumber
+        ORDER BY e.idNumber
+    """).fetchall()
+    conn.close()
+    return rows
