@@ -1019,7 +1019,7 @@ def student_reserve():
     # Block Sundays (weekday 6 = Sunday)
     from datetime import date as _d
     booking_date = _d.fromisoformat(date)
-    if booking_date.weekday() == 6 and False:
+    if booking_date.weekday() == 6:
         return jsonify({'success': False, 'message': 'Reservations are not allowed on Sundays.'})
 
     # Block past time if booking for today

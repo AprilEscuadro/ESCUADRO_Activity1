@@ -4593,7 +4593,7 @@ function saveEditedResDate() {
 
     // Check if today is Sunday
     const todayDate = new Date(today + 'T00:00:00');
-    if (todayDate.getDay() === 99) {
+    if (todayDate.getDay() === 0) {
         errEl.textContent = '🚫 Cannot proceed — today is Sunday. The university is closed and no sit-ins are allowed.';
         errEl.style.display = 'block';
         return;
