@@ -835,7 +835,7 @@ body { visibility: hidden; }
 
     <nav class="navbar">
         <div class="nav-content">
-            <a href="/admin/dashboard" class="logo-section" style="text-decoration:none;">
+            <a href="/admin/dashboard" class="logo-section" style="text-decoration:none;" onclick="localStorage.setItem('adminSection','section-home')">
                 <img src="{{ url_for('static', filename='images/ucmainccslogo.jpg') }}" alt="CCS Logo" class="navbar-logo">
                 <span class="site-title">College of Computer Studies Sit-in Monitoring System</span>
             </a>
@@ -996,7 +996,7 @@ body { visibility: hidden; }
         <button class="res-tab-btn" id="studTab2" onclick="switchStudTab('stud-panel-leaderboard', this)" style="flex:1;">🏆 Leaderboard</button>
     </div>
 
-    <!-- PANEL 1: Students Information -->
+<!-- PANEL 1: Students Information -->
 <div id="stud-panel-info" class="res-tab-panel">
     <div class="admin-card">
         <div class="table-top-bar">
@@ -1069,32 +1069,7 @@ body { visibility: hidden; }
     <!-- Leaderboard Table -->
     <div class="admin-card">
         <div class="table-top-bar" style="margin-bottom:1rem;">
-            <div style="font-size:0.95rem;font-weight:800;color:#0F3E7D;">🏆 Top 10 Leaderboard Rankings</div>
-            <div style="display:flex;gap:0.5rem;align-items:center;">
-                <select id="lbFilterCourse" class="filter-select" onchange="renderLeaderboard()">
-                    <option value="">All Courses</option>
-                    <option value="BSIT">BSIT</option>
-                    <option value="BSCS">BSCS</option>
-                    <option value="BSCoE">BSCoE</option>
-                    <option value="CISCO">CISCO</option>
-                    <option value="BSCE">BSCE</option>
-                    <option value="BSME">BSME</option>
-                    <option value="BSEE">BSEE</option>
-                    <option value="BSIE">BSIE</option>
-                </select>
-                <select id="lbFilterYear" class="filter-select" onchange="renderLeaderboard()">
-                    <option value="">All Years</option>
-                    <option value="1">1st Year</option>
-                    <option value="2">2nd Year</option>
-                    <option value="3">3rd Year</option>
-                    <option value="4">4th Year</option>
-                </select>
-                <select id="lbLimit" class="filter-select" onchange="renderLeaderboard()">
-                    <option value="10">Top 10</option>
-                    <option value="20">Top 20</option>
-                    <option value="50">Top 50</option>
-                </select>
-            </div>
+            <div style="font-size:0.95rem;font-weight:800;color:#0F3E7D;">🏆 Leaderboard Rankings</div>
         </div>
         <div class="table-scroll">
             <table class="dashboard-table" id="leaderboardTable">
@@ -1115,6 +1090,10 @@ body { visibility: hidden; }
                 </tbody>
             </table>
         </div>
+        <div class="pagination-wrap" style="margin-top:1rem;">
+            <div class="pagination-info" id="lbTopInfo"></div>
+            <div class="pagination-btns" id="lbTopPgBtns"></div>
+        </div>
     </div>
 
     <!-- Score Computation Table -->
@@ -1125,7 +1104,26 @@ body { visibility: hidden; }
             <div style="flex:1;height:2px;background:linear-gradient(90deg,transparent,rgba(15,62,125,0.4),rgba(244,185,66,0.8),rgba(15,62,125,0.4),transparent);border-radius:10px;"></div>
         </div>
         <div class="admin-card">
-        <div style="font-size:0.95rem;font-weight:800;color:#0F3E7D;margin-bottom:1rem;padding:0.6rem 0 0;">📊 Leaderboard Score Computation</div>            <div class="table-scroll">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding:0.6rem 0 0;">
+            <div style="font-size:0.95rem;font-weight:800;color:#0F3E7D;">📊 Leaderboard Score Computation</div>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+    <input type="text" id="lbScoreSearch" placeholder="Search student..."
+        class="table-search-input"
+        oninput="buildLBScoreTable()">
+    <select id="lbFilterCourse" class="filter-select" onchange="buildLBScoreTable()">
+        <option value="">All Courses</option>
+        <option value="BSIT">BSIT</option>
+        <option value="BSCS">BSCS</option>
+        <option value="BSCoE">BSCoE</option>
+        <option value="CISCO">CISCO</option>
+        <option value="BSCE">BSCE</option>
+        <option value="BSME">BSME</option>
+        <option value="BSEE">BSEE</option>
+        <option value="BSIE">BSIE</option>
+    </select>
+</div>
+        </div>
+        <div class="table-scroll">
                 <table class="dashboard-table" id="lbScoreTable">
                     <thead>
                         <tr>
@@ -1145,6 +1143,10 @@ body { visibility: hidden; }
                         <tr><td colspan="10" class="no-data">No evaluation data yet.</td></tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="pagination-wrap" id="lbScorePgWrap" style="display:none;">
+            <div class="pagination-info" id="lbScoreInfo"></div>
+            <div class="pagination-btns" id="lbScorePgBtns"></div>
             </div>
             <div style="margin-top:0.6rem;font-size:0.75rem;color:#888;padding:0.5rem 1rem;">
                 Formula: <code style="background:rgba(15,62,125,0.08);padding:0.1rem 0.4rem;border-radius:4px;">
@@ -1171,7 +1173,18 @@ body { visibility: hidden; }
                     </div>
                     <div class="table-scroll">
                         <table class="dashboard-table" id="sitinTable">
-                        <thead><tr><th>Sit ID Number</th><th>ID Number</th><th>Name</th><th>Purpose</th><th>Sit Lab</th><th>PC Number</th><th>Session</th><th>Available Until</th><th>Status</th><th>Actions</th></tr></thead>                            <tbody id="sitinTableBody">
+                        <thead><tr>
+                            <th style="white-space:nowrap;">Sit ID</th>
+                            <th style="white-space:nowrap;">ID Number</th>
+                            <th>Name</th>
+                            <th>Purpose</th>
+                            <th>Lab</th>
+                            <th style="white-space:nowrap;">PC</th>
+                            <th>Session</th>
+                            <th style="white-space:nowrap;">Available Until</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr></thead>                            <tbody id="sitinTableBody">
                                 {% for s in sessions %}
                                 {% if s.status == 'active' %}
                                 <tr>
@@ -1774,11 +1787,17 @@ body { visibility: hidden; }
                     <option value="18:00|20:00">6:00 PM – 8:00 PM</option>
                 </select>
             </div>
-            <div style="display:flex;gap:1rem;margin-bottom:0.75rem;flex-wrap:wrap;">
-                <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#eafaf1;border:1.5px solid #27ae60;display:inline-block;"></span>Available</span>
-                <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#f8d7da;border:1.5px solid #c0392b;display:inline-block;"></span>Unavailable</span>
-                <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:50%;background:#c0392b;display:inline-block;"></span>Occupied</span>
-                <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#fff3cd;border:1.5px solid #F4B942;display:inline-block;"></span>Reserved</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;gap:0.5rem;">
+                <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;">
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#eafaf1;border:1.5px solid #27ae60;display:inline-block;"></span>Available</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#f8d7da;border:1.5px solid #c0392b;display:inline-block;"></span>Unavailable</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:50%;background:#c0392b;display:inline-block;"></span>Occupied</span>
+                    <span style="display:flex;align-items:center;gap:4px;font-size:0.78rem;color:#555;"><span style="width:12px;height:12px;border-radius:3px;background:#fff3cd;border:1.5px solid #F4B942;display:inline-block;"></span>Reserved</span>
+                </div>
+                <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+                    <button onclick="confirmBulkBlock()" style="background:linear-gradient(135deg,#e74c3c,#c0392b);color:white;border:2px solid rgba(255,255,255,0.2);padding:0.38rem 1.1rem;border-radius:12px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;box-shadow:0 4px 14px rgba(192,57,43,0.4),0 1px 0 rgba(255,255,255,0.2) inset;transition:all 0.18s ease;min-width:140px;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 18px rgba(192,57,43,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px rgba(192,57,43,0.4),0 1px 0 rgba(255,255,255,0.2) inset'">🚫 Unavailable All</button>
+                    <button onclick="confirmBulkClear()" style="background:linear-gradient(135deg,#2ecc71,#1e7e34);color:white;border:2px solid rgba(255,255,255,0.2);padding:0.38rem 1.1rem;border-radius:12px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;box-shadow:0 4px 14px rgba(39,174,96,0.4),0 1px 0 rgba(255,255,255,0.2) inset;transition:all 0.18s ease;min-width:140px;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 18px rgba(39,174,96,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 14px rgba(39,174,96,0.4),0 1px 0 rgba(255,255,255,0.2) inset'">✅ Clear All</button>
+                </div>
             </div>
             <div id="mgmt_pc_grid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:8px;"></div>
             <div id="mgmt_status_msg" style="margin-top:0.75rem;font-size:0.82rem;color:#888;"></div>
@@ -1984,7 +2003,7 @@ body { visibility: hidden; }
                             <td>{{ r.purpose }}</td>
                             <td>{{ r.lab }}</td>
                             <td>PC {{ r.pc_number if r.pc_number else '—' }}</td>
-                            <td>{{ r.actual_login | timeformat if r.actual_login else '—' }}</td>
+                            <td>{{ r.actual_login.split(' ')[1] | timeformat if r.actual_login and ' ' in r.actual_login else r.actual_login | timeformat if r.actual_login else '—' }}</td>
                             <td>{{ r.time_out | timeformat if r.time_out else '—' }}</td>
                             <td>{{ r.date }}</td>
                             <td>
@@ -3663,7 +3682,7 @@ function exportFeedbackPDFConfirmed() {
 
         function confirmAdminLogout() { closeAdminHam(); showModal('adminLogoutModal'); }
 
-        ['searchModal','sitinFormModal','sitinModal','editStudentModal','deleteModal','logoutModal','adminLogoutModal','editAnnModal','deleteAnnModal','reqModal','sitinFromResModal','confirmApproveReqModal','confirmRejectReqModal','confirmExportReportsCSVModal','confirmExportReportsExcelModal','confirmExportReportsPDFModal','confirmPrintReportsModal','confirmExportFeedbackCSVModal','confirmExportFeedbackExcelModal','confirmExportFeedbackPDFModal','confirmPrintFeedbackReportModal','confirmExportLogCSVModal','confirmExportLogExcelModal','confirmExportLogPDFModal','confirmPrintLogModal','deleteFeedbackModal','confirmDeleteReservationModal','wrongDateModal','editResDateModal'].forEach(id => {            const el = document.getElementById(id);
+        ['searchModal','sitinFormModal','sitinModal','editStudentModal','deleteModal','logoutModal','adminLogoutModal','editAnnModal','deleteAnnModal','reqModal','sitinFromResModal','confirmApproveReqModal','confirmRejectReqModal','confirmExportReportsCSVModal','confirmExportReportsExcelModal','confirmExportReportsPDFModal','confirmPrintReportsModal','confirmExportFeedbackCSVModal','confirmExportFeedbackExcelModal','confirmExportFeedbackPDFModal','confirmPrintFeedbackReportModal','confirmExportLogCSVModal','confirmExportLogExcelModal','confirmExportLogPDFModal','confirmPrintLogModal','deleteFeedbackModal','confirmDeleteReservationModal','wrongDateModal','editResDateModal','confirmBulkBlockModal','confirmBulkClearModal'].forEach(id => {            const el = document.getElementById(id);
             if (el) el.addEventListener('click', function(e) { if (e.target === this) closeModal(id); });
         });
 
@@ -5824,10 +5843,90 @@ function buildLeaderboard() {
                 </td>`;
             tbody.appendChild(tr);
         });
+        // Pagination info
+const infoEl = document.getElementById('lbTopInfo');
+const pgEl   = document.getElementById('lbTopPgBtns');
+const totalAll = scored.length;
+const pages = Math.max(1, Math.ceil(totalAll / limit));
+if (infoEl) infoEl.textContent = `Showing 1–${top.length} of ${totalAll} entries`;
+if (pgEl) {
+    pgEl.innerHTML = '';
+    function makeTopBtn(label, onClick, isActive, isDisabled) {
+        const b = document.createElement('button');
+        b.className = 'pg-btn' + (isActive ? ' active' : '');
+        b.innerHTML = label; b.disabled = isDisabled; b.onclick = onClick;
+        pgEl.appendChild(b);
+    }
+    let lbCurrentPage = 1;
+makeTopBtn('&#8592;', () => { lbCurrentPage--; buildLeaderboardPage(scored, (lbCurrentPage-1)*limit, limit, lbCurrentPage, pages); }, false, true);
+for (let i = 1; i <= pages; i++) {
+    const startIdx = (i - 1) * limit;
+    const pageNum = i;
+    makeTopBtn(i, () => { lbCurrentPage = pageNum; buildLeaderboardPage(scored, startIdx, limit, lbCurrentPage, pages); }, i === 1, false);
+}
+makeTopBtn('&#8594;', () => { lbCurrentPage++; buildLeaderboardPage(scored, (lbCurrentPage-1)*limit, limit, lbCurrentPage, pages); }, false, pages === 1);
+}
     })
     .catch(() => {
         tbody.innerHTML = '<tr><td colspan="8" class="no-data">Failed to load scores.</td></tr>';
     });
+}
+
+function buildLeaderboardPage(scored, startIdx, limit, currentPage = 1, totalPages = 1) {
+    const tbody = document.getElementById('leaderboardBody');
+    const infoEl = document.getElementById('lbTopInfo');
+    const top = scored.slice(startIdx, startIdx + limit);
+    const maxScore = scored[0]?.finalScore || 1;
+    const medals = ['🥇','🥈','🥉'];
+    const barColors = [
+        'linear-gradient(90deg,#F4B942,#f39c12)',
+        'linear-gradient(90deg,#aaa,#888)',
+        'linear-gradient(90deg,#cd7f32,#b5651d)'
+    ];
+    const yearSuffix = ['','st','nd','rd','th'];
+    tbody.innerHTML = '';
+    top.forEach((d, i) => {
+        const rank = startIdx + i + 1;
+        const pct = maxScore > 0 ? Math.round((d.finalScore / maxScore) * 100) : 0;
+        const remainClass = d.remaining <= 5 ? 'remaining-low' : d.remaining <= 10 ? 'remaining-mid' : 'remaining-ok';
+        const scoreColor = rank === 1 ? '#b8860b' : rank === 2 ? '#888' : rank === 3 ? '#8b4513' : '#0F3E7D';
+        const barColor = rank <= 3 ? barColors[rank-1] : 'linear-gradient(90deg,#0F3E7D,#185FA5)';
+        const medalHtml = rank <= 3
+            ? `<span class="lb-rank-medal" style="background:${['#fff8dc','#e8e8e8','#f5e6d3'][rank-1]};color:${['#b8860b','#888','#8b4513'][rank-1]};">${medals[rank-1]}</span>`
+            : `<span class="lb-rank-medal" style="background:#f0f0f0;color:#555;font-size:0.78rem;">#${rank}</span>`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="text-align:center;">${medalHtml}</td>
+            <td>${d.idNum}</td>
+            <td style="font-weight:${rank<=3?'700':'400'}">${d.name}</td>
+            <td><span style="background:#E6F1FB;color:#0F3E7D;padding:0.2rem 0.6rem;border-radius:10px;font-size:0.78rem;font-weight:700;">${d.course}</span></td>
+            <td>${d.year}${yearSuffix[parseInt(d.year)]||'th'}</td>
+            <td style="font-weight:800;color:${scoreColor};font-size:1.05rem;">${d.finalScore.toFixed(2)}</td>
+            <td><span class="sitin-remaining ${remainClass}">${d.remaining}</span></td>
+            <td style="min-width:120px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="lb-bar-wrap"><div class="lb-bar-fill" style="width:${pct}%;background:${barColor};"></div></div>
+                    <span style="font-size:0.75rem;color:#888;min-width:28px;">${pct}%</span>
+                </div>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+if (infoEl) infoEl.textContent = `Showing ${startIdx+1}–${Math.min(startIdx+limit, scored.length)} of ${scored.length} entries`;
+const pgEl = document.getElementById('lbTopPgBtns');
+if (!pgEl) return;
+pgEl.innerHTML = '';
+function makeBtn2(label, onClick, isActive, isDisabled) {
+    const b = document.createElement('button');
+    b.className = 'pg-btn' + (isActive ? ' active' : '');
+    b.innerHTML = label; b.disabled = isDisabled; b.onclick = onClick;
+    pgEl.appendChild(b);
+}
+makeBtn2('&#8592;', () => buildLeaderboardPage(scored, startIdx - limit, limit, currentPage - 1, totalPages), false, startIdx === 0);
+for (let i = 1; i <= totalPages; i++) {
+    const s = (i - 1) * limit;
+    makeBtn2(i, () => buildLeaderboardPage(scored, s, limit, i, totalPages), i === currentPage, false);
+}
+makeBtn2('&#8594;', () => buildLeaderboardPage(scored, startIdx + limit, limit, currentPage + 1, totalPages), false, startIdx + limit >= scored.length);
 }
 
 function buildLBScoreTable() {
@@ -5839,6 +5938,14 @@ function buildLBScoreTable() {
             tbody.innerHTML = '<tr><td colspan="10" class="no-data">No evaluation data yet.</td></tr>';
             return;
         }
+const courseF = document.getElementById('lbFilterCourse')?.value || '';
+const searchQ = document.getElementById('lbScoreSearch')?.value.toLowerCase().trim() || '';
+if (courseF) data.scores = data.scores.filter(s => s.course === courseF);
+if (searchQ) data.scores = data.scores.filter(s =>
+    (s.firstName + ' ' + s.lastName).toLowerCase().includes(searchQ) ||
+    s.idNumber?.toString().includes(searchQ)
+);
+        
 
         // Sort by final score descending
         data.scores.sort((a, b) => b.final_score - a.final_score);
@@ -5871,6 +5978,9 @@ function buildLBScoreTable() {
                 </td>
             </tr>`;
         }).join('');
+
+        // ── Pagination for Score Table ──
+        renderLBScorePagination(data.scores);
     })
     .catch(() => {
         document.getElementById('lbScoreBody').innerHTML =
@@ -5878,6 +5988,76 @@ function buildLBScoreTable() {
     });
 }
 
+let _lbScoreData = [], _lbScorePage = 1;
+const LB_SCORE_PER_PAGE = 10;
+
+function renderLBScorePagination(scores) {
+    _lbScoreData = scores;
+    _lbScorePage = 1;
+    renderLBScoreTable();
+}
+
+function renderLBScoreTable() {
+    const total = _lbScoreData.length;
+    const pages = Math.max(1, Math.ceil(total / LB_SCORE_PER_PAGE));
+    const start = (_lbScorePage - 1) * LB_SCORE_PER_PAGE;
+    const end   = start + LB_SCORE_PER_PAGE;
+    const medals = ['🥇','🥈','🥉'];
+    const tbody = document.getElementById('lbScoreBody');
+
+    tbody.innerHTML = _lbScoreData.slice(start, end).map((s, i) => {
+        const rank = start + i + 1;
+        const rankDisplay = rank <= 3
+            ? `<span style="font-size:1.1rem;">${medals[rank-1]}</span>`
+            : `<span style="font-weight:700;color:#555;">#${rank}</span>`;
+        const hrs  = Math.floor(s.total_minutes / 60);
+        const mins = s.total_minutes % 60;
+        const hrsDisplay = hrs > 0 ? `${hrs}hr ${mins}m` : `${mins}m`;
+        return `<tr style="${rank <= 3 ? 'background:rgba(244,185,66,0.07);' : ''}">
+            <td style="text-align:center;">${rankDisplay}</td>
+            <td style="font-weight:${rank<=3?'700':'400'};color:${rank===1?'#0F3E7D':'inherit'};">
+                ${s.lastName}, ${s.firstName}
+            </td>
+            <td><span style="background:#E6F1FB;color:#0F3E7D;padding:0.2rem 0.6rem;border-radius:10px;font-size:0.78rem;font-weight:700;">${s.course}</span></td>
+            <td style="text-align:center;">${s.raw_tidy_points}</td>
+            <td style="color:#185FA5;font-weight:700;text-align:center;">${s.lb_tidy_pts.toFixed(2)}</td>
+            <td style="text-align:center;">${hrsDisplay}</td>
+            <td style="color:#185FA5;font-weight:700;text-align:center;">${s.hrs_weighted.toFixed(2)}</td>
+            <td style="text-align:center;">${s.tasks_completed}/${s.total_sessions}</td>
+            <td style="color:#185FA5;font-weight:700;text-align:center;">${s.task_weighted.toFixed(2)}</td>
+            <td style="background:rgba(244,185,66,0.15);font-weight:800;color:#0F3E7D;font-size:1rem;text-align:center;">
+                ${s.final_score.toFixed(2)}
+            </td>
+        </tr>`;
+    }).join('');
+
+    // Info + buttons
+    const wrap = document.getElementById('lbScorePgWrap');
+    const info = document.getElementById('lbScoreInfo');
+    const btns = document.getElementById('lbScorePgBtns');
+    if (!wrap) return;
+    wrap.style.display = total <= LB_SCORE_PER_PAGE ? 'none' : '';
+    if (info) info.textContent = `Showing ${start+1}–${Math.min(end,total)} of ${total} entries`;
+    if (!btns) return;
+    btns.innerHTML = '';
+
+    function makeBtn(label, onClick, isActive, isDisabled, isDots) {
+        if (isDots) { const s = document.createElement('span'); s.className='pg-dots'; s.textContent='···'; btns.appendChild(s); return; }
+        const b = document.createElement('button');
+        b.className = 'pg-btn' + (isActive ? ' active' : '');
+        b.innerHTML = label; b.disabled = isDisabled;
+        b.onclick = () => { _lbScorePage = typeof onClick === 'number' ? onClick : onClick(); renderLBScoreTable(); };
+        btns.appendChild(b);
+    }
+
+    makeBtn('&#8592;', _lbScorePage - 1, false, _lbScorePage === 1);
+    const delta = 2, range = [];
+    for (let i = Math.max(1, _lbScorePage - delta); i <= Math.min(pages, _lbScorePage + delta); i++) range.push(i);
+    if (range[0] > 1) { makeBtn('1', 1, false, false); if (range[0] > 2) makeBtn('', null, false, false, true); }
+    range.forEach(i => makeBtn(i, i, i === _lbScorePage, false));
+    if (range[range.length-1] < pages) { if (range[range.length-1] < pages-1) makeBtn('', null, false, false, true); makeBtn(pages, pages, false, false); }
+    makeBtn('&#8594;', _lbScorePage + 1, false, _lbScorePage === pages);
+}
 // ══════════════════════════════════════
 // AI INSIGHTS ENGINE
 // ══════════════════════════════════════
@@ -6219,6 +6399,7 @@ function buildLabRankings() {
         }, {})
     ).sort((a,b)=>b[1]-a[1])[0]?.[0] || '—';
     document.getElementById('statActiveToday').textContent = activeToday;
+    
     buildTrendBars();
     buildPeakHoursBars();
 }
@@ -6371,6 +6552,51 @@ document.addEventListener('DOMContentLoaded', checkSitinGate);
 setInterval(checkSitinGate, 1000);
 document.addEventListener('DOMContentLoaded', checkSitinGate);
 */
+
+function confirmBulkBlock() {
+    document.getElementById('bulkBlockLabLabel').textContent = _mgmtLab;
+    showModal('confirmBulkBlockModal');
+}
+
+function confirmBulkClear() {
+    document.getElementById('bulkClearLabLabel').textContent = _mgmtLab;
+    showModal('confirmBulkClearModal');
+}
+
+function submitBulkBlock() {
+    closeModal('confirmBulkBlockModal');
+    const fd = new FormData();
+    fd.append('lab', _mgmtLab);
+    fd.append('action', 'block_all');
+    fetch('/admin/bulk-pc-block', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            _blockedPCs = Array.from({length: 50}, (_, i) => i + 1);
+            loadMgmtGrid();
+            showToast(`🚫 All PCs in Lab ${_mgmtLab} set to Unavailable.`, 'error');
+        }
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
+}
+
+function submitBulkClear() {
+    closeModal('confirmBulkClearModal');
+    const fd = new FormData();
+    fd.append('lab', _mgmtLab);
+    fd.append('action', 'clear_all');
+    fetch('/admin/bulk-pc-block', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            _blockedPCs = [];
+            loadMgmtGrid();
+            showToast(`✅ All PCs in Lab ${_mgmtLab} are now Available.`, 'success');
+        }
+    })
+    .catch(() => showToast('✗ Connection error.', 'error'));
+}
+
     </script>
 <div class="modal-overlay" id="deleteFeedbackModal" style="display:none;">
     <div class="modal-box modal-sm">
@@ -6681,6 +6907,210 @@ document.addEventListener('DOMContentLoaded', checkSitinGate);
     </div>
     <button onclick="dismissAiTip()" style="width:100%; background:linear-gradient(135deg,#1a5db5,#0F3E7D); color:white; border:none; padding:9px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer; font-family:Arial,sans-serif; letter-spacing:0.02em;">Okay, got it</button>
   </div>
+</div>
+
+<!-- BULK BLOCK MODAL -->
+<div class="modal-overlay" id="confirmBulkBlockModal" style="display:none; z-index:9999;">
+    <div style="
+        background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(255,235,235,0.88));
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border-radius: 36px;
+        width: 90%;
+        max-width: 420px;
+        border: 2px solid rgba(255,255,255,0.95);
+        box-shadow:
+            0 30px 60px rgba(192,57,43,0.2),
+            0 8px 20px rgba(192,57,43,0.12),
+            0 2px 0 rgba(255,255,255,1) inset,
+            6px 6px 0px rgba(255,150,150,0.25);
+        overflow: hidden;
+    ">
+        <!-- Header -->
+        <div style="
+            background: linear-gradient(135deg, #c0392b, #e74c3c);
+            padding: 1.1rem 1.4rem;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(192,57,43,0.35);
+        ">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="
+                    width:34px;height:34px;
+                    background:rgba(255,255,255,0.18);
+                    border-radius:12px;
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:16px;
+                    border:1.5px solid rgba(255,255,255,0.3);
+                ">🚫</div>
+                <span style="color:white;font-size:1rem;font-weight:800;letter-spacing:0.02em;text-shadow:0 1px 4px rgba(0,0,0,0.2);">Set All PCs Unavailable</span>
+            </div>
+            <button onclick="closeModal('confirmBulkBlockModal')" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);color:white;font-size:1rem;cursor:pointer;width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:1.75rem 2rem;text-align:center;">
+            <div style="
+                width:88px;height:88px;
+                background:linear-gradient(145deg,#fdecea,#f9b9b4);
+                border-radius:28px;
+                margin:0 auto 1.25rem;
+                display:flex;align-items:center;justify-content:center;
+                font-size:2.4rem;
+                box-shadow:0 8px 24px rgba(192,57,43,0.2),0 2px 0 rgba(255,255,255,0.9) inset;
+                border:2px solid rgba(255,255,255,0.9);
+                transform:rotate(-4deg);
+                animation:clayWobble 3s ease-in-out infinite;
+            ">🖥️</div>
+
+            <p style="color:#2c2c2e;font-size:1rem;font-weight:700;margin:0 0 0.4rem;line-height:1.4;">
+                Block all 50 PCs?
+            </p>
+            <p style="color:#888;font-size:0.85rem;margin:0 0 0.5rem;line-height:1.6;">
+                Lab <strong style="color:#c0392b;" id="bulkBlockLabLabel">—</strong> — All PCs will be marked
+                <span style="background:#f8d7da;color:#c0392b;font-size:0.78rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:10px;border:1px solid rgba(192,57,43,0.2);">Unavailable</span>
+            </p>
+            <p style="color:#aaa;font-size:0.78rem;margin:0 0 1.75rem;">Students won't be able to reserve any PC in this lab.</p>
+
+            <!-- AI Insight chip -->
+            <div style="
+                display:inline-flex;align-items:center;gap:6px;
+                background:linear-gradient(135deg,rgba(192,57,43,0.08),rgba(231,76,60,0.05));
+                border:1px solid rgba(192,57,43,0.15);
+                border-radius:20px;padding:0.35rem 0.9rem;margin-bottom:1.5rem;
+            ">
+                <span style="font-size:11px;">🤖</span>
+                <span style="font-size:0.72rem;font-weight:700;color:#c0392b;letter-spacing:0.04em;">Use during exams week or maintenance</span>
+            </div>
+
+            <div style="display:flex;gap:0.75rem;justify-content:center;">
+                <button onclick="closeModal('confirmBulkBlockModal')" style="
+                    background:linear-gradient(145deg,#f2f2f7,#e5e5ea);
+                    color:#3a3a3c;border:2px solid rgba(255,255,255,0.9);
+                    padding:0.75rem 1.5rem;border-radius:18px;
+                    font-size:0.9rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;
+                    box-shadow:0 6px 20px rgba(0,0,0,0.08),0 2px 0 rgba(255,255,255,0.95) inset;
+                    transition:all 0.18s ease;flex:1;max-width:130px;
+                "
+                onmouseover="this.style.transform='translateY(-2px)'"
+                onmouseout="this.style.transform=''">Cancel</button>
+
+                <button onclick="submitBulkBlock()" style="
+                    background:linear-gradient(145deg,#e74c3c,#c0392b);
+                    color:white;border:2px solid rgba(255,255,255,0.25);
+                    padding:0.75rem 1.5rem;border-radius:18px;
+                    font-size:0.9rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;
+                    box-shadow:0 8px 24px rgba(192,57,43,0.4),0 2px 0 rgba(255,255,255,0.25) inset;
+                    transition:all 0.18s ease;flex:1;max-width:160px;
+                "
+                onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 32px rgba(192,57,43,0.5)'"
+                onmouseout="this.style.transform='';this.style.boxShadow='0 8px 24px rgba(192,57,43,0.4),0 2px 0 rgba(255,255,255,0.25) inset'">
+                    Yes, Block All
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- BULK CLEAR MODAL -->
+<div class="modal-overlay" id="confirmBulkClearModal" style="display:none; z-index:9999;">
+    <div style="
+        background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(235,255,245,0.88));
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border-radius: 36px;
+        width: 90%;
+        max-width: 420px;
+        border: 2px solid rgba(255,255,255,0.95);
+        box-shadow:
+            0 30px 60px rgba(30,126,52,0.18),
+            0 8px 20px rgba(30,126,52,0.10),
+            0 2px 0 rgba(255,255,255,1) inset,
+            6px 6px 0px rgba(150,255,180,0.3);
+        overflow: hidden;
+    ">
+        <!-- Header -->
+        <div style="
+            background: linear-gradient(135deg, #1a7a34, #2ecc71);
+            padding: 1.1rem 1.4rem;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(30,126,52,0.35);
+        ">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="
+                    width:34px;height:34px;
+                    background:rgba(255,255,255,0.18);
+                    border-radius:12px;
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:16px;
+                    border:1.5px solid rgba(255,255,255,0.3);
+                ">✅</div>
+                <span style="color:white;font-size:1rem;font-weight:800;letter-spacing:0.02em;text-shadow:0 1px 4px rgba(0,0,0,0.2);">Clear All PCs</span>
+            </div>
+            <button onclick="closeModal('confirmBulkClearModal')" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);color:white;font-size:1rem;cursor:pointer;width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div style="padding:1.75rem 2rem;text-align:center;">
+            <div style="
+                width:88px;height:88px;
+                background:linear-gradient(145deg,#eafaf1,#a9dfbf);
+                border-radius:28px;
+                margin:0 auto 1.25rem;
+                display:flex;align-items:center;justify-content:center;
+                font-size:2.4rem;
+                box-shadow:0 8px 24px rgba(30,126,52,0.2),0 2px 0 rgba(255,255,255,0.9) inset;
+                border:2px solid rgba(255,255,255,0.9);
+                transform:rotate(4deg);
+                animation:clayWobble 3s ease-in-out infinite;
+            ">🖥️</div>
+
+            <p style="color:#2c2c2e;font-size:1rem;font-weight:700;margin:0 0 0.4rem;line-height:1.4;">
+                Make all 50 PCs available?
+            </p>
+            <p style="color:#888;font-size:0.85rem;margin:0 0 0.5rem;line-height:1.6;">
+                Lab <strong style="color:#1e7e34;" id="bulkClearLabLabel">—</strong> — All manually blocked PCs will be
+                <span style="background:#eafaf1;color:#1e7e34;font-size:0.78rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:10px;border:1px solid rgba(39,174,96,0.2);">Available</span> again.
+            </p>
+            <p style="color:#aaa;font-size:0.78rem;margin:0 0 1.75rem;">Occupied & reserved PCs will remain as-is.</p>
+
+            <!-- AI Insight chip -->
+            <div style="
+                display:inline-flex;align-items:center;gap:6px;
+                background:linear-gradient(135deg,rgba(39,174,96,0.08),rgba(46,204,113,0.05));
+                border:1px solid rgba(39,174,96,0.18);
+                border-radius:20px;padding:0.35rem 0.9rem;margin-bottom:1.5rem;
+            ">
+                <span style="font-size:11px;">🤖</span>
+                <span style="font-size:0.72rem;font-weight:700;color:#1e7e34;letter-spacing:0.04em;">Opens lab for walk-ins & reservations</span>
+            </div>
+
+            <div style="display:flex;gap:0.75rem;justify-content:center;">
+                <button onclick="closeModal('confirmBulkClearModal')" style="
+                    background:linear-gradient(145deg,#f2f2f7,#e5e5ea);
+                    color:#3a3a3c;border:2px solid rgba(255,255,255,0.9);
+                    padding:0.75rem 1.5rem;border-radius:18px;
+                    font-size:0.9rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;
+                    box-shadow:0 6px 20px rgba(0,0,0,0.08),0 2px 0 rgba(255,255,255,0.95) inset;
+                    transition:all 0.18s ease;flex:1;max-width:130px;
+                "
+                onmouseover="this.style.transform='translateY(-2px)'"
+                onmouseout="this.style.transform=''">Cancel</button>
+
+                <button onclick="submitBulkClear()" style="
+                    background:linear-gradient(145deg,#2ecc71,#1a7a34);
+                    color:white;border:2px solid rgba(255,255,255,0.25);
+                    padding:0.75rem 1.5rem;border-radius:18px;
+                    font-size:0.9rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;
+                    box-shadow:0 8px 24px rgba(30,126,52,0.4),0 2px 0 rgba(255,255,255,0.25) inset;
+                    transition:all 0.18s ease;flex:1;max-width:160px;
+                "
+                onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 32px rgba(30,126,52,0.5)'"
+                onmouseout="this.style.transform='';this.style.boxShadow='0 8px 24px rgba(30,126,52,0.4),0 2px 0 rgba(255,255,255,0.25) inset'">
+                    Yes, Clear All
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 </body>

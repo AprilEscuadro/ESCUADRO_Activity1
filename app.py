@@ -953,6 +953,26 @@ def admin_toggle_pc_block():
     set_pc_blocked(lab, int(pc_number), blocked == '1')
     return jsonify({'success': True, 'blocked': blocked == '1'})
 
+@app.route('/admin/bulk-pc-block', methods=['POST'])
+def admin_bulk_pc_block():
+    if not session.get('admin'):
+        return jsonify({'success': False}), 401
+    lab    = request.form.get('lab', '').strip()
+    action = request.form.get('action', '').strip()
+    if not lab:
+        return jsonify({'success': False, 'message': 'Missing lab.'})
+    conn = _sqlite3.connect('database.db', timeout=10)
+    if action == 'block_all':
+        for i in range(1, 51):
+            conn.execute(
+                "INSERT OR IGNORE INTO blocked_pcs (lab, pc_number) VALUES (?, ?)",
+                (lab, i)
+            )
+    elif action == 'clear_all':
+        conn.execute("DELETE FROM blocked_pcs WHERE lab = ?", (lab,))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
 # ══════════════════════════════════════════
 # RESERVATION DELETE
 # ══════════════════════════════════════════
@@ -1441,7 +1461,7 @@ def admin_auto_logout_overdue():
     conn.execute("PRAGMA journal_mode=WAL")
 
     overdue_rows = conn.execute("""
-        SELECT id, idNumber FROM sitin_sessions
+        SELECT id, idNumber, time_in FROM sitin_sessions
         WHERE status = 'active'
         AND time_end IS NOT NULL
         AND time_end <= ?
@@ -1451,7 +1471,22 @@ def admin_auto_logout_overdue():
     for row in overdue_rows:
         session_id = row[0]
         id_number  = row[1]
+        time_in    = row[2]
         now_ph = now.strftime('%Y-%m-%d %H:%M:%S')
+
+        # ── Compute actual duration ──
+        duration_minutes = 15  # fallback
+        try:
+            for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+                try:
+                    t_in = datetime.strptime(time_in.strip(), fmt)
+                    t_in = t_in.replace(tzinfo=PH_TZ)
+                    duration_minutes = max(0, int((now - t_in).total_seconds() / 60))
+                    break
+                except:
+                    continue
+        except:
+            pass
 
         conn.execute("UPDATE sitin_sessions SET time_out=?, status='done' WHERE id=?", (now_ph, session_id))
         conn.execute("UPDATE students SET sitin_count = sitin_count - 1 WHERE idNumber = ? AND sitin_count > 0", (id_number,))
@@ -1463,8 +1498,8 @@ def admin_auto_logout_overdue():
         conn.execute("""
             INSERT OR REPLACE INTO sit_evaluations
             (session_id, idNumber, tidy_point, task_completed, duration_minutes)
-            VALUES (?, ?, 0, 0, 15)
-        """, (session_id, id_number))
+            VALUES (?, ?, 0, 0, ?)
+        """, (session_id, id_number, duration_minutes))  # ← actual duration!
 
         auto_logged.append(session_id)
 
